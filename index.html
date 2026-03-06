@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>meryne.eis — Content Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,700&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --rose:#FF2D7A; --rose-l:#FFE0EE; --rose-p:#FFF5F9;
+  --violet:#7C3AED; --violet-l:#EDE9FE;
+  --gold:#C9860A; --gold-b:#FFF8DC; --gold-br:#FCD34D;
+  --ttr:#FF004F; --ttb:#00F2EA;
+  --insta:#C13584;
+  --dark:#0A0A14; --ink:#18181B; --muted:#71717A;
+  --surf:#FAFAFA; --bord:#E4E4E7; --white:#FFFFFF;
+  --cyan:#06B6D4; --green:#059669; --amber:#F59E0B;
+}
+
+/* ── FONTS ── */
+body { font-family:'DM Sans',sans-serif; background:var(--surf); color:var(--ink); font-size:15px; line-height:1.6; }
+
+/* ══════════════════════════════════════════
+   LOGIN PAGE
+══════════════════════════════════════════ */
+#login-page {
+  min-height:100vh;
+  background: var(--dark);
+  display:flex; align-items:center; justify-content:center;
+  position:relative; overflow:hidden;
+}
+.login-bg {
+  position:absolute; inset:0;
+  background:
+    radial-gradient(ellipse 70% 60% at 20% 70%, rgba(255,45,122,.18) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 50% at 80% 25%, rgba(124,58,237,.16) 0%, transparent 55%),
+    radial-gradient(ellipse 40% 40% at 60% 80%, rgba(255,0,79,.1) 0%, transparent 50%);
+}
+.login-noise {
+  position:absolute; inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  opacity:.5;
+}
+.login-box {
+  position:relative;
+  width:100%; max-width:400px;
+  margin:24px;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:24px;
+  padding:48px 40px;
+  backdrop-filter:blur(20px);
+  animation: fadeUp .6s ease both;
+}
+@keyframes fadeUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+
+.login-logo {
+  text-align:center; margin-bottom:32px;
+}
+.login-logo .monogram {
+  width:64px; height:64px;
+  background:linear-gradient(135deg, var(--rose), var(--violet));
+  border-radius:18px;
+  display:inline-flex; align-items:center; justify-content:center;
+  font-family:'Cormorant Garamond',serif;
+  font-size:28px; font-weight:700; color:#fff;
+  margin-bottom:14px;
+  box-shadow:0 8px 32px rgba(255,45,122,.3);
+}
+.login-logo h1 {
+  font-family:'Cormorant Garamond',serif;
+  font-size:26px; font-weight:700; color:#fff;
+  letter-spacing:-.5px;
+}
+.login-logo p {
+  font-size:12px; color:rgba(255,255,255,.35);
+  font-family:'DM Mono',monospace;
+  letter-spacing:2px; text-transform:uppercase;
+  margin-top:4px;
+}
+
+.login-field { margin-bottom:16px; }
+.login-field label {
+  display:block;
+  font-size:11px; font-weight:600;
+  color:rgba(255,255,255,.4);
+  text-transform:uppercase; letter-spacing:1px;
+  margin-bottom:8px;
+}
+.login-field input {
+  width:100%; padding:14px 18px;
+  background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:12px;
+  font-size:15px; color:#fff;
+  font-family:'DM Sans',sans-serif;
+  outline:none; transition:all .2s;
+}
+.login-field input::placeholder { color:rgba(255,255,255,.25); }
+.login-field input:focus {
+  border-color:rgba(255,45,122,.5);
+  background:rgba(255,45,122,.06);
+  box-shadow:0 0 0 3px rgba(255,45,122,.1);
+}
+
+.login-btn {
+  width:100%; padding:15px;
+  background:linear-gradient(135deg, var(--rose), #c0185a);
+  border:none; border-radius:12px;
+  font-size:15px; font-weight:700; color:#fff;
+  cursor:pointer; margin-top:8px;
+  font-family:'DM Sans',sans-serif;
+  transition:all .2s;
+  letter-spacing:.3px;
+}
+.login-btn:hover { transform:translateY(-1px); box-shadow:0 8px 24px rgba(255,45,122,.35); }
+.login-btn:active { transform:translateY(0); }
+
+.login-error {
+  text-align:center; margin-top:14px;
+  font-size:13px; color:#FF88B0;
+  display:none;
+  animation: shake .3s ease;
+}
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+.login-error.show { display:block; }
+
+/* ══════════════════════════════════════════
+   MAIN APP
+══════════════════════════════════════════ */
+#app { display:none; }
+
+/* HEADER */
+.header {
+  background:linear-gradient(135deg, #0A0A14 0%, #1a0a2e 50%, #2d0a1e 100%);
+  position:relative; overflow:hidden;
+}
+.header-glow {
+  position:absolute; inset:0; pointer-events:none;
+  background:
+    radial-gradient(ellipse 60% 80% at 20% 60%,rgba(255,45,122,.18) 0%,transparent 60%),
+    radial-gradient(ellipse 50% 60% at 80% 30%,rgba(124,58,237,.15) 0%,transparent 55%);
+}
+.header-inner { position:relative; max-width:980px; margin:0 auto; padding:36px 24px 0; }
+.header-eyebrow {
+  font-family:'DM Mono',monospace; font-size:11px;
+  letter-spacing:3px; color:var(--rose); text-transform:uppercase;
+  margin-bottom:10px; display:flex; align-items:center; gap:10px;
+}
+.header-eyebrow::before { content:''; width:20px; height:1px; background:var(--rose); }
+.header h1 {
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(26px,4vw,46px); font-weight:700;
+  color:#fff; line-height:1.1; margin-bottom:8px;
+}
+.header h1 em { color:var(--rose); font-style:italic; }
+.header-sub { color:rgba(255,255,255,.4); font-size:13px; margin-bottom:20px; font-weight:300; }
+
+.kpi-row { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:24px; }
+.kpi {
+  background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1);
+  border-radius:12px; padding:10px 16px; backdrop-filter:blur(8px);
+}
+.kpi-label { font-size:10px; color:rgba(255,255,255,.35); letter-spacing:.5px; text-transform:uppercase; margin-bottom:2px; }
+.kpi-val { font-size:20px; font-weight:800; font-variant-numeric:tabular-nums; }
+
+/* TABS */
+.tabs {
+  max-width:980px; margin:0 auto; padding:0 24px;
+  display:flex; gap:2px;
+  border-top:1px solid rgba(255,255,255,.07);
+  overflow-x:auto; scrollbar-width:none;
+}
+.tabs::-webkit-scrollbar { display:none; }
+.tab-btn {
+  padding:14px 20px; background:none; border:none; cursor:pointer;
+  color:rgba(255,255,255,.35); border-bottom:2px solid transparent;
+  font-size:13px; font-weight:600; font-family:'DM Sans',sans-serif;
+  transition:all .15s; white-space:nowrap; flex-shrink:0;
+}
+.tab-btn:hover { color:rgba(255,255,255,.7); }
+.tab-btn.active { color:var(--rose); border-bottom-color:var(--rose); }
+.tab-sub { font-size:10px; opacity:.6; display:block; margin-top:1px; }
+
+/* CONTENT */
+.page { max-width:980px; margin:0 auto; padding:28px 24px 80px; }
+.tab-panel { display:none; }
+.tab-panel.active { display:block; }
+
+/* ── ALERT BANNER ── */
+.alert-banner {
+  border-radius:14px; padding:14px 18px; margin-bottom:20px;
+  display:flex; gap:12px; align-items:flex-start;
+}
+.ab-gold { background:#78350F20; border:1px solid #FCD34D55; }
+.ab-gold .ab-text { color:#92400E; font-size:13px; }
+.ab-rose { background:#FF2D7A15; border:1px solid #FF2D7A44; }
+.ab-rose .ab-text { color:#9D174D; font-size:13px; }
+
+/* ── PROGRESS BAR ── */
+.prog-wrap { background:#e5e7eb; border-radius:99px; height:6px; overflow:hidden; }
+.prog-fill { height:100%; border-radius:99px; transition:width .5s ease; }
+.prog-meta { display:flex; justify-content:space-between; margin-top:6px; }
+.prog-meta span { font-size:12px; color:var(--muted); }
+
+/* ── PROD CARDS ── */
+.prod-list { display:flex; flex-direction:column; gap:10px; }
+.prod-card {
+  background:#fff; border:1.5px solid var(--bord);
+  border-radius:14px; padding:16px 20px; cursor:pointer;
+  transition:all .2s; display:flex; gap:14px; align-items:flex-start;
+  box-shadow:0 1px 4px rgba(0,0,0,.05);
+}
+.prod-card:hover { border-color:#d1d5db; transform:translateY(-1px); box-shadow:0 4px 16px rgba(0,0,0,.08); }
+.prod-card.done { background:#f0fdf4; border-color:#16a34a44; box-shadow:none; transform:none; }
+.prod-card.launch { border-color:#FF2D7A44; }
+
+.checkbox {
+  width:24px; height:24px; border-radius:6px;
+  border:2px solid #d1d5db; background:transparent;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0; margin-top:2px; transition:all .2s;
+}
+.prod-card.done .checkbox { background:#16a34a; border-color:#16a34a; }
+.checkbox-check { color:#fff; font-size:14px; display:none; }
+.prod-card.done .checkbox-check { display:block; }
+
+.prod-info { flex:1; }
+.prod-meta { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:6px; }
+.prod-date { font-size:11px; font-weight:700; color:var(--muted); font-family:'DM Mono',monospace; letter-spacing:.5px; }
+.prod-emoji { font-size:18px; }
+.prod-title { font-size:15px; font-weight:700; transition:all .2s; }
+.prod-card.done .prod-title { text-decoration:line-through; color:#16a34a; }
+.prod-desc { font-size:13px; color:#555; margin-bottom:8px; }
+.prod-card.done .prod-desc { color:#4ade80; }
+.tag-row { display:flex; gap:6px; flex-wrap:wrap; }
+.tag {
+  font-size:11px; padding:3px 10px; border-radius:6px;
+  background:var(--surf); color:var(--muted); font-weight:500;
+}
+.tag-gold { background:#FFFBEB; color:#92400E; }
+.tag-launch { background:var(--rose); color:#fff; font-size:10px; font-weight:800; letter-spacing:.5px; padding:3px 10px; }
+.prod-note { margin-top:8px; font-size:12px; color:var(--muted); font-style:italic; }
+
+/* ── PUB CARDS ── */
+.week-block { margin-bottom:32px; }
+.week-header {
+  background:#fff; border:1.5px solid var(--bord);
+  border-radius:12px; padding:12px 18px; margin-bottom:10px;
+  display:flex; justify-content:space-between; align-items:center;
+  border-left-width:4px;
+}
+.week-header-left { display:flex; align-items:center; gap:10px; }
+.week-name { font-weight:800; font-size:15px; }
+.week-dates { font-size:12px; color:var(--muted); }
+.week-desc { font-size:12px; color:#aaa; margin-left:4px; }
+.week-count { font-size:12px; font-weight:700; }
+
+.filter-row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:24px; }
+.filter-label { font-size:12px; color:var(--muted); font-weight:600; }
+.filter-btn {
+  padding:6px 14px; border-radius:8px;
+  border:1.5px solid var(--bord); background:#fff;
+  color:#555; font-size:12px; font-weight:600;
+  cursor:pointer; font-family:'DM Sans',sans-serif;
+  transition:all .15s;
+}
+.filter-btn:hover { border-color:#d1d5db; }
+.filter-btn.active-sem { background:var(--rose); border-color:var(--rose); color:#fff; }
+.filter-btn.active-plat { background:var(--violet); border-color:var(--violet); color:#fff; }
+.filter-divider { width:1px; height:20px; background:var(--bord); margin:0 4px; }
+
+.pub-card {
+  background:#fff; border:1.5px solid var(--bord);
+  border-radius:12px; padding:14px 18px; margin-bottom:8px;
+  transition:all .2s; box-shadow:0 1px 3px rgba(0,0,0,.04);
+}
+.pub-card:hover { box-shadow:0 2px 12px rgba(0,0,0,.08); }
+.pub-card.done { background:#f0fdf4; border-color:#16a34a33; box-shadow:none; }
+.pub-card.launch-card { border-color:#FF2D7A44; }
+.pub-top { display:flex; gap:10px; align-items:flex-start; }
+.pub-checkbox {
+  width:22px; height:22px; border-radius:5px;
+  border:2px solid #d1d5db; background:transparent;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0; margin-top:3px; cursor:pointer; transition:all .2s;
+}
+.pub-card.done .pub-checkbox { background:#16a34a; border-color:#16a34a; }
+.pub-body { flex:1; }
+.pub-meta { display:flex; gap:7px; flex-wrap:wrap; align-items:center; margin-bottom:6px; }
+.pub-date { font-size:11px; font-family:'DM Mono',monospace; color:var(--muted); letter-spacing:.5px; }
+.plat-badge {
+  font-size:10px; font-weight:700; padding:3px 10px; border-radius:6px;
+  letter-spacing:.5px; text-transform:uppercase; white-space:nowrap;
+}
+.plat-tt { background:#0A0A14; color:#FF004F; border:1px solid #FF004F33; }
+.plat-ig { background:var(--rose-p); color:var(--insta); }
+.plat-st { background:var(--violet-l); color:var(--violet); }
+.fmt-tag { font-size:11px; background:var(--surf); color:#555; padding:3px 8px; border-radius:5px; font-weight:600; }
+.time-tag { font-size:11px; font-family:'DM Mono',monospace; color:var(--muted); background:#f9f9f9; padding:3px 8px; border-radius:5px; }
+.launch-tag { background:var(--rose); color:#fff; font-size:10px; font-weight:800; padding:3px 8px; border-radius:5px; }
+.pub-title { font-size:14px; font-weight:600; margin-bottom:5px; line-height:1.4; transition:all .2s; }
+.pub-card.done .pub-title { text-decoration:line-through; color:#15803d; }
+.pub-son { font-size:12px; color:var(--muted); font-style:italic; margin-bottom:6px; }
+.pub-footer { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.source-tag { font-size:11px; color:#aaa; }
+.stats-btn {
+  font-size:11px; font-weight:700; color:var(--violet);
+  background:var(--violet-l); border:none; border-radius:6px;
+  padding:3px 10px; cursor:pointer; font-family:'DM Sans',sans-serif;
+  transition:all .15s;
+}
+.stats-btn:hover { background:#DDD6FE; }
+.inline-stats { display:flex; gap:8px; flex-wrap:wrap; }
+.stat-chip { font-size:11px; font-weight:700; }
+
+/* STATS PANEL */
+.stats-panel {
+  display:none; margin-top:14px; padding:18px;
+  background:linear-gradient(135deg,#F5F0FF,#FFF0F7);
+  border-radius:12px; border:1.5px solid #DDD6FE;
+  animation: slideDown .2s ease;
+}
+@keyframes slideDown { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+.stats-panel.open { display:block; }
+.stats-panel-header {
+  display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;
+}
+.stats-panel-title {
+  font-size:12px; font-weight:700; color:var(--violet);
+  letter-spacing:.5px; text-transform:uppercase;
+  display:flex; align-items:center; gap:6px;
+}
+.stats-source-hint { font-size:11px; color:#9CA3AF; font-style:italic; }
+.stats-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:10px; margin-bottom:14px; }
+.stat-field {}
+.stat-field label {
+  display:block; font-size:10px; font-weight:700;
+  text-transform:uppercase; letter-spacing:.5px; margin-bottom:5px;
+}
+.stat-field input {
+  width:100%; padding:10px 12px; border:1.5px solid #DDD6FE;
+  border-radius:10px; font-size:15px; font-weight:700;
+  text-align:center; font-family:'DM Sans',sans-serif;
+  outline:none; transition:all .2s; color:var(--ink);
+  background:#fff;
+}
+.stat-field input:focus { transform:scale(1.02); box-shadow:0 4px 12px rgba(124,58,237,.15); }
+.stat-field input::placeholder { color:#D1D5DB; font-weight:400; }
+.engage-row {
+  display:flex; align-items:center; justify-content:space-between;
+  background:#fff; border-radius:10px; padding:12px 16px;
+  border:1.5px solid #DDD6FE;
+}
+.engage-label { font-size:12px; color:#555; }
+.engage-val { font-size:20px; font-weight:800; color:var(--violet); }
+.engage-benchmark { font-size:11px; color:#9CA3AF; margin-top:2px; }
+.stats-where {
+  margin-top:10px; font-size:11px; color:#9CA3AF;
+  display:flex; gap:16px; flex-wrap:wrap;
+}
+.stats-where span { display:flex; align-items:center; gap:4px; }
+
+.charts-grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+  margin-bottom:20px;
+}
+.chart-card canvas { width:100% !important; display:block; }
+@media(max-width:700px) { .charts-grid { grid-template-columns:1fr; } }
+
+/* ══ ANALYTICS ══ */
+.kpi-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(155px,1fr)); gap:12px; margin-bottom:28px; }
+.ana-kpi { border-radius:14px; padding:16px; border:1.5px solid transparent; }
+.ana-kpi-label { font-size:11px; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; }
+.ana-kpi-val { font-size:26px; font-weight:800; line-height:1; margin-bottom:4px; font-variant-numeric:tabular-nums; }
+.ana-kpi-sub { font-size:11px; color:#aaa; }
+
+.ana-card { background:#fff; border:1.5px solid var(--bord); border-radius:16px; padding:22px; margin-bottom:20px; }
+.ana-card h3 { font-size:15px; font-weight:800; margin-bottom:18px; color:var(--ink); }
+
+.sem-row { margin-bottom:14px; }
+.sem-row-top { display:flex; justify-content:space-between; margin-bottom:6px; }
+.sem-row-top .sname { font-weight:700; font-size:14px; }
+.sem-row-top .sdates { font-size:12px; color:var(--muted); margin-left:8px; }
+.sem-row-top .scnt { font-size:13px; font-weight:700; }
+
+.plat-split { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px; }
+.plat-card { border-radius:14px; padding:18px; border:1.5px solid transparent; }
+.plat-card-name { font-size:15px; font-weight:800; margin-bottom:10px; }
+.plat-big { font-size:26px; font-weight:800; line-height:1; margin-bottom:6px; }
+.plat-big span { font-size:16px; color:#aaa; }
+
+.best-post { background:linear-gradient(135deg,#FFF8DC,#FFFBEB); border:1.5px solid var(--gold-br); border-radius:16px; padding:20px; margin-bottom:20px; }
+.best-label { font-size:11px; font-weight:700; color:#92400E; letter-spacing:1px; text-transform:uppercase; margin-bottom:8px; }
+.best-title { font-size:15px; font-weight:700; color:var(--ink); margin-bottom:10px; }
+.best-stats { display:flex; gap:16px; flex-wrap:wrap; }
+.best-stat-item .bsl { font-size:10px; color:#888; margin-bottom:2px; }
+.best-stat-item .bsv { font-size:20px; font-weight:800; }
+
+.table-wrap { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; font-size:13px; }
+thead tr { background:var(--surf); }
+th { padding:10px 12px; text-align:left; font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; border-bottom:2px solid var(--bord); white-space:nowrap; }
+td { padding:10px 12px; border-bottom:1px solid #f0f0f0; vertical-align:middle; }
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:var(--surf); }
+.eng-badge { font-weight:700; padding:2px 8px; border-radius:6px; font-size:12px; }
+.eng-good { background:#F0FDF4; color:#16a34a; }
+.eng-ok { background:#FFFBEB; color:#92400E; }
+.eng-low { background:#FFF5F5; color:#DC2626; }
+
+.empty-state { text-align:center; padding:40px 20px; color:#aaa; }
+.empty-state .es-icon { font-size:36px; margin-bottom:10px; }
+
+.obj-banner {
+  background:linear-gradient(135deg,#0A0A14,#1a0a2e);
+  border-radius:16px; padding:22px; margin-top:20px; color:#fff;
+}
+.obj-banner h3 { font-size:15px; font-weight:800; color:var(--rose); margin-bottom:16px; }
+.obj-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.obj-item { background:rgba(255,255,255,.06); border-radius:12px; padding:16px; }
+.obj-plat { font-size:15px; font-weight:700; margin-bottom:8px; }
+.obj-nums { display:flex; justify-content:space-between; margin-bottom:8px; }
+.obj-num-block .on-label { font-size:10px; color:rgba(255,255,255,.4); margin-bottom:2px; }
+.obj-num-block .on-val { font-size:20px; font-weight:800; }
+.obj-note { font-size:11px; color:rgba(255,255,255,.35); }
+
+/* ── LOGOUT BTN ── */
+.logout-btn {
+  position:fixed; top:14px; right:16px; z-index:999;
+  background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15);
+  color:rgba(255,255,255,.5); font-size:12px; font-weight:600;
+  padding:7px 14px; border-radius:8px; cursor:pointer;
+  font-family:'DM Sans',sans-serif; transition:all .2s;
+}
+.logout-btn:hover { background:rgba(255,255,255,.12); color:rgba(255,255,255,.8); }
+
+@media(max-width:600px) {
+  .login-box { padding:36px 24px; }
+  .header-inner { padding:28px 16px 0; }
+  .page { padding:20px 16px 60px; }
+  .plat-split,.obj-grid { grid-template-columns:1fr; }
+  .kpi-grid { grid-template-columns:repeat(2,1fr); }
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     LOGIN PAGE
+══════════════════════════════════════ -->
+<div id="login-page">
+  <div class="login-bg"></div>
+  <div class="login-noise"></div>
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="monogram">M</div>
+      <h1>meryne.eis</h1>
+      <p>Content Studio · Mars 2026</p>
+    </div>
+    <div class="login-field">
+      <label>Identifiant</label>
+      <input type="text" id="login-user" placeholder="meryne" autocomplete="username">
+    </div>
+    <div class="login-field">
+      <label>Mot de passe</label>
+      <input type="password" id="login-pass" placeholder="••••••••••" autocomplete="current-password">
+    </div>
+    <button class="login-btn" onclick="doLogin()">Accéder à mon espace ✦</button>
+    <div class="login-error" id="login-error">Identifiants incorrects. Réessaie 🔒</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     MAIN APP
+══════════════════════════════════════ -->
+<div id="app">
+  <button class="logout-btn" onclick="doLogout()">✦ Déconnexion</button>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-glow"></div>
+    <div class="header-inner">
+      <div class="header-eyebrow">meryne.eis — Content Studio</div>
+      <h1>Planning Éditorial<br><em>Mars 2026</em></h1>
+      <p class="header-sub">🎯 Instagram 30K · TikTok 100K — Décembre 2026 · Mode / Style / Grande taille</p>
+      <div class="kpi-row" id="kpi-row"></div>
+    </div>
+    <div class="tabs">
+      <button class="tab-btn active" onclick="setTab('production',this)">🎬 Production<span class="tab-sub">5–8 Mars</span></button>
+      <button class="tab-btn" onclick="setTab('planning',this)">📅 Planning<span class="tab-sub">Publications</span></button>
+      <button class="tab-btn" onclick="setTab('analytics',this)">📊 Analytics<span class="tab-sub">Stats & Perf.</span></button>
+    </div>
+  </div>
+
+  <div class="page">
+    <!-- PRODUCTION -->
+    <div id="tab-production" class="tab-panel active">
+      <div class="alert-banner ab-gold" style="margin-bottom:16px;">
+        <span style="font-size:18px;flex-shrink:0;">⚠️</span>
+        <div class="ab-text"><strong>Semaine de production — 5 au 8 Mars.</strong> Rien ne sort avant le <strong>Dimanche 8 Mars à 18h00</strong>. Tout ce contenu alimente le mois entier.</div>
+      </div>
+      <div style="margin-bottom:20px;">
+        <div class="prog-wrap"><div class="prog-fill" id="prod-prog" style="background:var(--amber);width:0%"></div></div>
+        <div class="prog-meta"><span id="prod-prog-label">0 / 11 tâches complétées</span><span id="prod-pct">0%</span></div>
+      </div>
+      <div class="prod-list" id="prod-list"></div>
+    </div>
+
+    <!-- PLANNING -->
+    <div id="tab-planning" class="tab-panel">
+      <div class="filter-row" id="filter-row"></div>
+      <div id="pubs-container"></div>
+    </div>
+
+    <!-- ANALYTICS -->
+    <div id="tab-analytics" class="tab-panel">
+      <div style="background:linear-gradient(135deg,#1a0a2e,#2d0a1e);border-radius:16px;padding:20px 24px;margin-bottom:24px;border:1px solid rgba(255,45,122,.2)">
+        <div style="font-size:12px;font-weight:700;color:var(--rose);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">📊 Comment saisir tes statistiques</div>
+        <div style="color:rgba(255,255,255,.65);font-size:13px;line-height:1.9">
+          <strong style="color:#fff">1.</strong> Va dans <strong style="color:var(--rose)">📅 Planning</strong> → clique <strong style="color:#C4B5FD">📊 Saisir stats</strong> sur n'importe quel post publié<br>
+          <strong style="color:#fff">2.</strong> Rentre tes chiffres depuis <strong style="color:#fff">Instagram Insights</strong> ou <strong style="color:#fff">TikTok Analytics</strong><br>
+          <strong style="color:#fff">3.</strong> Les graphiques ci-dessous se mettent à jour <strong style="color:var(--rose)">automatiquement ✨</strong>
+        </div>
+        <div style="display:flex;gap:12px;margin-top:14px;flex-wrap:wrap">
+          <div style="background:rgba(255,255,255,.07);border-radius:10px;padding:10px 14px;font-size:12px;color:rgba(255,255,255,.6)">📱 <strong style="color:#fff">Instagram :</strong> Publication → Voir les insights → Portée / Interactions</div>
+          <div style="background:rgba(255,255,255,.07);border-radius:10px;padding:10px 14px;font-size:12px;color:rgba(255,255,255,.6)">🎵 <strong style="color:#fff">TikTok :</strong> Ta vidéo → … → Données analytiques</div>
+        </div>
+      </div>
+      <div class="kpi-grid" id="ana-kpi-grid"></div>
+      <div class="plat-split" id="plat-split"></div>
+
+      <!-- GRAPHIQUES -->
+      <div class="charts-grid">
+        <div class="ana-card chart-card">
+          <h3>📈 Évolution des vues par semaine</h3>
+          <div id="chart-views"></div>
+        </div>
+        <div class="ana-card chart-card">
+          <h3>❤️ Likes · Saves · Comments par semaine</h3>
+          <div id="chart-metrics"></div>
+        </div>
+        <div class="ana-card chart-card">
+          <h3>🏆 Top 5 meilleurs posts (vues)</h3>
+          <div id="chart-top5"></div>
+        </div>
+        <div class="ana-card chart-card">
+          <h3>📊 Taux d'engagement par post <span style="font-size:11px;color:#aaa;font-weight:400">— ligne rouge = objectif 5%</span></h3>
+          <div id="chart-engagement"></div>
+        </div>
+      </div>
+
+      <div id="best-post-block"></div>
+      <div class="ana-card">
+        <h3>📅 Avancement par semaine</h3>
+        <div id="sem-progress"></div>
+      </div>
+      <div class="ana-card">
+        <h3>📋 Tableau — Posts avec statistiques</h3>
+        <div class="table-wrap" id="ana-table"></div>
+      </div>
+      <div class="obj-banner">
+        <h3>🎯 Objectifs Décembre 2026</h3>
+        <div class="obj-grid">
+          <div class="obj-item">
+            <div class="obj-plat" style="color:#C13584;">📸 Instagram</div>
+            <div class="obj-nums">
+              <div class="obj-num-block"><div class="on-label">ACTUELS</div><div class="on-val" style="color:#fff;">—</div></div>
+              <div class="obj-num-block" style="text-align:right"><div class="on-label">OBJECTIF</div><div class="on-val" style="color:#C13584;">30 000</div></div>
+            </div>
+            <div class="obj-note">→ ~3 000 abonnés/mois nécessaires</div>
+          </div>
+          <div class="obj-item">
+            <div class="obj-plat" style="color:#FF004F;">🎵 TikTok</div>
+            <div class="obj-nums">
+              <div class="obj-num-block"><div class="on-label">ACTUELS</div><div class="on-val" style="color:#fff;">—</div></div>
+              <div class="obj-num-block" style="text-align:right"><div class="on-label">OBJECTIF</div><div class="on-val" style="color:#FF004F;">100 000</div></div>
+            </div>
+            <div class="obj-note">→ ~10 000 abonnés/mois nécessaires</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════
+const CREDS = { user: "meryne", pass: "28122000Mn@" };
+
+function doLogin() {
+  const u = document.getElementById('login-user').value.trim();
+  const p = document.getElementById('login-pass').value;
+  const err = document.getElementById('login-error');
+  if (u === CREDS.user && p === CREDS.pass) {
+    sessionStorage.setItem('auth','ok');
+    document.getElementById('login-page').style.display='none';
+    document.getElementById('app').style.display='block';
+    initApp();
+  } else {
+    err.classList.add('show');
+    setTimeout(()=>err.classList.remove('show'),3000);
+  }
+}
+function doLogout() {
+  sessionStorage.removeItem('auth');
+  location.reload();
+}
+document.addEventListener('keydown', e => {
+  if (e.key==='Enter' && document.getElementById('login-page').style.display!=='none') doLogin();
+});
+if (sessionStorage.getItem('auth')==='ok') {
+  document.getElementById('login-page').style.display='none';
+  document.getElementById('app').style.display='block';
+}
+
+// ══════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════
+const SEM_META = {
+  S1:{label:"Semaine 1",dates:"8–9 Mars",color:"#FF2D7A",desc:"Lancement officiel"},
+  S2:{label:"Semaine 2",dates:"10–16 Mars",color:"#7C3AED",desc:"Épuisement stock"},
+  S3:{label:"Semaine 3",dates:"17–23 Mars",color:"#0891B2",desc:"Nouveau contenu + Printemps"},
+  S4:{label:"Semaine 4",dates:"24–29 Mars",color:"#059669",desc:"Éducatif + tendances"},
+  S5:{label:"Semaine 5",dates:"30–31 Mars",color:"#DC2626",desc:"Bilan + teaser Avril"},
+};
+const PLAT_META = {
+  tiktok:{label:"TikTok",cls:"plat-tt"},
+  insta:{label:"Instagram",cls:"plat-ig"},
+  stories:{label:"Stories",cls:"plat-st"},
+};
+
+let PROD = [
+  {id:"p1",date:"Mer 5 Mars",emoji:"🎷",title:"Concert de Jazz",desc:"Photos + vidéos ambiance + outfit soirée",platform:"TikTok + Insta",format:"GRWM / Reel soirée",posts:"2",note:"Demander à copain photos full body avant départ",done:false},
+  {id:"p2",date:"Jeu 6 Mars",emoji:"👢",title:"Unboxing Bottes ASOS",desc:"Ouverture colis + essayage 2 paires",platform:"TikTok",format:"Unboxing",posts:"1",note:"Film l'ouverture + walking shot des 2 paires",done:false},
+  {id:"p3",date:"Ven 7 Mars",emoji:"🛍",title:"Haul Zara",desc:"Vidéo rapide gardé vs renvoyé — angle grande taille 1m82",platform:"TikTok + Insta",format:"Haul",posts:"2",note:"Hook fort : 'quand tu fais 1m82 chez Zara'",done:false},
+  {id:"p4",date:"Sam 8 Mars 9h",emoji:"💄",title:"Collab Maquillage MUA",desc:"Transformation avant/après avec copine maquilleuse",platform:"TikTok + Insta",format:"Transformation",posts:"2",note:"Tagger copine partout. Film processus + réaction miroir",done:false},
+  {id:"p5",date:"Sam 8 Mars",emoji:"🛍",title:"Shopping post-maquillage",desc:"Essayages cabine + coups de cœur",platform:"TikTok",format:"Haul shopping",posts:"1-2",note:"Courts clips 3-4s par pièce. Mentionner les tailles.",done:false},
+  {id:"p6",date:"Dim 8 Mars",emoji:"☕",title:"Shooting Tenue 1 — Hôtel",desc:"Miroir full body · Walking shot · Détail café · Pose assise (avec Aminata)",platform:"Instagram",format:"Carousel",posts:"1 carousel",note:"Ambiance soft/dorée. Lumière fenêtre. 10-15 photos minimum.",done:false},
+  {id:"p7",date:"Dim 8 Mars",emoji:"🎨",title:"Shooting Tenue 2 — Musée",desc:"De dos devant œuvre · Walking couloir · Pose sculptée (avec Aminata)",platform:"Instagram",format:"Carousel",posts:"1 carousel",note:"Contraste toi/art. Chercher les couloirs longs.",done:false},
+  {id:"p8",date:"Dim 8 Mars",emoji:"🗼",title:"Shooting Tenue 3 — Tour Eiffel",desc:"Walking vers Tour · Vidéos drôles · Photos golden hour (avec Aminata)",platform:"Instagram + TikTok",format:"Carousel + TikTok",posts:"1 carousel + 2 TikToks",note:"Golden hour 17-18h = lumière magique",done:false},
+  {id:"p9",date:"Dim 8 Mars 18h",emoji:"🌸",title:"Vidéo Lancement — 1ER POST OFFICIEL",desc:"3 tenues · 3 lieux · Journée des Femmes — Publication à 18h00",platform:"TikTok + Insta",format:"Reel / TikTok lancement",posts:"2",note:"🚀 Publication officielle à 18h00",done:false,launch:true},
+  {id:"p10",date:"Déjà filmé",emoji:"🍜",title:"Restaurant Coréen",desc:"Photos + vidéos ambiance + outfits avec amies",platform:"TikTok + Insta",format:"TikTok fun / Reel",posts:"2",note:"Montre outfits, ambiance, moments fun.",done:false},
+  {id:"p11",date:"Déjà filmé",emoji:"🎳",title:"Bowling + Anniversaire copain",desc:"Photos bowling + restaurant italien",platform:"TikTok + Insta",format:"TikTok humour / Stories",posts:"2",note:"Angle : look chic VS bowling 😂",done:false},
+];
+
+let PUBS = [
+  {id:"pub1",sem:"S1",date:"08 Mars",jour:"Dim",platform:"tiktok",format:"TikTok",title:"🌸 LANCEMENT — 3 tenues · 3 lieux · Journée des Femmes à Paris",son:"Son trending #8mars",heure:"18h00",tags:"#journeedesfemmes #shooting #paris #3outfits",source:"Shooting 8 mars",done:false,launch:true,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+  {id:"pub2",sem:"S1",date:"08 Mars",jour:"Dim",platform:"insta",format:"Reel",title:"🌸 Meilleur shot du shooting — message Journée des Femmes",son:"Son inspirant",heure:"20h00",tags:"#journeedesfemmes #parisienne #ootd #shooting",source:"Shooting 8 mars",done:false,launch:true,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+  {id:"pub3",sem:"S1",date:"08 Mars",jour:"Dim",platform:"stories",format:"Stories",title:"Coulisses du shooting en temps réel — hôtel · musée · Tour Eiffel",son:"—",heure:"Toute la journée",tags:"Stories shooting live",source:"Shooting 8 mars",done:false,launch:true,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+  {id:"pub4",sem:"S1",date:"09 Mars",jour:"Lun",platform:"insta",format:"Carousel",title:"📷 Carousel Tenue 1 — Look Hôtel / Café (avec Aminata)",son:"—",heure:"12h00",tags:"#carousel #lookdujour #hotelvibes #parisianstyle",source:"Shooting 8 mars · Tenue 1",done:false,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+  {id:"pub5",sem:"S1",date:"09 Mars",jour:"Lun",platform:"tiktok",format:"TikTok",title:"🍜 Soirée Restaurant Coréen — ambiance + looks",son:"Son girl dinner trending",heure:"18h00",tags:"#kbbq #girlsnight #koreanfood #soireefilles",source:"Contenu prêt ✅",done:false,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+  {id:"pub6",sem:"S2",date:"10 Mars",jour:"Mar",platform:"insta",format:"Carousel",title:"📷 Carousel Tenue 2 — Look Musée (avec Aminata)",son:"—",heure:"12h00",tags:"#carousel #museestyle #artvibes #lookdujour",source:"Shooting 8 mars · Tenue 2",done:false,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+  {id:"pub7",sem:"S2",date:"10 Mars",jour:"Mar",platform:"tiktok",format:"TikTok",title:"🎷 GRWM Concert Jazz — outfit soirée chic + ambiance",son:"Son jazz lounge / nuit parisienne",heure:"18h00",tags:"#grwm #concert #jazz #soiree #outfitnight",source:"Concert Jazz ✅",done:false,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+  {id:"pub8",sem:"S2",date:"11 Mars",jour:"Mer",platform:"insta",format:"Reel",title:"🍜 Restaurant Coréen — Reel lifestyle ambiance + outfit",son:"Son fun / coréen trending",heure:"12h00",tags:"#koreanfood #girlsnight #lifestyle #soireeparis",source:"Contenu prêt ✅",done:false,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+  {id:"pub9",sem:"S2",date:"11 Mars",jour:"Mer",platform:"tiktok",format:"TikTok",title:"🎳 Bowling + Anniversaire copain — look chic VS bowling 😂",son:"Son humour / fun",heure:"18h00",tags:"#birthday #anniversaire #bowling #datenight",source:"Bowling anniversaire ✅",done:false,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+  {id:"pub10",sem:"S2",date:"12 Mars",jour:"Jeu",platform:"insta",format:"Carousel",title:"📷 Carousel Tenue 3 — Look Tour Eiffel / Rues de Paris",son:"—",heure:"12h00",tags:"#carousel #toureiffel #paris #lookdujour",source:"Shooting 8 mars · Tenue 3",done:false,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+  {id:"pub11",sem:"S2",date:"12 Mars",jour:"Jeu",platform:"tiktok",format:"TikTok",title:"💄 Collab maquillage copine MUA — transformation avant/après",son:"Son transformation trending",heure:"18h00",tags:"#makeupartist #transformation #mua #collab",source:"Collab MUA ✅",done:false,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+  {id:"pub12",sem:"S2",date:"13 Mars",jour:"Ven",platform:"stories",format:"Stories",title:"Q&A : 'Votre question sur le shooting du 8 mars ?'",son:"—",heure:"18h00",tags:"Stories Q&A",source:"Engagement",done:false,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+  {id:"pub13",sem:"S2",date:"13 Mars",jour:"Ven",platform:"tiktok",format:"TikTok",title:"🛍 Haul Zara — La vérité quand tu fais 1m82 📏",son:"Son haul trending",heure:"18h00",tags:"#haul #zara #grandetaille #tallgirl #1m82",source:"Haul Zara ✅",done:false,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+  {id:"pub14",sem:"S2",date:"14 Mars",jour:"Sam",platform:"insta",format:"Reel",title:"💄 Transformation maquillage copine MUA — look final + collab",son:"Son glam transformation",heure:"14h00",tags:"#mua #makeup #transformation #collab",source:"Collab MUA ✅",done:false,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+  {id:"pub15",sem:"S2",date:"15 Mars",jour:"Dim",platform:"tiktok",format:"TikTok",title:"👢 Unboxing 2 paires de bottes ASOS — essayage + verdict",son:"Son unboxing / haul",heure:"14h00",tags:"#asos #unboxing #bottes #tallgirl #grandetaille",source:"Bottes ASOS ✅",done:false,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+  {id:"pub16",sem:"S2",date:"16 Mars",jour:"Lun",platform:"insta",format:"Carousel",title:"🎳 Best-of Bowling + Restaurant Italien anniversaire",son:"—",heure:"12h00",tags:"#birthday #anniversaire #datenight #restaurant",source:"Bowling anniversaire ✅",done:false,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+  {id:"pub17",sem:"S3",date:"17 Mars",jour:"Mar",platform:"tiktok",format:"TikTok",title:"🛍 Shopping samedi — essayages cabine + haul coups de cœur",son:"Son haul shopping",heure:"18h00",tags:"#shopping #haul #cabine #shoppinghaul",source:"Shopping samedi ✅",done:false,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+  {id:"pub18",sem:"S3",date:"17 Mars",jour:"Mar",platform:"insta",format:"Reel",title:"👢 Styling bottes ASOS — comment je les porte avec mes tenues",son:"Son styling tendance",heure:"12h00",tags:"#asos #bottes #styling #outfitideas #tallgirl",source:"Bottes ASOS ✅",done:false,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+  {id:"pub19",sem:"S3",date:"18 Mars",jour:"Mer",platform:"tiktok",format:"TikTok",title:"3 erreurs de style que tout le monde fait",son:"Son éducatif viral",heure:"18h00",tags:"#styleconseils #fashiontips #mode #tiktokfr",source:"À filmer 🎬",done:false,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+  {id:"pub20",sem:"S3",date:"18 Mars",jour:"Mer",platform:"stories",format:"Stories",title:"Poll : Quelle tenue du shooting tu préfères — 1, 2 ou 3 ?",son:"—",heure:"12h00",tags:"Stories vote",source:"Engagement",done:false,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+  {id:"pub21",sem:"S3",date:"19 Mars",jour:"Jeu",platform:"insta",format:"Carousel",title:"10 pièces essentielles pour une garde-robe capsule",son:"—",heure:"12h00",tags:"#capsulewardrobe #essentiel #garderobefrancaise",source:"À créer ✏️",done:false,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+  {id:"pub22",sem:"S3",date:"19 Mars",jour:"Jeu",platform:"tiktok",format:"TikTok",title:"1 blazer · 5 façons de le porter — du casual au chic",son:"Son transition tendance",heure:"18h00",tags:"#blazer #outfitideas #stylehack #mode",source:"À filmer 🎬",done:false,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+  {id:"pub23",sem:"S3",date:"20 Mars",jour:"Ven",platform:"insta",format:"Reel",title:"🌼 1er jour du Printemps — outfit spécial saison",son:"Son printemps trending",heure:"09h00",tags:"#printemps #springvibes #firstdayofspring",source:"À filmer 🎬",done:false,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+  {id:"pub24",sem:"S3",date:"20 Mars",jour:"Ven",platform:"tiktok",format:"TikTok",title:"🌼 Printemps day 1 — check garde-robe + tendances saison",son:"Son printemps / renouveau",heure:"11h00",tags:"#printemps #springoutfit #tendancesprintemps",source:"À filmer 🎬",done:false,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+  {id:"pub25",sem:"S3",date:"21 Mars",jour:"Sam",platform:"tiktok",format:"TikTok",title:"Mon copain / meilleure amie choisit mes tenues pendant 1 journée",son:"Son duo / fun challenge",heure:"14h00",tags:"#outfitchallenge #couple #tenuechallenge",source:"À filmer 🎬",done:false,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+  {id:"pub26",sem:"S3",date:"22 Mars",jour:"Dim",platform:"insta",format:"Reel",title:"Transformation : look casual → look soirée en 5 min",son:"Son glam transformation",heure:"14h00",tags:"#transformation #grwm #soiree #outfitchange",source:"À filmer 🎬",done:false,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+  {id:"pub27",sem:"S3",date:"23 Mars",jour:"Lun",platform:"tiktok",format:"TikTok",title:"GRWM lundi matin — de pyjama à stylée en 3 minutes",son:"Son fun morning vibes",heure:"07h30",tags:"#grwm #lundi #morningroutine #outfitoftheday",source:"À filmer 🎬",done:false,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+  {id:"pub28",sem:"S4",date:"24 Mars",jour:"Mar",platform:"insta",format:"Carousel",title:"Aesthetic du moment : Quiet Luxury — guide complet",son:"—",heure:"12h00",tags:"#quietluxury #aesthetic #luxeminimaliste",source:"À créer ✏️",done:false,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+  {id:"pub29",sem:"S4",date:"24 Mars",jour:"Mar",platform:"tiktok",format:"TikTok",title:"Haul friperie du mois — meilleures trouvailles vintage",son:"Son vintage / esthétique",heure:"18h00",tags:"#friperie #secondhand #vintagestyle #fripemode",source:"À filmer 🎬",done:false,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+  {id:"pub30",sem:"S4",date:"25 Mars",jour:"Mer",platform:"insta",format:"Reel",title:"Je recrée le look d'une célébrité avec mes propres vêtements",son:"Son célébrité / trend",heure:"12h00",tags:"#lookrecreated #inspired #celebrity #fashioninspo",source:"À filmer 🎬",done:false,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+  {id:"pub31",sem:"S4",date:"25 Mars",jour:"Mer",platform:"tiktok",format:"TikTok",title:"5 tenues de bureau stylées pour moins de 100€",son:"Son office look professionnel",heure:"18h00",tags:"#officestyle #workwear #tenuebureaux #stylechic",source:"À filmer 🎬",done:false,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+  {id:"pub32",sem:"S4",date:"26 Mars",jour:"Jeu",platform:"stories",format:"Stories",title:"Sondage : Quiet Luxury ou Y2K — quelle aesthetic ?",son:"—",heure:"12h00",tags:"Stories sondage",source:"Engagement",done:false,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+  {id:"pub33",sem:"S4",date:"26 Mars",jour:"Jeu",platform:"tiktok",format:"TikTok",title:"Dupes luxe vs fast fashion — comparaison honnête",son:"Son comparatif / luxe",heure:"18h00",tags:"#luxedupe #fashiondupes #stylehack #dupe",source:"À filmer 🎬",done:false,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+  {id:"pub34",sem:"S4",date:"27 Mars",jour:"Ven",platform:"insta",format:"Reel",title:"Rate my outfits — 5 tenues, tu votes le meilleur",son:"Son challenge vote",heure:"18h00",tags:"#ratemyoutfit #fashionvote #outfitcheck",source:"À filmer 🎬",done:false,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+  {id:"pub35",sem:"S4",date:"28 Mars",jour:"Sam",platform:"tiktok",format:"TikTok",title:"J'ai testé les tendances Pinterest mode de la semaine",son:"Son Pinterest / esthétique",heure:"14h00",tags:"#pinterest #pinterestfashion #pinterestinspired",source:"À filmer 🎬",done:false,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+  {id:"pub36",sem:"S4",date:"28 Mars",jour:"Sam",platform:"insta",format:"Reel",title:"GRWM soirée — de casual à glamour · tenue + accessoires",son:"Son soirée / glam",heure:"17h00",tags:"#grwm #soiree #glam #outfitnight",source:"À filmer 🎬",done:false,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+  {id:"pub37",sem:"S4",date:"29 Mars",jour:"Dim",platform:"tiktok",format:"TikTok",title:"Day in my life stylée — comment je m'habille au quotidien",son:"Son vlog lifestyle",heure:"14h00",tags:"#dayinmylife #lifestyletiktok #quotidien",source:"À filmer 🎬",done:false,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+  {id:"pub38",sem:"S5",date:"30 Mars",jour:"Lun",platform:"insta",format:"Carousel",title:"Idées looks vacances de printemps — 5 tenues pour partir stylée",son:"—",heure:"12h00",tags:"#springbreak #vacanceslooks #travel #springfashion",source:"À créer ✏️",done:false,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+  {id:"pub39",sem:"S5",date:"30 Mars",jour:"Lun",platform:"tiktok",format:"TikTok",title:"Comment trouver son style personnel en 3 étapes",son:"Son inspirant éducatif",heure:"18h00",tags:"#styleperso #trouversonstyle #conseilstyle",source:"À filmer 🎬",done:false,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+  {id:"pub40",sem:"S5",date:"31 Mars",jour:"Mar",platform:"insta",format:"Reel",title:"Bilan Mars + teaser Avril — ce qui arrive bientôt !",son:"Son hype / teaser",heure:"19h00",tags:"#bilanmars #teaseravril #meryne",source:"À filmer 🎬",done:false,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+  {id:"pub41",sem:"S5",date:"31 Mars",jour:"Mar",platform:"tiktok",format:"TikTok",title:"Bilan de ma 1ère semaine sur TikTok — ce qui a marché",son:"Son bilan motivant",heure:"12h00",tags:"#contentcreator #tiktokgrowth #bilanmars",source:"À filmer 🎬",done:false,stats:{views:0,likes:0,comments:0,saves:0,shares:0}},
+];
+
+// Persist state
+function save() { localStorage.setItem('prod', JSON.stringify(PROD)); localStorage.setItem('pubs', JSON.stringify(PUBS)); }
+function load() {
+  try { const p=localStorage.getItem('prod'); if(p) PROD=JSON.parse(p); } catch(e){}
+  try { const p=localStorage.getItem('pubs'); if(p) PUBS=JSON.parse(p); } catch(e){}
+}
+
+// ══════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════
+let filterSem='all', filterPlat='all';
+
+function initApp() {
+  load();
+  renderKPIs();
+  renderProduction();
+  buildFilters();
+  renderPlanning();
+  renderAnalytics();
+}
+
+function setTab(id, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+  if(id==='analytics') renderAnalytics();
+}
+
+// ── KPIs header ──
+function renderKPIs() {
+  const posted = PUBS.filter(p=>p.done).length;
+  const total = PUBS.length;
+  const prodDone = PROD.filter(p=>p.done).length;
+  const ttPosted = PUBS.filter(p=>p.platform==='tiktok'&&p.done).length;
+  const igPosted = PUBS.filter(p=>p.platform==='insta'&&p.done).length;
+  const ws = PUBS.filter(p=>p.done&&p.stats.views>0);
+  const totalViews = ws.reduce((s,p)=>s+p.stats.views,0);
+  const avgEng = ws.length ? (ws.reduce((s,p)=>s+((p.stats.likes+p.stats.comments+p.stats.saves+p.stats.shares)/Math.max(p.stats.views,1)*100),0)/ws.length).toFixed(1) : '—';
+  document.getElementById('kpi-row').innerHTML = [
+    {label:'Productions',val:`${prodDone}/${PROD.length}`,color:'#F59E0B'},
+    {label:'Posts publiés',val:`${posted}/${total}`,color:'#FF2D7A'},
+    {label:'TikTok',val:`${ttPosted}/${PUBS.filter(p=>p.platform==='tiktok').length}`,color:'#FF004F'},
+    {label:'Instagram',val:`${igPosted}/${PUBS.filter(p=>p.platform==='insta').length}`,color:'#C13584'},
+    {label:'Vues totales',val:totalViews>0?totalViews.toLocaleString('fr-FR'):'—',color:'#06B6D4'},
+    {label:'Engagement moy.',val:avgEng!=='—'?avgEng+'%':'—',color:'#10B981'},
+  ].map(k=>`<div class="kpi"><div class="kpi-label">${k.label}</div><div class="kpi-val" style="color:${k.color}">${k.val}</div></div>`).join('');
+}
+
+// ── PRODUCTION ──
+function renderProduction() {
+  const done = PROD.filter(p=>p.done).length;
+  const pct = Math.round(done/PROD.length*100);
+  document.getElementById('prod-prog').style.width=pct+'%';
+  document.getElementById('prod-prog-label').textContent=`${done} / ${PROD.length} tâches complétées`;
+  document.getElementById('prod-pct').textContent=pct+'%';
+  document.getElementById('prod-list').innerHTML = PROD.map(item=>`
+    <div class="prod-card${item.done?' done':''}${item.launch?' launch':''}" onclick="toggleProd('${item.id}')">
+      <div class="checkbox"><span class="checkbox-check">✓</span></div>
+      <div class="prod-info">
+        <div class="prod-meta">
+          <span class="prod-date">${item.date}</span>
+          <span class="prod-emoji">${item.emoji}</span>
+          <span class="prod-title">${item.title}</span>
+          ${item.launch?'<span class="tag tag-launch">🚀 LANCEMENT 18H</span>':''}
+        </div>
+        <div class="prod-desc">${item.desc}</div>
+        <div class="tag-row">
+          <span class="tag">${item.platform}</span>
+          <span class="tag">${item.format}</span>
+          <span class="tag tag-gold">📦 ${item.posts} posts</span>
+        </div>
+        <div class="prod-note">💡 ${item.note}</div>
+      </div>
+    </div>
+  `).join('');
+  renderKPIs();
+}
+
+function toggleProd(id) {
+  PROD = PROD.map(p=>p.id===id?{...p,done:!p.done}:p);
+  save(); renderProduction();
+}
+
+// ── PLANNING ──
+function buildFilters() {
+  document.getElementById('filter-row').innerHTML = `
+    <span class="filter-label">Semaine :</span>
+    ${['all','S1','S2','S3','S4','S5'].map(s=>`<button class="filter-btn${filterSem===s?' active-sem':''}" onclick="setSemFilter('${s}')">${s==='all'?'Toutes':SEM_META[s]?.label||s}</button>`).join('')}
+    <div class="filter-divider"></div>
+    <span class="filter-label">Plateforme :</span>
+    ${['all','tiktok','insta','stories'].map(pl=>`<button class="filter-btn${filterPlat===pl?' active-plat':''}" onclick="setPlatFilter('${pl}')">${pl==='all'?'Toutes':PLAT_META[pl]?.label||pl}</button>`).join('')}
+  `;
+}
+function setSemFilter(s) { filterSem=s; buildFilters(); renderPlanning(); }
+function setPlatFilter(p) { filterPlat=p; buildFilters(); renderPlanning(); }
+
+function renderPlanning() {
+  const sems = filterSem==='all'?['S1','S2','S3','S4','S5']:[filterSem];
+  document.getElementById('pubs-container').innerHTML = sems.map(sem=>{
+    const items = PUBS.filter(p=>p.sem===sem&&(filterPlat==='all'||p.platform===filterPlat));
+    if(!items.length) return '';
+    const m = SEM_META[sem];
+    const done = items.filter(p=>p.done).length;
+    return `
+      <div class="week-block">
+        <div class="week-header" style="border-left-color:${m.color}">
+          <div class="week-header-left">
+            <span class="week-name" style="color:${m.color}">${m.label}</span>
+            <span class="week-dates">${m.dates}</span>
+            <span class="week-desc">— ${m.desc}</span>
+          </div>
+          <span class="week-count" style="color:${done===items.length?'#16a34a':'#888'}">${done}/${items.length} publiés</span>
+        </div>
+        ${items.map(pub=>renderPub(pub)).join('')}
+      </div>
+    `;
+  }).join('');
+}
+
+function renderPub(pub) {
+  const pm = PLAT_META[pub.platform]||PLAT_META.insta;
+  const ws = pub.stats.views>0;
+  const hasOpen = document.querySelector(`#sp-${pub.id}`)?.classList.contains('open');
+  return `
+    <div class="pub-card${pub.done?' done':''}${pub.launch?' launch-card':''}" id="pc-${pub.id}">
+      <div class="pub-top">
+        <div class="pub-checkbox" onclick="togglePub('${pub.id}')">
+          ${pub.done?'<span style="color:#fff;font-size:13px;">✓</span>':''}
+        </div>
+        <div class="pub-body">
+          <div class="pub-meta">
+            <span class="pub-date">${pub.date}</span>
+            <span class="plat-badge ${pm.cls}">${pub.platform==='tiktok'?'🎵':pub.platform==='insta'?'📸':'📱'} ${pm.label}</span>
+            <span class="fmt-tag">${pub.format}</span>
+            <span class="time-tag">⏰ ${pub.heure}</span>
+            ${pub.launch?'<span class="launch-tag">🚀 1er post</span>':''}
+          </div>
+          <div class="pub-title">${pub.title}</div>
+          <div class="pub-son">🎵 ${pub.son}</div>
+          <div class="pub-footer">
+            <span class="source-tag">📦 ${pub.source}</span>
+            ${pub.done ? `<button class="stats-btn" onclick="toggleStats('${pub.id}')">${ws ? '✏️ Modifier stats' : '📊 Saisir stats'}</button>` : ''}
+            ${ws?`<div class="inline-stats">
+              <span class="stat-chip" style="color:#06B6D4">👁 ${pub.stats.views.toLocaleString('fr-FR')}</span>
+              <span class="stat-chip" style="color:#FF2D7A">❤️ ${pub.stats.likes.toLocaleString('fr-FR')}</span>
+              <span class="stat-chip" style="color:#F59E0B">💬 ${pub.stats.comments.toLocaleString('fr-FR')}</span>
+              <span class="stat-chip" style="color:#7C3AED">🔖 ${pub.stats.saves.toLocaleString('fr-FR')}</span>
+              <span class="stat-chip" style="color:#059669">↗️ ${pub.stats.shares.toLocaleString('fr-FR')}</span>
+            </div>`:''}
+          </div>
+        </div>
+      </div>
+      <div class="stats-panel${hasOpen?' open':''}" id="sp-${pub.id}">
+        <div class="stats-panel-header">
+          <div class="stats-panel-title">📊 Statistiques — ${pub.date} · ${pub.format}</div>
+          <span class="stats-source-hint">Saisis tes chiffres après publication</span>
+        </div>
+        <div class="stats-grid">
+          ${[
+            {key:'views',  label:'👁 Vues',         color:'#06B6D4', hint:'Instagram: Insights → Portée · TikTok: Statistiques'},
+            {key:'likes',  label:'❤️ Likes',        color:'#FF2D7A', hint:''},
+            {key:'comments',label:'💬 Commentaires',color:'#F59E0B', hint:''},
+            {key:'saves',  label:'🔖 Sauvegardes',  color:'#7C3AED', hint:'Instagram uniquement'},
+            {key:'shares', label:'↗️ Partages',     color:'#059669', hint:''},
+          ].map(f=>`<div class="stat-field">
+            <label style="color:${f.color}">${f.label}</label>
+            <input type="number" min="0" value="${pub.stats[f.key]||''}" placeholder="0"
+              onfocus="this.style.borderColor='${f.color}';this.style.boxShadow='0 4px 12px ${f.color}33'"
+              onblur="this.style.borderColor='#DDD6FE';this.style.boxShadow='none'"
+              oninput="updateStat('${pub.id}','${f.key}',this.value)">
+          </div>`).join('')}
+        </div>
+        ${pub.stats.views>0 ? `
+        <div class="engage-row">
+          <div>
+            <div class="engage-label">Taux d'engagement</div>
+            <div class="engage-benchmark">Objectif : &gt; 5% 🎯</div>
+          </div>
+          <div style="text-align:right">
+            <div class="engage-val" id="eng-${pub.id}">${((pub.stats.likes+pub.stats.comments+pub.stats.saves+pub.stats.shares)/Math.max(pub.stats.views,1)*100).toFixed(1)}%</div>
+          </div>
+        </div>` : ''}
+        <div class="stats-where">
+          <span>📱 <strong>Instagram :</strong> Publication → Voir les insights → Portée / Interactions</span>
+          <span>🎵 <strong>TikTok :</strong> Vidéo → … → Données analytiques</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function togglePub(id) {
+  PUBS = PUBS.map(p=>p.id===id?{...p,done:!p.done}:p);
+  save(); renderPlanning(); renderKPIs();
+}
+function toggleStats(id) {
+  const el = document.getElementById('sp-'+id);
+  if(el) el.classList.toggle('open');
+}
+function updateStat(id,key,val) {
+  PUBS = PUBS.map(p=>p.id===id?{...p,stats:{...p.stats,[key]:parseInt(val)||0}}:p);
+  save();
+  const pub = PUBS.find(p=>p.id===id);
+  if(!pub) return;
+  // update inline chips
+  const card = document.getElementById('pc-'+id);
+  if(card) {
+    const footer = card.querySelector('.pub-footer');
+    if(footer) {
+      let chips = footer.querySelector('.inline-stats');
+      if(pub.stats.views>0||pub.stats.likes>0||pub.stats.comments>0||pub.stats.saves>0||pub.stats.shares>0) {
+        const html = `<div class="inline-stats">
+          <span class="stat-chip" style="color:#06B6D4">👁 ${pub.stats.views.toLocaleString('fr-FR')}</span>
+          <span class="stat-chip" style="color:#FF2D7A">❤️ ${pub.stats.likes.toLocaleString('fr-FR')}</span>
+          <span class="stat-chip" style="color:#F59E0B">💬 ${pub.stats.comments.toLocaleString('fr-FR')}</span>
+          <span class="stat-chip" style="color:#7C3AED">🔖 ${pub.stats.saves.toLocaleString('fr-FR')}</span>
+          <span class="stat-chip" style="color:#059669">↗️ ${pub.stats.shares.toLocaleString('fr-FR')}</span>
+        </div>`;
+        if(chips) chips.outerHTML = html;
+        else footer.insertAdjacentHTML('beforeend', html);
+      }
+    }
+  }
+  // update engagement display inside panel
+  const panel = document.getElementById('sp-'+id);
+  if(panel && pub.stats.views>0) {
+    const eng = ((pub.stats.likes+pub.stats.comments+pub.stats.saves+pub.stats.shares)/Math.max(pub.stats.views,1)*100).toFixed(1);
+    const engEl = panel.querySelector('#eng-'+id);
+    if(engEl) {
+      engEl.textContent = eng+'%';
+      engEl.style.color = parseFloat(eng)>=5?'#16a34a':parseFloat(eng)>=2?'#F59E0B':'#DC2626';
+    } else {
+      // inject engage row if not present
+      const grid = panel.querySelector('.stats-grid');
+      if(grid && !panel.querySelector('.engage-row')) {
+        grid.insertAdjacentHTML('afterend', `
+          <div class="engage-row" style="margin-top:12px">
+            <div>
+              <div class="engage-label">Taux d'engagement</div>
+              <div class="engage-benchmark">Objectif : &gt; 5% 🎯</div>
+            </div>
+            <div style="text-align:right">
+              <div class="engage-val" id="eng-${id}">${eng}%</div>
+            </div>
+          </div>`);
+      }
+    }
+  }
+  renderKPIs();
+}
+
+// ── ANALYTICS ──
+function renderAnalytics() {
+  const posted = PUBS.filter(p=>p.done);
+  const ws = posted.filter(p=>p.stats.views>0);
+  const totalViews = ws.reduce((s,p)=>s+p.stats.views,0);
+  const totalLikes = ws.reduce((s,p)=>s+p.stats.likes,0);
+  const totalSaves = ws.reduce((s,p)=>s+p.stats.saves,0);
+  const totalComments = ws.reduce((s,p)=>s+p.stats.comments,0);
+  const totalShares = ws.reduce((s,p)=>s+p.stats.shares,0);
+  const avgEng = ws.length?(ws.reduce((s,p)=>s+((p.stats.likes+p.stats.comments+p.stats.saves+p.stats.shares)/Math.max(p.stats.views,1)*100),0)/ws.length).toFixed(1):null;
+
+  // KPI grid
+  document.getElementById('ana-kpi-grid').innerHTML=[
+    {label:'Posts publiés',val:`${posted.length}/${PUBS.length}`,sub:Math.round(posted.length/PUBS.length*100)+'% du mois',color:'#FF2D7A',bg:'#FFF5F9'},
+    {label:'Vues totales',val:totalViews>0?totalViews.toLocaleString('fr-FR'):'—',sub:'Toutes plateformes',color:'#06B6D4',bg:'#F0FAFF'},
+    {label:'Likes totaux',val:totalLikes>0?totalLikes.toLocaleString('fr-FR'):'—',sub:'',color:'#FF2D7A',bg:'#FFF5F9'},
+    {label:'Sauvegardes',val:totalSaves>0?totalSaves.toLocaleString('fr-FR'):'—',sub:'Fort signal algo',color:'#7C3AED',bg:'#F5F0FF'},
+    {label:'Commentaires',val:totalComments>0?totalComments.toLocaleString('fr-FR'):'—',sub:'',color:'#F59E0B',bg:'#FFFBEB'},
+    {label:'Partages',val:totalShares>0?totalShares.toLocaleString('fr-FR'):'—',sub:'',color:'#059669',bg:'#F0FDF4'},
+    {label:'Engagement moy.',val:avgEng?avgEng+'%':'—',sub:'Objectif > 5%',color:'#7C3AED',bg:'#F5F0FF'},
+  ].map(k=>`<div class="ana-kpi" style="background:${k.bg};border-color:${k.color}22">
+    <div class="ana-kpi-label">${k.label}</div>
+    <div class="ana-kpi-val" style="color:${k.color}">${k.val}</div>
+    ${k.sub?`<div class="ana-kpi-sub">${k.sub}</div>`:''}
+  </div>`).join('');
+
+  // Plat split
+  const ttT=PUBS.filter(p=>p.platform==='tiktok').length, ttD=PUBS.filter(p=>p.platform==='tiktok'&&p.done).length;
+  const igT=PUBS.filter(p=>p.platform==='insta').length, igD=PUBS.filter(p=>p.platform==='insta'&&p.done).length;
+  document.getElementById('plat-split').innerHTML=`
+    <div class="plat-card" style="background:#FFF0F0;border-color:#FF004F33">
+      <div class="plat-card-name" style="color:#FF004F">🎵 TikTok</div>
+      <div class="plat-big" style="color:#FF004F">${ttD}<span>/${ttT}</span></div>
+      <div class="prog-wrap"><div class="prog-fill" style="background:#FF004F;width:${Math.round(ttD/ttT*100)}%"></div></div>
+      <div style="font-size:12px;color:#888;margin-top:6px">${Math.round(ttD/ttT*100)}% publiés</div>
+    </div>
+    <div class="plat-card" style="background:var(--rose-p);border-color:#C1358433">
+      <div class="plat-card-name" style="color:var(--insta)">📸 Instagram</div>
+      <div class="plat-big" style="color:var(--insta)">${igD}<span>/${igT}</span></div>
+      <div class="prog-wrap"><div class="prog-fill" style="background:var(--insta);width:${Math.round(igD/igT*100)}%"></div></div>
+      <div style="font-size:12px;color:#888;margin-top:6px">${Math.round(igD/igT*100)}% publiés</div>
+    </div>
+  `;
+
+  // Sem progress
+  document.getElementById('sem-progress').innerHTML=Object.keys(SEM_META).map(sem=>{
+    const m=SEM_META[sem], items=PUBS.filter(p=>p.sem===sem), done=items.filter(p=>p.done).length, pct=Math.round(done/items.length*100);
+    return `<div class="sem-row">
+      <div class="sem-row-top">
+        <div><span class="sname" style="color:${m.color}">${m.label}</span><span class="sdates">${m.dates}</span></div>
+        <span class="scnt" style="color:${pct===100?'#16a34a':'#555'}">${done}/${items.length} — ${pct}%</span>
+      </div>
+      <div class="prog-wrap"><div class="prog-fill" style="background:${m.color};width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+
+  // ── CHARTS (Canvas) ──
+  const noData = `<div class="empty-state"><div class="es-icon">📊</div><p>Publie et saisis tes stats pour voir apparaître les graphiques ✨</p></div>`;
+
+  // Chart 1 — Vues par semaine (line)
+  const semViews = Object.keys(SEM_META).map(sem => {
+    const items = ws.filter(p=>p.sem===sem);
+    return { sem, label: SEM_META[sem].label, views: items.reduce((s,p)=>s+p.stats.views,0), color: SEM_META[sem].color };
+  });
+  document.getElementById('chart-views').innerHTML = ws.length ? `<canvas id="cv-views" height="200"></canvas>` : noData;
+  if(ws.length) drawLineChart('cv-views', semViews.map(s=>s.label), semViews.map(s=>s.views), semViews.map(s=>s.color), '👁 Vues');
+
+  // Chart 2 — Likes / Saves / Comments grouped bar
+  const semMetrics = Object.keys(SEM_META).map(sem => {
+    const items = ws.filter(p=>p.sem===sem);
+    return {
+      label: SEM_META[sem].label,
+      likes: items.reduce((s,p)=>s+p.stats.likes,0),
+      saves: items.reduce((s,p)=>s+p.stats.saves,0),
+      comments: items.reduce((s,p)=>s+p.stats.comments,0),
+    };
+  });
+  document.getElementById('chart-metrics').innerHTML = ws.length ? `<canvas id="cv-metrics" height="200"></canvas>` : noData;
+  if(ws.length) drawGroupedBar('cv-metrics', semMetrics);
+
+  // Chart 3 — Top 5 posts par vues (horizontal bar)
+  const top5 = [...ws].sort((a,b)=>b.stats.views-a.stats.views).slice(0,5);
+  document.getElementById('chart-top5').innerHTML = top5.length ? `<canvas id="cv-top5" height="220"></canvas>` : noData;
+  if(top5.length) drawHorizontalBar('cv-top5', top5);
+
+  // Chart 4 — Engagement par post (vertical bar)
+  const engPosts = ws.map(p=>({
+    label: p.date+' '+p.format,
+    eng: ((p.stats.likes+p.stats.comments+p.stats.saves+p.stats.shares)/Math.max(p.stats.views,1)*100),
+    platform: p.platform
+  }));
+  document.getElementById('chart-engagement').innerHTML = engPosts.length ? `<canvas id="cv-eng" height="200"></canvas>` : noData;
+  if(engPosts.length) drawEngagementBar('cv-eng', engPosts);
+
+  // Table
+  if(!ws.length) {
+    document.getElementById('ana-table').innerHTML=noData;
+    return;
+  }
+  document.getElementById('ana-table').innerHTML=`<table>
+    <thead><tr>${['Date','Plateforme','Format','Titre','Vues','Likes','Saves','Comments','Engagement'].map(h=>`<th>${h}</th>`).join('')}</tr></thead>
+    <tbody>${ws.map((p,i)=>{
+      const eng=((p.stats.likes+p.stats.comments+p.stats.saves+p.stats.shares)/Math.max(p.stats.views,1)*100).toFixed(1);
+      const pm=PLAT_META[p.platform]||PLAT_META.insta;
+      const ec=parseFloat(eng)>=5?'eng-good':parseFloat(eng)>=2?'eng-ok':'eng-low';
+      return `<tr style="background:${i%2===0?'#fafafa':'#fff'}">
+        <td style="font-family:monospace;font-size:11px;color:#888">${p.date}</td>
+        <td><span class="plat-badge ${pm.cls}">${pm.label}</span></td>
+        <td style="color:#555;font-size:12px">${p.format}</td>
+        <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600">${p.title}</td>
+        <td style="color:#06B6D4;font-weight:700;text-align:right">${p.stats.views.toLocaleString('fr-FR')}</td>
+        <td style="color:#FF2D7A;font-weight:700;text-align:right">${p.stats.likes.toLocaleString('fr-FR')}</td>
+        <td style="color:#7C3AED;font-weight:700;text-align:right">${p.stats.saves.toLocaleString('fr-FR')}</td>
+        <td style="color:#F59E0B;font-weight:700;text-align:right">${p.stats.comments.toLocaleString('fr-FR')}</td>
+        <td style="text-align:right"><span class="eng-badge ${ec}">${eng}%</span></td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
+}
+
+// ── CANVAS CHART HELPERS ──
+function getCanvasWidth(id) {
+  const el = document.getElementById(id);
+  return el ? el.parentElement.clientWidth || 600 : 600;
+}
+
+function drawLineChart(id, labels, values, colors, ylabel) {
+  requestAnimationFrame(()=>{
+    const canvas = document.getElementById(id);
+    if(!canvas) return;
+    const W = canvas.parentElement.clientWidth; canvas.width = W; canvas.height = 200;
+    const ctx = canvas.getContext('2d');
+    const pad = {t:20,r:20,b:40,l:50};
+    const cW = W-pad.l-pad.r, cH = 200-pad.t-pad.b;
+    const max = Math.max(...values,1);
+    ctx.clearRect(0,0,W,200);
+    // grid
+    ctx.strokeStyle='#f0f0f0'; ctx.lineWidth=1;
+    for(let i=0;i<=4;i++){
+      const y = pad.t + cH - (i/4)*cH;
+      ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(pad.l+cW,y); ctx.stroke();
+      ctx.fillStyle='#aaa'; ctx.font='11px DM Sans,sans-serif'; ctx.textAlign='right';
+      ctx.fillText(Math.round(max*i/4).toLocaleString('fr-FR'), pad.l-6, y+4);
+    }
+    // gradient fill
+    const pts = labels.map((l,i)=>({ x: pad.l+i*(cW/(labels.length-1||1)), y: pad.t+cH-(values[i]/max)*cH }));
+    if(pts.length>1){
+      const grad = ctx.createLinearGradient(0,pad.t,0,pad.t+cH);
+      grad.addColorStop(0,'rgba(255,45,122,0.25)'); grad.addColorStop(1,'rgba(255,45,122,0)');
+      ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y);
+      pts.slice(1).forEach(p=>ctx.lineTo(p.x,p.y));
+      ctx.lineTo(pts[pts.length-1].x,pad.t+cH); ctx.lineTo(pts[0].x,pad.t+cH); ctx.closePath();
+      ctx.fillStyle=grad; ctx.fill();
+    }
+    // line
+    ctx.beginPath(); ctx.strokeStyle='#FF2D7A'; ctx.lineWidth=3; ctx.lineJoin='round';
+    pts.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y)); ctx.stroke();
+    // dots + labels
+    pts.forEach((p,i)=>{
+      ctx.beginPath(); ctx.arc(p.x,p.y,5,0,Math.PI*2);
+      ctx.fillStyle=colors[i]||'#FF2D7A'; ctx.fill();
+      ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.stroke();
+      ctx.fillStyle='#555'; ctx.font='11px DM Sans,sans-serif'; ctx.textAlign='center';
+      ctx.fillText(labels[i].replace('Semaine ','S'), p.x, 200-pad.b+16);
+      if(values[i]>0){
+        ctx.fillStyle=colors[i]||'#FF2D7A'; ctx.font='bold 11px DM Sans,sans-serif';
+        ctx.fillText(values[i].toLocaleString('fr-FR'), p.x, p.y-10);
+      }
+    });
+  });
+}
+
+function drawGroupedBar(id, data) {
+  requestAnimationFrame(()=>{
+    const canvas = document.getElementById(id);
+    if(!canvas) return;
+    const W = canvas.parentElement.clientWidth; canvas.width=W; canvas.height=200;
+    const ctx = canvas.getContext('2d');
+    const pad={t:20,r:20,b:40,l:50};
+    const cW=W-pad.l-pad.r, cH=200-pad.t-pad.b;
+    const cols=['#FF2D7A','#7C3AED','#F59E0B'];
+    const keys=['likes','saves','comments'];
+    const lbls=['Likes','Saves','Comments'];
+    const max=Math.max(...data.flatMap(d=>keys.map(k=>d[k])),1);
+    ctx.clearRect(0,0,W,200);
+    // grid
+    for(let i=0;i<=4;i++){
+      const y=pad.t+cH-(i/4)*cH;
+      ctx.strokeStyle='#f0f0f0'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(pad.l+cW,y); ctx.stroke();
+      ctx.fillStyle='#aaa'; ctx.font='10px DM Sans,sans-serif'; ctx.textAlign='right';
+      ctx.fillText(Math.round(max*i/4).toLocaleString('fr-FR'), pad.l-4, y+4);
+    }
+    const grpW = cW/data.length, barW = (grpW*0.7)/3, gap = grpW*0.15;
+    data.forEach((d,gi)=>{
+      keys.forEach((k,ki)=>{
+        const x=pad.l+gi*grpW+gap+ki*(barW+2);
+        const h=(d[k]/max)*cH;
+        const y=pad.t+cH-h;
+        const grad=ctx.createLinearGradient(0,y,0,y+h);
+        grad.addColorStop(0,cols[ki]); grad.addColorStop(1,cols[ki]+'88');
+        ctx.fillStyle=grad;
+        ctx.beginPath();
+        ctx.roundRect?ctx.roundRect(x,y,barW,h,3):ctx.rect(x,y,barW,h);
+        ctx.fill();
+      });
+      ctx.fillStyle='#555'; ctx.font='10px DM Sans,sans-serif'; ctx.textAlign='center';
+      ctx.fillText(d.label.replace('Semaine ','S'), pad.l+gi*grpW+grpW/2, 200-pad.b+14);
+    });
+    // legend
+    keys.forEach((k,i)=>{
+      const lx=pad.l+i*80; const ly=8;
+      ctx.fillStyle=cols[i]; ctx.fillRect(lx,ly,10,10);
+      ctx.fillStyle='#555'; ctx.font='10px DM Sans,sans-serif'; ctx.textAlign='left';
+      ctx.fillText(lbls[i],lx+14,ly+9);
+    });
+  });
+}
+
+function drawHorizontalBar(id, posts) {
+  requestAnimationFrame(()=>{
+    const canvas = document.getElementById(id);
+    if(!canvas) return;
+    const W = canvas.parentElement.clientWidth; canvas.width=W; canvas.height=220;
+    const ctx = canvas.getContext('2d');
+    const pad={t:16,r:80,b:16,l:160};
+    const cW=W-pad.l-pad.r, cH=220-pad.t-pad.b;
+    const max=Math.max(...posts.map(p=>p.stats.views),1);
+    const barH=(cH/posts.length)*0.6, gap=(cH/posts.length)*0.4;
+    const COLORS=['#FF2D7A','#7C3AED','#06B6D4','#F59E0B','#059669'];
+    ctx.clearRect(0,0,W,220);
+    posts.forEach((p,i)=>{
+      const y=pad.t+i*(barH+gap);
+      const w=(p.stats.views/max)*cW;
+      const grad=ctx.createLinearGradient(pad.l,0,pad.l+w,0);
+      grad.addColorStop(0,COLORS[i%5]); grad.addColorStop(1,COLORS[i%5]+'55');
+      ctx.fillStyle=grad;
+      ctx.beginPath();
+      ctx.roundRect?ctx.roundRect(pad.l,y,w,barH,4):ctx.rect(pad.l,y,w,barH);
+      ctx.fill();
+      // label left
+      const title = p.title.replace(/[🌸📷🎷🛍🎳💄👢🗼🍜]/g,'').trim().slice(0,22)+'…';
+      ctx.fillStyle='#333'; ctx.font='bold 11px DM Sans,sans-serif'; ctx.textAlign='right';
+      ctx.fillText(title, pad.l-6, y+barH/2+4);
+      // value right
+      ctx.fillStyle=COLORS[i%5]; ctx.font='bold 12px DM Sans,sans-serif'; ctx.textAlign='left';
+      ctx.fillText(p.stats.views.toLocaleString('fr-FR'), pad.l+w+6, y+barH/2+4);
+    });
+  });
+}
+
+function drawEngagementBar(id, data) {
+  requestAnimationFrame(()=>{
+    const canvas = document.getElementById(id);
+    if(!canvas) return;
+    const W = canvas.parentElement.clientWidth; canvas.width=W; canvas.height=200;
+    const ctx = canvas.getContext('2d');
+    const pad={t:20,r:20,b:50,l:40};
+    const cW=W-pad.l-pad.r, cH=200-pad.t-pad.b;
+    const max=Math.max(...data.map(d=>d.eng),10);
+    ctx.clearRect(0,0,W,200);
+    // 5% target line
+    const targetY=pad.t+cH-(5/max)*cH;
+    ctx.strokeStyle='#FF2D7A44'; ctx.lineWidth=1.5; ctx.setLineDash([4,4]);
+    ctx.beginPath(); ctx.moveTo(pad.l,targetY); ctx.lineTo(pad.l+cW,targetY); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#FF2D7A88'; ctx.font='10px DM Sans,sans-serif'; ctx.textAlign='left';
+    ctx.fillText('Objectif 5%', pad.l+2, targetY-4);
+    // grid
+    for(let i=0;i<=4;i++){
+      const y=pad.t+cH-(i/4)*cH;
+      ctx.strokeStyle='#f0f0f0'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(pad.l+cW,y); ctx.stroke();
+      ctx.fillStyle='#aaa'; ctx.font='10px DM Sans,sans-serif'; ctx.textAlign='right';
+      ctx.fillText((max*i/4).toFixed(1)+'%', pad.l-4, y+4);
+    }
+    const barW=Math.min(cW/data.length*0.7,40);
+    data.forEach((d,i)=>{
+      const x=pad.l+(i+0.5)*(cW/data.length)-barW/2;
+      const h=(d.eng/max)*cH; const y=pad.t+cH-h;
+      const col=d.eng>=5?'#10B981':d.eng>=2?'#F59E0B':'#EF4444';
+      const grad=ctx.createLinearGradient(0,y,0,y+h);
+      grad.addColorStop(0,col); grad.addColorStop(1,col+'66');
+      ctx.fillStyle=grad;
+      ctx.beginPath();
+      ctx.roundRect?ctx.roundRect(x,y,barW,h,4):ctx.rect(x,y,barW,h);
+      ctx.fill();
+      // x label
+      const pm = d.platform==='tiktok'?'TT':'IG';
+      ctx.fillStyle='#777'; ctx.font='9px DM Sans,sans-serif'; ctx.textAlign='center';
+      ctx.fillText(pm, x+barW/2, 200-pad.b+12);
+      ctx.fillStyle='#aaa'; ctx.font='9px DM Sans,sans-serif';
+      ctx.fillText(d.label.split(' ')[0], x+barW/2, 200-pad.b+24);
+      // value on top
+      if(d.eng>0){
+        ctx.fillStyle=col; ctx.font='bold 10px DM Sans,sans-serif';
+        ctx.fillText(d.eng.toFixed(1)+'%', x+barW/2, y-4);
+      }
+    });
+  });
+}
+
+// Init on load
+if(sessionStorage.getItem('auth')==='ok') initApp();
+</script>
+</body>
+</html>
