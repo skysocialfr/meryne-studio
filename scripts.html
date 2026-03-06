@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scripts Semaine 1 — meryne.eis</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --rose: #FF2D7A;
+  --rose-light: #FFE0EE;
+  --rose-pale: #FFF5F9;
+  --violet: #7C3AED;
+  --violet-light: #EDE9FE;
+  --gold: #C9860A;
+  --gold-bg: #FFFBEB;
+  --gold-border: #FCD34D;
+  --tiktok-red: #FF004F;
+  --tiktok-blue: #00F2EA;
+  --insta: #E1306C;
+  --dark: #0A0A14;
+  --ink: #18181B;
+  --muted: #71717A;
+  --surface: #FAFAFA;
+  --border: #E4E4E7;
+  --white: #FFFFFF;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* ── HEADER ── */
+header {
+  background: var(--dark);
+  padding: 0;
+  position: relative;
+  overflow: hidden;
+}
+.header-noise {
+  position: absolute; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  opacity: 0.4;
+}
+.header-glow {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 60% 80% at 20% 60%, rgba(255,45,122,0.15) 0%, transparent 60%),
+              radial-gradient(ellipse 50% 60% at 80% 30%, rgba(124,58,237,0.15) 0%, transparent 55%);
+}
+.header-inner {
+  position: relative;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 56px 32px 48px;
+}
+.header-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: var(--rose);
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.header-eyebrow::before {
+  content: '';
+  width: 24px; height: 1px;
+  background: var(--rose);
+}
+header h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(32px, 5vw, 58px);
+  font-weight: 700;
+  color: var(--white);
+  line-height: 1.1;
+  margin-bottom: 16px;
+}
+header h1 em {
+  color: var(--rose);
+  font-style: italic;
+}
+header p {
+  color: rgba(255,255,255,0.5);
+  font-size: 15px;
+  max-width: 520px;
+  margin-bottom: 28px;
+  font-weight: 300;
+}
+.pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid;
+}
+.pill-rose { background: rgba(255,45,122,0.12); color: #FF88B0; border-color: rgba(255,45,122,0.25); }
+.pill-violet { background: rgba(124,58,237,0.12); color: #C4B5FD; border-color: rgba(124,58,237,0.25); }
+.pill-gold { background: rgba(201,134,10,0.12); color: #FCD34D; border-color: rgba(201,134,10,0.25); }
+.pill-white { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.6); border-color: rgba(255,255,255,0.12); }
+
+/* ── NAV TABS ── */
+.sticky-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-inner {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 0 32px;
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.nav-inner::-webkit-scrollbar { display: none; }
+.nav-tab {
+  padding: 14px 18px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.nav-tab:hover { color: var(--ink); }
+.nav-tab.active { color: var(--rose); border-bottom-color: var(--rose); }
+
+/* ── LAYOUT ── */
+.page { max-width: 980px; margin: 0 auto; padding: 48px 32px 80px; }
+
+/* ── SECTION ── */
+.section { margin-bottom: 56px; }
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.section-icon {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.icon-shooting { background: var(--gold-bg); border: 1px solid var(--gold-border); }
+.icon-insta { background: var(--rose-light); border: 1px solid #FBCFE8; }
+.icon-tiktok { background: #0A0A14; border: 1px solid #333; }
+.icon-jazz { background: var(--violet-light); border: 1px solid #DDD6FE; }
+.section-title-text h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--ink);
+}
+.section-title-text p { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+/* ── OVERVIEW GRID ── */
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 28px;
+}
+.ov-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px;
+  position: relative;
+  overflow: hidden;
+}
+.ov-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+}
+.ov-gold::before { background: linear-gradient(90deg, #F59E0B, #FCD34D); }
+.ov-rose::before { background: linear-gradient(90deg, #EC4899, #F43F5E); }
+.ov-violet::before { background: linear-gradient(90deg, #7C3AED, #A855F7); }
+.ov-tiktok::before { background: linear-gradient(90deg, #FF004F, #00F2EA); }
+.ov-card .ov-emoji { font-size: 24px; margin-bottom: 8px; display: block; }
+.ov-card h4 { font-size: 13px; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
+.ov-card p { font-size: 12px; color: var(--muted); }
+.ov-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+  margin-top: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.ov-badge-ready { background: #DCFCE7; color: #166534; }
+.ov-badge-tonight { background: var(--violet-light); color: var(--violet); }
+.ov-badge-sunday { background: var(--gold-bg); color: var(--gold); border: 1px solid var(--gold-border); }
+.ov-badge-saturday { background: var(--rose-light); color: var(--insta); }
+
+/* ── DAY BLOCK ── */
+.day-block {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.day-header {
+  padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.day-header-left { display: flex; align-items: center; gap: 12px; }
+.day-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.day-dot-gold { background: #F59E0B; box-shadow: 0 0 8px rgba(245,158,11,0.4); }
+.day-dot-rose { background: var(--rose); box-shadow: 0 0 8px rgba(255,45,122,0.4); }
+.day-dot-violet { background: var(--violet); box-shadow: 0 0 8px rgba(124,58,237,0.4); }
+.day-dot-tiktok { background: var(--tiktok-red); box-shadow: 0 0 8px rgba(255,0,79,0.4); }
+.day-date {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 1px;
+}
+.day-title { font-size: 15px; font-weight: 700; color: var(--ink); }
+.post-count {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+/* ── POST ITEM ── */
+.post-item {
+  padding: 24px;
+  border-bottom: 1px solid var(--border);
+}
+.post-item:last-child { border-bottom: none; }
+.post-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.platform-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.pb-insta { background: var(--rose-light); color: var(--insta); }
+.pb-tiktok { background: #0A0A14; color: #FF004F; border: 1px solid #333; }
+.pb-stories { background: var(--violet-light); color: var(--violet); }
+.time-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  background: var(--surface);
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.format-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.post-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 16px;
+  line-height: 1.3;
+}
+
+/* ── HOOK ── */
+.hook-block {
+  background: linear-gradient(135deg, rgba(255,45,122,0.06), rgba(124,58,237,0.06));
+  border: 1.5px solid rgba(255,45,122,0.2);
+  border-radius: 14px;
+  padding: 18px 22px;
+  margin-bottom: 16px;
+}
+.hook-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: var(--rose);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.hook-text {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.4;
+}
+.hook-note { font-size: 12px; color: var(--muted); margin-top: 8px; font-style: italic; }
+
+/* ── SCRIPT ── */
+.script-block {
+  background: var(--dark);
+  border-radius: 14px;
+  padding: 0;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.script-header {
+  padding: 12px 20px;
+  background: rgba(255,255,255,0.04);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.script-header span {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,0.3);
+  text-transform: uppercase;
+}
+.dot-red { width:10px;height:10px;border-radius:50%;background:#FF5F56;flex-shrink:0; }
+.dot-yellow { width:10px;height:10px;border-radius:50%;background:#FFBD2E;flex-shrink:0; }
+.dot-green { width:10px;height:10px;border-radius:50%;background:#27C93F;flex-shrink:0; }
+.script-lines { padding: 20px; }
+.sl {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 14px;
+  margin-bottom: 12px;
+  align-items: start;
+}
+.sl:last-child { margin-bottom: 0; }
+.sl-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--rose);
+  background: rgba(255,45,122,0.1);
+  border: 1px solid rgba(255,45,122,0.2);
+  padding: 4px 6px;
+  border-radius: 6px;
+  text-align: center;
+  margin-top: 1px;
+  line-height: 1.4;
+}
+.sl-time.gold { color: #FCD34D; background: rgba(252,211,77,0.1); border-color: rgba(252,211,77,0.2); }
+.sl-time.violet { color: #C4B5FD; background: rgba(196,181,253,0.1); border-color: rgba(196,181,253,0.2); }
+.sl-content { color: rgba(255,255,255,0.75); font-size: 13.5px; line-height: 1.55; }
+.sl-content strong { color: #FF88B0; font-weight: 600; }
+.sl-content .cam { color: #86EFAC; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+.sl-content .txt { color: #93C5FD; }
+
+/* ── HOW TO FILM ── */
+.filming-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+@media(max-width:600px){ .filming-grid { grid-template-columns: 1fr; } }
+.filming-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+.filming-card h5 {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.filming-card p { font-size: 12px; color: var(--muted); }
+
+/* ── CAROUSEL PLAN ── */
+.carousel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  margin: 14px 0;
+}
+.carousel-slide {
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 14px;
+  position: relative;
+  min-height: 110px;
+}
+.slide-num {
+  position: absolute;
+  top: -1px; left: -1px;
+  background: var(--violet);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  width: 26px; height: 26px;
+  border-radius: 12px 0 8px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.slide-num.rose { background: var(--rose); }
+.slide-num.gold { background: var(--gold); color: white; }
+.carousel-slide h5 { font-size: 12px; font-weight: 700; color: var(--ink); margin: 16px 0 6px 4px; }
+.carousel-slide p { font-size: 11px; color: var(--muted); }
+
+/* ── TIPS ── */
+.tip-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+.tip-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-weight: 500;
+}
+.tc-rose { background: var(--rose-light); color: #BE185D; }
+.tc-gold { background: var(--gold-bg); color: var(--gold); border: 1px solid var(--gold-border); }
+.tc-violet { background: var(--violet-light); color: var(--violet); }
+.tc-green { background: #DCFCE7; color: #166534; }
+.tc-tiktok { background: #0A0A14; color: var(--tiktok-red); border: 1px solid #1A1A2E; }
+
+/* ── HASHTAGS ── */
+.hashtag-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.htag {
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-weight: 500;
+}
+.ht-insta { background: var(--rose-light); color: var(--insta); }
+.ht-tt { background: #0A0A14; color: var(--tiktok-red); border: 1px solid #1A1A2E; }
+
+/* ── ALERT ── */
+.alert {
+  display: flex;
+  gap: 12px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  margin: 16px 0;
+  align-items: flex-start;
+}
+.alert-gold { background: var(--gold-bg); border: 1px solid var(--gold-border); }
+.alert-rose { background: var(--rose-light); border: 1px solid #FBCFE8; }
+.alert-violet { background: var(--violet-light); border: 1px solid #DDD6FE; }
+.alert-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.alert-gold p { color: #78350F; font-size: 13px; }
+.alert-rose p { color: #9D174D; font-size: 13px; }
+.alert-violet p { color: #4C1D95; font-size: 13px; }
+strong { font-weight: 700; }
+
+/* ── DIVIDER ── */
+.divider { height: 1px; background: var(--border); margin: 32px 0; }
+
+/* ── SUMMARY TABLE ── */
+.summary-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.summary-table th {
+  background: var(--surface);
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+  border-bottom: 2px solid var(--border);
+}
+.summary-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.summary-table tr:last-child td { border-bottom: none; }
+.summary-table tr:hover td { background: var(--surface); }
+
+/* ── FOOTER ── */
+footer {
+  background: var(--dark);
+  text-align: center;
+  padding: 32px 20px;
+  color: rgba(255,255,255,0.25);
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 1px;
+}
+footer span { color: var(--rose); }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-noise"></div>
+  <div class="header-glow"></div>
+  <div class="header-inner">
+    <div class="header-eyebrow">meryne.eis — Scripts &amp; Plans de tournage</div>
+    <h1>Semaine 1 —<br><em>Le Grand Lancement</em></h1>
+    <p>Scripts détaillés, plans de tournage, plans carousel et stratégie pour chaque post du 5 au 11 Mars 2026</p>
+    <div class="pill-row">
+      <span class="pill pill-gold">☕ Hôtel café</span>
+      <span class="pill pill-gold">🎨 Musée</span>
+      <span class="pill pill-gold">🗼 Tour Eiffel</span>
+      <span class="pill pill-rose">🍜 Restaurant coréen ✅</span>
+      <span class="pill pill-rose">🎳 Bowling anniversaire ✅</span>
+      <span class="pill pill-violet">🎷 Concert Jazz ce soir</span>
+      <span class="pill pill-white">🛍 Haul Zara ✅</span>
+      <span class="pill pill-white">👢 Bottes ASOS ✅</span>
+      <span class="pill pill-rose">💄 Maquillage samedi</span>
+      <span class="pill pill-white">🛍 Shopping samedi</span>
+    </div>
+  </div>
+</header>
+
+<!-- NAV -->
+<nav class="sticky-nav">
+  <div class="nav-inner">
+    <a href="#overview" class="nav-tab active">Vue d'ensemble</a>
+    <a href="#shooting" class="nav-tab">📸 Shooting 8 mars</a>
+    <a href="#carousel" class="nav-tab">📷 Carousel</a>
+    <a href="#existant" class="nav-tab">✅ Contenus prêts</a>
+    <a href="#jazz" class="nav-tab">🎷 Jazz ce soir</a>
+    <a href="#samedi" class="nav-tab">💄 Samedi</a>
+    <a href="#planning" class="nav-tab">📅 Planning complet</a>
+  </div>
+</nav>
+
+<div class="page">
+
+<!-- VUE D'ENSEMBLE -->
+<div id="overview" class="section">
+  <div class="section-title">
+    <div class="section-icon icon-shooting">🗓</div>
+    <div class="section-title-text">
+      <h2>Vue d'ensemble — Ton stock de contenu</h2>
+      <p>Tu as du contenu pour toute la semaine, voici tout ce que tu possèdes</p>
+    </div>
+  </div>
+
+  <div class="overview-grid">
+    <div class="ov-card ov-gold">
+      <span class="ov-emoji">📸</span>
+      <h4>Shooting — 8 Mars</h4>
+      <p>3 tenues · Hôtel · Musée · Tour Eiffel · Rues de Paris</p>
+      <span class="ov-badge ov-badge-sunday">Dimanche</span>
+    </div>
+    <div class="ov-card ov-rose">
+      <span class="ov-emoji">🍜</span>
+      <h4>Restaurant Coréen</h4>
+      <p>Photos + vidéos avec amies · Ambiance · Outfit</p>
+      <span class="ov-badge ov-badge-ready">Prêt à poster ✅</span>
+    </div>
+    <div class="ov-card ov-rose">
+      <span class="ov-emoji">🎳</span>
+      <h4>Bowling + Anniversaire</h4>
+      <p>Photos bowling + restaurant italien · Look soirée fête</p>
+      <span class="ov-badge ov-badge-ready">Prêt à poster ✅</span>
+    </div>
+    <div class="ov-card ov-tiktok">
+      <span class="ov-emoji">🛍</span>
+      <h4>Haul Zara</h4>
+      <p>Vidéo rapide · Gardé vs renvoyé · Taille 1m82</p>
+      <span class="ov-badge ov-badge-ready">Prêt à poster ✅</span>
+    </div>
+    <div class="ov-card ov-rose">
+      <span class="ov-emoji">👢</span>
+      <h4>Bottes ASOS</h4>
+      <p>2 paires reçues · Unboxing + essayage</p>
+      <span class="ov-badge ov-badge-ready">Prêt à filmer ✅</span>
+    </div>
+    <div class="ov-card ov-violet">
+      <span class="ov-emoji">🎷</span>
+      <h4>Concert Jazz</h4>
+      <p>Outfit soirée · Ambiance · Photos + vidéos à filmer</p>
+      <span class="ov-badge ov-badge-tonight">Ce soir 🎬</span>
+    </div>
+    <div class="ov-card ov-rose">
+      <span class="ov-emoji">💄</span>
+      <h4>Maquillage copine</h4>
+      <p>Transformation makeup · Collab · Look final</p>
+      <span class="ov-badge ov-badge-saturday">Samedi 9h</span>
+    </div>
+    <div class="ov-card ov-rose">
+      <span class="ov-emoji">🛍</span>
+      <h4>Shopping Samedi</h4>
+      <p>Haul en live · Essayage cabine · Contenu spontané</p>
+      <span class="ov-badge ov-badge-saturday">Samedi</span>
+    </div>
+  </div>
+
+  <div class="alert alert-gold">
+    <span class="alert-icon">🔥</span>
+    <p><strong>Résultat :</strong> Tu as de quoi poster <strong>2 fois par jour pendant toute la semaine</strong> sans forcer. C'est exactement ce dont l'algorithme TikTok a besoin pour booster un nouveau compte. Le timing est parfait — profite de l'élan de la Journée des Femmes le 8 mars pour démarrer en force.</p>
+  </div>
+</div>
+
+<!-- SHOOTING 8 MARS -->
+<div id="shooting" class="section">
+  <div class="section-title">
+    <div class="section-icon icon-shooting">📸</div>
+    <div class="section-title-text">
+      <h2>Shooting — Dimanche 8 Mars</h2>
+      <p>Plan de tournage détaillé pour les 3 lieux · 3 tenues · 3 types de contenu</p>
+    </div>
+  </div>
+
+  <!-- LIEU 1 : HÔTEL -->
+  <div class="day-block">
+    <div class="day-header">
+      <div class="day-header-left">
+        <div class="day-dot day-dot-gold"></div>
+        <div>
+          <div class="day-date">LIEU 1 — MATIN</div>
+          <div class="day-title">☕ Hôtel / Café — Tenue 1</div>
+        </div>
+      </div>
+      <span class="post-count">2 posts + stories</span>
+    </div>
+    <div class="post-item">
+      <div class="alert alert-gold">
+        <span class="alert-icon">🎨</span>
+        <p><strong>Ambiance visée :</strong> Soft, lumineuse, parisienne chic. L'hôtel donne une lumière intérieure dorée parfaite. Cherche les fenêtres, les miroirs, le comptoir du café, les petits détails (tasse, croissant, carnet).</p>
+      </div>
+      <h4 style="font-size:14px;font-weight:700;margin-bottom:12px;color:var(--ink);">📹 Ce qu'il faut filmer à l'hôtel</h4>
+      <div class="filming-grid">
+        <div class="filming-card">
+          <h5>🪞 Miroir full body</h5>
+          <p>Trouve un grand miroir dans le lobby ou les toilettes. Filme ton reflet en entier — tourne lentement sur toi-même. 10 secondes.</p>
+        </div>
+        <div class="filming-card">
+          <h5>🚶‍♀️ Walking shot</h5>
+          <p>Demande à ton copain de te filmer de dos en train de marcher vers le café, puis de face. Ralenti si possible.</p>
+        </div>
+        <div class="filming-card">
+          <h5>☕ Détail café</h5>
+          <p>Plan serré sur ta main + ta tasse. Ton outfit visible en arrière-plan flou. Super pour les transitions TikTok.</p>
+        </div>
+        <div class="filming-card">
+          <h5>🪑 Assise / Posée</h5>
+          <p>Assise à la table, jambes croisées, tenue visible. Plan de 3/4. Lumière naturelle de la fenêtre si possible.</p>
+        </div>
+        <div class="filming-card">
+          <h5>🎬 Transition tenue</h5>
+          <p>Filme-toi en train d'ajuster un accessoire (collier, boucle, ceinture) — excellent pour une intro de transition.</p>
+        </div>
+        <div class="filming-card">
+          <h5>📱 Stories live</h5>
+          <p>"On est partis pour une journée shooting !" — selfie rapide, café en main. Lance le hype dès le matin.</p>
+        </div>
+      </div>
+      <div class="hook-block">
+        <div class="hook-label">⚡ Hook TikTok — Tenue hôtel</div>
+        <div class="hook-text">"POV : on commence la Journée des Femmes avec un café dans un hôtel parisien 🥐"</div>
+        <div class="hook-note">Texte à l'écran dès la 1ère seconde. Son : ambiance café matinal ou son trending doux.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIEU 2 : MUSÉE -->
+  <div class="day-block">
+    <div class="day-header">
+      <div class="day-header-left">
+        <div class="day-dot day-dot-rose"></div>
+        <div>
+          <div class="day-date">LIEU 2 — MILIEU DE JOURNÉE</div>
+          <div class="day-title">🎨 Musée — Tenue 2</div>
+        </div>
+      </div>
+      <span class="post-count">2 posts + stories</span>
+    </div>
+    <div class="post-item">
+      <div class="alert alert-rose">
+        <span class="alert-icon">🎨</span>
+        <p><strong>Ambiance visée :</strong> Artistique, intellectuelle, contraste entre toi et les œuvres. Le musée est une scène magnifique — utilise les grandes salles vides, les couloirs, les œuvres comme fond.</p>
+      </div>
+      <h4 style="font-size:14px;font-weight:700;margin-bottom:12px;">📹 Ce qu'il faut filmer au musée</h4>
+      <div class="filming-grid">
+        <div class="filming-card">
+          <h5>🖼 Devant une œuvre</h5>
+          <p>De dos face à un grand tableau. Tenue visible. "Toi VS l'art" — esthétique fort, très sauvegardé sur Instagram.</p>
+        </div>
+        <div class="filming-card">
+          <h5>🚶‍♀️ Walking dans les couloirs</h5>
+          <p>Couloirs longs et vides = walking shot de rêve. Caméra au sol ou à hauteur de taille. Ton copain marche devant ou derrière.</p>
+        </div>
+        <div class="filming-card">
+          <h5>💃 Transition de dos → face</h5>
+          <p>Marche de dos, retourne-toi vers la caméra. Classique mais toujours viral. À faire dans un couloir éclairé.</p>
+        </div>
+        <div class="filming-card">
+          <h5>🎭 Imite une pose d'œuvre</h5>
+          <p>Trouve une sculpture ou peinture et fais la même pose. Contenu drôle/créatif = fort partage.</p>
+        </div>
+        <div class="filming-card">
+          <h5>📐 Escaliers / Architecture</h5>
+          <p>Les escaliers de musée sont toujours photogéniques. Plan du haut vers le bas ou inversé.</p>
+        </div>
+        <div class="filming-card">
+          <h5>📱 Stories musée</h5>
+          <p>"Changement de tenue, on est au musée !" — montre la nouvelle tenue rapidement en stories.</p>
+        </div>
+      </div>
+      <div class="hook-block">
+        <div class="hook-label">⚡ Hook TikTok — Tenue musée</div>
+        <div class="hook-text">"Tenue 2 du jour — quand ton outfit est plus beau que les œuvres 😌🎨"</div>
+        <div class="hook-note">Texte à l'écran. Enchaîne rapidement les clips : couloir → devant œuvre → pose sculptée. Max 20 secondes.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIEU 3 : TOUR EIFFEL -->
+  <div class="day-block">
+    <div class="day-header">
+      <div class="day-header-left">
+        <div class="day-dot day-dot-tiktok"></div>
+        <div>
+          <div class="day-date">LIEU 3 — FIN DE JOURNÉE</div>
+          <div class="day-title">🗼 Rues de Paris + Tour Eiffel — Tenue 3</div>
+        </div>
+      </div>
+      <span class="post-count">3 posts + stories</span>
+    </div>
+    <div class="post-item">
+      <div class="alert alert-violet">
+        <span class="alert-icon">✨</span>
+        <p><strong>Ambiance visée :</strong> Énergie, fun, spontané + quelques shots stylés. C'est ici que tu fais les vidéos drôles ET les plus belles photos. Alterne entre contenu sérieux (walking, pose) et contenu fun (sauts, réactions, fou rire).</p>
+      </div>
+      <h4 style="font-size:14px;font-weight:700;margin-bottom:12px;">📹 Ce qu'il faut filmer Tour Eiffel</h4>
+      <div class="filming-grid">
+        <div class="filming-card">
+          <h5>🗼 Walking vers la Tour</h5>
+          <p>Caméra de face, tu marches vers la caméra, Tour Eiffel derrière toi. Le classique indémodable. 2-3 prises.</p>
+        </div>
+        <div class="filming-card">
+          <h5>🤣 Vidéo drôle</h5>
+          <p>Idées : fais semblant de tenir la tour avec la main, réaction exagérée en "voyant" la tour, danse spontanée, chute simulée.</p>
+        </div>
+        <div class="filming-card">
+          <h5>💨 Walking rapide rue</h5>
+          <p>Ton copain te filme de côté pendant que tu marches vite dans la rue. Look parisienne naturelle = très esthétique.</p>
+        </div>
+        <div class="filming-card">
+          <h5>🔄 Transition 3 tenues</h5>
+          <p>Film rapide : "Tenue 1 → Tenue 2 → Tenue 3" en transition. Claque la main devant la caméra entre chaque. VIRAL.</p>
+        </div>
+        <div class="filming-card">
+          <h5>📸 Photos statiques</h5>
+          <p>Poses face/profil/dos avec Tour Eiffel. Utilise la lumière de fin d'après-midi (dorée, parfaite). 3-4 poses différentes.</p>
+        </div>
+        <div class="filming-card">
+          <h5>🌅 Golden hour</h5>
+          <p>Si vous finissez vers 17-18h, la lumière est magique. Selfie + shots serrés sur le visage avec flou d'arrière-plan.</p>
+        </div>
+      </div>
+      <div class="hook-block">
+        <div class="hook-label">⚡ Hook TikTok — Tenue Tour Eiffel (le plus viral)</div>
+        <div class="hook-text">"3 tenues, 3 lieux, 1 seule journée à Paris — Journée des Femmes edition 🗼🌸"</div>
+        <div class="hook-note">Ce format "récap journée" est l'un des plus partagés. Enchaîne les 3 lieux en 30 secondes max. Son : trending du moment avec énergie.</div>
+      </div>
+      <div class="hook-block" style="border-color:rgba(124,58,237,0.2);background:linear-gradient(135deg,rgba(124,58,237,0.06),rgba(255,45,122,0.06));">
+        <div class="hook-label" style="color:var(--violet);">⚡ Alternative — Vidéo drôle</div>
+        <div class="hook-text">"On voulait faire un shooting stylé… voilà ce qui s'est vraiment passé 😂🗼"</div>
+        <div class="hook-note">Montre les coulisses ratées, les fous rires, les poses foirées. Ce type de contenu authentique EXPLOSE sur TikTok.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CAROUSEL -->
+<div id="carousel" class="section">
+  <div class="section-title">
+    <div class="section-icon icon-insta">📷</div>
+    <div class="section-title-text">
+      <h2>Plan du Carousel Instagram</h2>
+      <p>Best-of du shooting · 8-10 slides · Fort taux de sauvegarde</p>
+    </div>
+  </div>
+
+  <div class="day-block">
+    <div class="day-header">
+      <div class="day-header-left">
+        <div class="day-dot day-dot-rose"></div>
+        <div>
+          <div class="day-date">INSTAGRAM — 9 MARS · 18H00</div>
+          <div class="day-title">📷 Best-of shooting — Journée des Femmes</div>
+        </div>
+      </div>
+      <span class="post-count">8 slides</span>
+    </div>
+    <div class="post-item">
+      <div class="alert alert-rose">
+        <span class="alert-icon">💡</span>
+        <p><strong>Logique du carousel :</strong> La 1ère slide doit être la MEILLEURE photo pour capter l'attention. Ensuite varie les looks et les ambiances. Termine sur une slide qui donne envie de te suivre.</p>
+      </div>
+      <div class="carousel-grid">
+        <div class="carousel-slide">
+          <div class="slide-num rose">1</div>
+          <h5>COVER — Meilleure photo</h5>
+          <p>Ton meilleur shot de la journée. Tour Eiffel ou musée. Regarde la caméra. Look confiant.</p>
+        </div>
+        <div class="carousel-slide">
+          <div class="slide-num">2</div>
+          <h5>Tenue 1 — Hôtel</h5>
+          <p>Photo full body. Lumière intérieure dorée. Pose naturelle, café à la main si possible.</p>
+        </div>
+        <div class="carousel-slide">
+          <div class="slide-num">3</div>
+          <h5>Détail Tenue 1</h5>
+          <p>Zoom sur un accessoire ou une partie du look. Chaussures, sac, collier — ce qui est fort dans cette tenue.</p>
+        </div>
+        <div class="carousel-slide">
+          <div class="slide-num">4</div>
+          <h5>Tenue 2 — Musée</h5>
+          <p>Full body devant une œuvre. De dos ou de face. Le contraste toi/art est très esthétique.</p>
+        </div>
+        <div class="carousel-slide">
+          <div class="slide-num">5</div>
+          <h5>Ambiance Musée</h5>
+          <p>Couloir, escalier, architecture. Toi dedans mais plan large — montre l'environnement.</p>
+        </div>
+        <div class="carousel-slide">
+          <div class="slide-num gold">6</div>
+          <h5>Tenue 3 — Paris</h5>
+          <p>Shot walking ou pose avec Tour Eiffel. La tenue + Paris = slide très sauvegardée.</p>
+        </div>
+        <div class="carousel-slide">
+          <div class="slide-num gold">7</div>
+          <h5>Shot spontané</h5>
+          <p>Un moment naturel : fou rire, regard de côté, mouvement. Montre ta personnalité.</p>
+        </div>
+        <div class="carousel-slide">
+          <div class="slide-num rose">8</div>
+          <h5>Slide finale — CTA</h5>
+          <p>Belle photo + texte en overlay : "Sauvegarde ce post pour t'en inspirer 🌸" ou "Quelle tenue tu préfères ?"</p>
+        </div>
+      </div>
+      <div class="hook-block">
+        <div class="hook-label">✍️ Légende Instagram</div>
+        <div class="hook-text">3 tenues · 3 lieux · 1 journée à Paris pour la Journée des Femmes 🌸<br><br>Hôtel → Musée → Tour Eiffel. Quelle tenue est ton préférée ? 1️⃣2️⃣ ou 3️⃣<br><br>📌 Sauvegarde pour t'en inspirer</div>
+      </div>
+      <div class="hashtag-list">
+        <span class="htag ht-insta">#journeedesfemmes</span>
+        <span class="htag ht-insta">#parisienne</span>
+        <span class="htag ht-insta">#outfitoftheday</span>
+        <span class="htag ht-insta">#toureiffel</span>
+        <span class="htag ht-insta">#lookdujour</span>
+        <span class="htag ht-insta">#stylefrancais</span>
+        <span class="htag ht-insta">#shootingparis</span>
+        <span class="htag ht-insta">#ootd</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CONTENUS EXISTANTS -->
+<div id="existant" class="section">
+  <div class="section-title">
+    <div class="section-icon icon-insta">✅</div>
+    <div class="section-title-text">
+      <h2>Contenus déjà prêts — Scripts &amp; Stratégie</h2>
+      <p>Restaurant coréen · Bowling anniversaire · Haul Zara · Bottes ASOS</p>
+    </div>
+  </div>
+
+  <!-- RESTAURANT CORÉEN -->
+  <div class="day-block" style="margin-bottom:16px;">
+    <div class="day-header">
+      <div class="day-header-left">
+        <div class="day-dot day-dot-rose"></div>
+        <div>
+          <div class="day-date">CONTENU PRÊT ✅ — À POSTER LUNDI 10 MARS</div>
+          <div class="day-title">🍜 Restaurant Coréen avec les amies</div>
+        </div>
+      </div>
+      <span class="post-count">1 TikTok + 1 Reel</span>
+    </div>
+    <div class="post-item">
+      <div class="hook-block">
+        <div class="hook-label">⚡ Hook TikTok</div>
+        <div class="hook-text">"Korean BBQ avec les copines parce qu'on le vaut bien 🥩🔥"</div>
+        <div class="hook-note">Montre l'ambiance, les plats, vos looks, vos réactions. Son trending fun/girl dinner.</div>
+      </div>
+      <div class="hook-block" style="margin-top:10px;border-color:rgba(225,48,108,0.2);">
+        <div class="hook-label" style="color:var(--insta);">📸 Alternative Instagram Reel</div>
+        <div class="hook-text">"POV : soirée coréenne avec les meilleures personnes 🍜✨"</div>
+      </div>
+      <div class="tip-row">
+        <span class="tip-chip tc-rose">📸 Montre ton outfit du soir</span>
+        <span class="tip-chip tc-gold">🎬 Commence par le plat qui fume</span>
+        <span class="tip-chip tc-violet">😂 Inclus un moment fun/réaction</span>
+      </div>
+      <div class="hashtag-list">
+        <span class="htag ht-tt">#kbbq #koreanfood #girlfriendsdinner #girlsnight #soireefilles</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOWLING ANNIVERSAIRE -->
+  <div class="day-block" style="margin-bottom:16px;">
+    <div class="day-header">
+      <div class="day-header-left">
+        <div class="day-dot day-dot-violet"></div>
+        <div>
+          <div class="day-date">CONTENU PRÊT ✅ — À POSTER MERCREDI 11 MARS</div>
+          <div class="day-title">🎳 Bowling + Anniversaire copain — Restaurant Italien</div>
+        </div>
+      </div>
+      <span class="post-count">1 TikTok + stories</span>
+    </div>
+    <div class="post-item">
+      <div class="hook-block">
+        <div class="hook-label">⚡ Hook TikTok</div>
+        <div class="hook-text">"Anniversaire de mon copain = bowling + dîner italien et j'étais TROP stylée pour ça 🎳💅"</div>
+        <div class="hook-note">L'humour sur le contraste "tenue chic vs bowling" est très viral. Montre l'outfit, puis toi en train de jouer.</div>
+      </div>
+      <div class="tip-row">
+        <span class="tip-chip tc-rose">💡 Montre les photos du restaurant italien</span>
+        <span class="tip-chip tc-violet">🎳 Clip de toi qui lances la boule (drôle)</span>
+        <span class="tip-chip tc-gold">🎂 Moment bougie si tu as filmé</span>
+      </div>
+      <div class="hashtag-list">
+        <span class="htag ht-tt">#birthday #anniversaire #bowling #datenight #couplegoals</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- HAUL ZARA -->
+  <div class="day-block" style="margin-bottom:16px;">
+    <div class="day-header">
+      <div class="day-header-left">
+        <div class="day-dot day-dot-tiktok"></div>
+        <div>
+          <div class="day-date">CONTENU PRÊT ✅ — À POSTER JEUDI 12 MARS</div>
+          <div class="day-title">🛍 Haul Zara — La vérité quand on fait du 1m82</div>
+        </div>
+      </div>
+      <span class="post-count">1 TikTok viral potentiel</span>
+    </div>
+    <div class="post-item">
+      <div class="alert alert-gold">
+        <span class="alert-icon">🔥</span>
+        <p><strong>POT EN OR !</strong> Le contenu "grande taille + shopping" est EXTRÊMEMENT recherché. Les femmes grandes ont du mal à trouver du contenu qui leur correspond — tu touches une niche sous-représentée = viralité forte et communauté fidèle.</p>
+      </div>
+      <div class="hook-block">
+        <div class="hook-label">⚡ Hook TikTok — FORT POTENTIEL VIRAL</div>
+        <div class="hook-text">"Haul Zara quand tu fais 1m82 — ce que j'ai gardé, ce que j'ai renvoyé et POURQUOI 😭📏"</div>
+        <div class="hook-note">Ce hook est parfait. Les grandes tailles vont partager massivement. Sois honnête sur ce qui ne va pas → authenticité = confiance.</div>
+      </div>
+      <div class="script-block">
+        <div class="script-header">
+          <div class="dot-red"></div><div class="dot-yellow"></div><div class="dot-green"></div>
+          <span>Script TikTok — Haul Zara</span>
+        </div>
+        <div class="script-lines">
+          <div class="sl"><div class="sl-time">0-2s</div><div class="sl-content"><span class="cam">[Texte à l'écran]</span> <strong>"J'ai commandé 8 pièces Zara — résultat quand on fait 1m82 🙃"</strong></div></div>
+          <div class="sl"><div class="sl-time">2-8s</div><div class="sl-content">Montre rapidement les vêtements étalés. Voix off ou texte : <strong>"Bon, on commence par ce qui va pas..."</strong></div></div>
+          <div class="sl"><div class="sl-time">8-20s</div><div class="sl-content">Pièces RENVOYÉES : essaie-les ou montre pourquoi ça ne va pas. <span class="txt">Trop court, manches trop courtes, proportion bizarre.</span> Sois drôle et honnête.</div></div>
+          <div class="sl"><div class="sl-time">20-35s</div><div class="sl-content">Pièces GARDÉES : essaie et montre. <strong>"Par contre ça, c'est un coup de cœur !"</strong> Transition rapide entre chaque pièce.</div></div>
+          <div class="sl"><div class="sl-time">35-40s</div><div class="sl-content"><strong>CTA final :</strong> <span class="cam">[Texte]</span> <span class="txt">"Grande taille, dis-moi si tu veux que je fasse la suite ! 👇"</span></div></div>
+        </div>
+      </div>
+      <div class="hashtag-list">
+        <span class="htag ht-tt">#haul #zara #grandetaille #tall #tallgirl #1m82 #hauteur #hautzara</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTES ASOS -->
+  <div class="day-block">
+    <div class="day-header">
+      <div class="day-header-left">
+        <div class="day-dot day-dot-rose"></div>
+        <div>
+          <div class="day-date">À FILMER VITE ✅ — À POSTER VENDREDI 13 MARS</div>
+          <div class="day-title">👢 Unboxing Bottes ASOS — 2 paires</div>
+        </div>
+      </div>
+      <span class="post-count">1 TikTok + 1 Reel</span>
+    </div>
+    <div class="post-item">
+      <div class="hook-block">
+        <div class="hook-label">⚡ Hook TikTok</div>
+        <div class="hook-text">"J'ai commandé 2 paires de bottes sur ASOS — unboxing + essayage 👢✨"</div>
+        <div class="hook-note">Film l'ouverture du colis, l'essayage des deux paires, ton verdict. 30-40 secondes max.</div>
+      </div>
+      <div class="tip-row">
+        <span class="tip-chip tc-rose">📦 Filme l'ouverture du colis</span>
+        <span class="tip-chip tc-gold">👢 Essaie les deux paires en walking shot</span>
+        <span class="tip-chip tc-green">✅ Dis laquelle tu préfères + pourquoi</span>
+        <span class="tip-chip tc-violet">📏 Mentionne comment elles taillent (grande taille = précieux)</span>
+      </div>
+      <div class="hashtag-list">
+        <span class="htag ht-tt">#asos #unboxing #bottes #tallgirl #shoehaul #grandetaille</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JAZZ CE SOIR -->
+<div id="jazz" class="section">
+  <div class="section-title">
+    <div class="section-icon icon-jazz">🎷</div>
+    <div class="section-title-text">
+      <h2>Concert Jazz — Ce soir</h2>
+      <p>Ce qu'il faut absolument filmer et demander à ton copain</p>
+    </div>
+  </div>
+
+  <div class="day-block">
+    <div class="day-header">
+      <div class="day-header-left">
+        <div class="day-dot day-dot-violet"></div>
+        <div>
+          <div class="day-date">CE SOIR — À POSTER MARDI 10 MARS</div>
+          <div class="day-title">🎷 Concert Jazz — Outfit soirée + ambiance</div>
+        </div>
+      </div>
+      <span class="post-count">1 TikTok + stories</span>
+    </div>
+    <div class="post-item">
+      <div class="alert alert-violet">
+        <span class="alert-icon">📸</span>
+        <p><strong>Ce soir avant de partir :</strong> Demande à ton copain de te prendre EN PHOTO (pas juste en vidéo) sous une belle lumière — dans l'entrée, sous un lampadaire, devant le lieu du concert. 5-10 photos depuis son téléphone. Ces photos seront parfaites pour l'Instagram.</p>
+      </div>
+      <h4 style="font-size:14px;font-weight:700;margin-bottom:12px;">📹 Check-list de ce soir</h4>
+      <div class="filming-grid">
+        <div class="filming-card">
+          <h5>👗 Full body avant de partir</h5>
+          <p>Ton copain te filme/photographie habillée avant de partir. Lumière de la maison ou du couloir.</p>
+        </div>
+        <div class="filming-card">
+          <h5>🎷 Ambiance concert</h5>
+          <p>10 secondes de l'ambiance, les lumières, les musiciens. Pour les stories et le montage.</p>
+        </div>
+        <div class="filming-card">
+          <h5>🥂 Verre / moment</h5>
+          <p>Toi avec un verre, ambiance chaude. Plan rapproché. Très esthétique pour Instagram.</p>
+        </div>
+        <div class="filming-card">
+          <h5>📍 Entrée du lieu</h5>
+          <p>Photo devant l'entrée. Enseigne visible si belle. Classic mais toujours bien.</p>
+        </div>
+      </div>
+      <div class="hook-block">
+        <div class="hook-label">⚡ Hook TikTok — Jazz</div>
+        <div class="hook-text">"GRWM concert de jazz — soirée qu'on attendait 🎷🖤"</div>
+        <div class="hook-note">Format GRWM : commence par "je me prépare", finit par le concert. Son : jazz lounge trending ou son ambiance nuit parisienne.</div>
+      </div>
+      <div class="hashtag-list">
+        <span class="htag ht-tt">#concert #jazz #parisnightlife #grwm #soiree #outfitnight</span>
+        <span class="htag ht-insta">#concert #jazz #soireeparis #ootd #nightout</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SAMEDI -->
+<div id="samedi" class="section">
+  <div class="section-title">
+    <div class="section-icon icon-insta">💄</div>
+    <div class="section-title-text">
+      <h2>Samedi — Maquillage + Shopping</h2>
+      <p>La journée parfaite pour un contenu collab + haul spontané</p>
+    </div>
+  </div>
+
+  <div class="day-block">
+    <div class="day-header">
+      <div class="day-header-left">
+        <div class="day-dot day-dot-rose"></div>
+        <div>
+          <div class="day-date">SAMEDI — 9H00</div>
+          <div class="day-title">💄 Collab maquillage avec ta copine MUA</div>
+        </div>
+      </div>
+      <span class="post-count">1 TikTok transformation + stories</span>
+    </div>
+    <div class="post-item">
+      <div class="alert alert-rose">
+        <span class="alert-icon">🤝</span>
+        <p><strong>Opportunité collab :</strong> Tague ta copine dans TOUS tes posts liés au maquillage. Elle taguera sa communauté = tu gagnes ses abonnés. C'est une des meilleures façons de croître rapidement !</p>
+      </div>
+      <div class="hook-block">
+        <div class="hook-label">⚡ Hook TikTok — Transformation makeup</div>
+        <div class="hook-text">"Ma copine maquilleuse professionnelle m'a fait un look et je suis CHOQUÉE 💄✨"</div>
+        <div class="hook-note">Avant/après transformation = LE format le plus viral sur TikTok. Commence sans maquillage, finit avec le look complet. Réaction authentique obligatoire.</div>
+      </div>
+      <div class="filming-grid">
+        <div class="filming-card">
+          <h5>🤳 Film le processus</h5>
+          <p>Ton téléphone en selfie qui filme ta copine en train de te maquiller. Accéléré ou timelapse.</p>
+        </div>
+        <div class="filming-card">
+          <h5>😱 Film ta réaction</h5>
+          <p>Le moment où tu découvres dans le miroir. La réaction authentique = le clip le plus important de la vidéo.</p>
+        </div>
+        <div class="filming-card">
+          <h5>🔄 Avant/Après</h5>
+          <p>Claque la main devant la caméra pour la transition ou utilise le zoom. C'est le format classique de transformation.</p>
+        </div>
+        <div class="filming-card">
+          <h5>💄 Détail du look</h5>
+          <p>Zoom sur les yeux, les lèvres, la peau. Plan serré de qualité pour montrer le travail de ta copine.</p>
+        </div>
+      </div>
+      <div class="tip-row">
+        <span class="tip-chip tc-rose">🤝 Tague @copine dans la vidéo et la légende</span>
+        <span class="tip-chip tc-violet">💬 Demande-lui de partager sur son compte</span>
+        <span class="tip-chip tc-gold">📸 Fais des photos avec le look terminé pour Instagram</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="day-block" style="margin-top:16px;">
+    <div class="day-header">
+      <div class="day-header-left">
+        <div class="day-dot day-dot-tiktok"></div>
+        <div>
+          <div class="day-date">SAMEDI — APRÈS-MIDI</div>
+          <div class="day-title">🛍 Shopping spontané — Contenu en live</div>
+        </div>
+      </div>
+      <span class="post-count">1-2 TikToks</span>
+    </div>
+    <div class="post-item">
+      <div class="hook-block">
+        <div class="hook-label">⚡ Hook TikTok — Shopping</div>
+        <div class="hook-text">"Je suis allée faire du shopping avec le makeup de ma copine MUA — les vendeuses m'ont regardée autrement 💅"</div>
+        <div class="hook-note">Combine les deux : le maquillage + le shopping. Double contenu, une seule sortie. Montre les essayages en cabine.</div>
+      </div>
+      <div class="tip-row">
+        <span class="tip-chip tc-rose">📹 Filme quelques essayages en cabine</span>
+        <span class="tip-chip tc-gold">🛍 Montre 2-3 coups de cœur</span>
+        <span class="tip-chip tc-violet">📏 Toujours mentionner la taille si tu gardes</span>
+        <span class="tip-chip tc-green">✅ Courts clips : 3-4 secondes par pièce</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PLANNING COMPLET SEMAINE 1 -->
+<div id="planning" class="section">
+  <div class="section-title">
+    <div class="section-icon icon-tiktok">📅</div>
+    <div class="section-title-text">
+      <h2>Planning complet Semaine 1 — Révisé</h2>
+      <p>Avec tout ton contenu, voici le calendrier optimal</p>
+    </div>
+  </div>
+
+  <div class="day-block">
+    <div class="post-item" style="padding:0;overflow:hidden;">
+      <table class="summary-table">
+        <thead>
+          <tr>
+            <th>DATE</th>
+            <th>PLATEFORME</th>
+            <th>FORMAT</th>
+            <th>CONTENU</th>
+            <th>HEURE</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="background:#FFFBEB;">
+            <td><strong>Jeu 5 Mars</strong></td>
+            <td><span class="platform-badge pb-tiktok">🎷 TikTok</span></td>
+            <td>GRWM</td>
+            <td>GRWM Concert Jazz — Outfit soirée + ambiance</td>
+            <td><span class="time-badge">19h00</span></td>
+          </tr>
+          <tr>
+            <td><strong>Ven 6 Mars</strong></td>
+            <td><span class="platform-badge pb-insta">📸 Instagram</span></td>
+            <td>Story</td>
+            <td>Teaser : "Ce weekend c'est shooting journée entière 👀"</td>
+            <td><span class="time-badge">18h00</span></td>
+          </tr>
+          <tr style="background:#FFF5F9;">
+            <td rowspan="3"><strong>🌸 Dim 8 Mars</strong></td>
+            <td><span class="platform-badge pb-stories">Stories</span></td>
+            <td>Stories live</td>
+            <td>Coulisses shooting en temps réel — hôtel, musée, Tour Eiffel</td>
+            <td><span class="time-badge">Toute la journée</span></td>
+          </tr>
+          <tr style="background:#FFF5F9;">
+            <td><span class="platform-badge pb-insta">📸 Instagram</span></td>
+            <td>Reel</td>
+            <td>🌸 Journée des Femmes — Meilleur shot du shooting + message</td>
+            <td><span class="time-badge">20h00</span></td>
+          </tr>
+          <tr style="background:#FFF5F9;">
+            <td><span class="platform-badge pb-tiktok">🎵 TikTok</span></td>
+            <td>TikTok</td>
+            <td>3 tenues · 3 lieux · 1 journée à Paris — récap Journée des Femmes</td>
+            <td><span class="time-badge">21h00</span></td>
+          </tr>
+          <tr>
+            <td rowspan="2"><strong>Lun 9 Mars</strong></td>
+            <td><span class="platform-badge pb-tiktok">🎵 TikTok</span></td>
+            <td>TikTok</td>
+            <td>🍜 Restaurant Coréen avec les amies — ambiance + looks</td>
+            <td><span class="time-badge">12h00</span></td>
+          </tr>
+          <tr>
+            <td><span class="platform-badge pb-insta">📸 Instagram</span></td>
+            <td>Carousel</td>
+            <td>📷 Best-of shooting 8 mars — 8 slides</td>
+            <td><span class="time-badge">18h00</span></td>
+          </tr>
+          <tr style="background:#FFF5F9;">
+            <td rowspan="2"><strong>Mar 10 Mars</strong></td>
+            <td><span class="platform-badge pb-tiktok">🎵 TikTok</span></td>
+            <td>TikTok</td>
+            <td>Vidéo drôle coulisses shooting — ce qui s'est vraiment passé 😂</td>
+            <td><span class="time-badge">12h00</span></td>
+          </tr>
+          <tr style="background:#FFF5F9;">
+            <td><span class="platform-badge pb-insta">📸 Instagram</span></td>
+            <td>Reel</td>
+            <td>Restaurant Coréen ambiance + outfit soirée</td>
+            <td><span class="time-badge">19h00</span></td>
+          </tr>
+          <tr>
+            <td rowspan="2"><strong>Mer 11 Mars</strong></td>
+            <td><span class="platform-badge pb-tiktok">🎵 TikTok</span></td>
+            <td>TikTok</td>
+            <td>🎳 Bowling anniversaire — look chic vs bowling 😂</td>
+            <td><span class="time-badge">18h00</span></td>
+          </tr>
+          <tr>
+            <td><span class="platform-badge pb-insta">📸 Instagram</span></td>
+            <td>Story</td>
+            <td>Photos restaurant italien anniversaire</td>
+            <td><span class="time-badge">12h00</span></td>
+          </tr>
+          <tr style="background:#FFF5F9;">
+            <td rowspan="2"><strong>Jeu 12 Mars</strong></td>
+            <td><span class="platform-badge pb-tiktok">🎵 TikTok</span></td>
+            <td>TikTok</td>
+            <td>🛍 Haul Zara — vérité quand on fait 1m82 🔥</td>
+            <td><span class="time-badge">18h00</span></td>
+          </tr>
+          <tr style="background:#FFF5F9;">
+            <td><span class="platform-badge pb-insta">📸 Instagram</span></td>
+            <td>Reel</td>
+            <td>Haul Zara version condensée — looks gardés</td>
+            <td><span class="time-badge">12h00</span></td>
+          </tr>
+          <tr>
+            <td><strong>Ven 13 Mars</strong></td>
+            <td><span class="platform-badge pb-tiktok">🎵 TikTok</span></td>
+            <td>TikTok</td>
+            <td>👢 Unboxing bottes ASOS — 2 paires essayées</td>
+            <td><span class="time-badge">18h00</span></td>
+          </tr>
+          <tr style="background:#FFF5F9;">
+            <td rowspan="2"><strong>💄 Sam 14 Mars</strong></td>
+            <td><span class="platform-badge pb-tiktok">🎵 TikTok</span></td>
+            <td>Transformation</td>
+            <td>💄 Maquillage par ma copine MUA — avant/après</td>
+            <td><span class="time-badge">14h00</span></td>
+          </tr>
+          <tr style="background:#FFF5F9;">
+            <td><span class="platform-badge pb-tiktok">🎵 TikTok</span></td>
+            <td>TikTok</td>
+            <td>🛍 Shopping avec le makeup — haul essayages cabine</td>
+            <td><span class="time-badge">19h00</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="alert alert-gold" style="margin-top:20px;">
+    <span class="alert-icon">🏆</span>
+    <p><strong>Résultat semaine 1 :</strong> <strong>15 publications</strong> (TikTok + Instagram) sur 10 jours. Sans rien forcer, juste en exploitant intelligemment ce que tu vis déjà. C'est exactement comme ça que les créatrices passent de 0 à 10K en quelques semaines. <strong>Lance-toi dimanche !</strong> 🚀</p>
+  </div>
+</div>
+
+</div><!-- /page -->
+
+<footer>
+  Fait pour <span>meryne.eis</span> · Objectif 30K Instagram · 100K TikTok · Décembre 2026
+</footer>
+
+</body>
+</html>
