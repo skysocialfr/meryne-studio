@@ -1,0 +1,706 @@
+/* ═══════════════════════════════════════════════
+   MERYNE STUDIO V4 — Feed Module
+   Instagram + TikTok feed grid with drag & drop
+   ═══════════════════════════════════════════════ */
+
+// ─── Feed State ───
+var FEED_DATA = { insta: [], tiktok: [] };
+var feedPlat = 'insta';
+var feedEditIdx = null;
+var dragSrcIdx = null;
+var dragSrcPlat = null;
+
+// ─── IG Profile State ───
+var IG_PROFILE = { handle: 'meryne.eis', bio: '', avatar: null, followers: null };
+var IG_HIGHLIGHTS = [];
+
+// ═══════════════════════════════════════════════
+//  Data Persistence
+// ═══════════════════════════════════════════════
+
+async function loadFeedData() {
+  var loaded = await cloudLoad('feeddata2', { insta: [], tiktok: [] });
+  FEED_DATA = loaded;
+  if (!FEED_DATA.insta) FEED_DATA.insta = [];
+  if (!FEED_DATA.tiktok) FEED_DATA.tiktok = [];
+}
+
+function saveFeedData() {
+  cloudSave('feeddata2', FEED_DATA);
+}
+
+// ═══════════════════════════════════════════════
+//  Image Compression
+// ═══════════════════════════════════════════════
+
+function compressImage(dataUrl, cb) {
+  var img = new Image();
+  img.onload = function() {
+    var maxSize = 600;
+    var w = img.width;
+    var h = img.height;
+    if (w > maxSize || h > maxSize) {
+      if (w > h) {
+        h = Math.round(h * maxSize / w);
+        w = maxSize;
+      } else {
+        w = Math.round(w * maxSize / h);
+        h = maxSize;
+      }
+    }
+    var canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    var ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, w, h);
+    var compressed = canvas.toDataURL('image/jpeg', 0.65);
+    cb(compressed);
+  };
+  img.onerror = function() {
+    cb(dataUrl);
+  };
+  img.src = dataUrl;
+}
+
+// ═══════════════════════════════════════════════
+//  Feed Switching & Count
+// ═══════════════════════════════════════════════
+
+function switchFeed(plat, btn) {
+  feedPlat = plat;
+  document.querySelectorAll('.ig-feed-tab').forEach(function(b) {
+    b.classList.remove('active');
+  });
+  if (btn) btn.classList.add('active');
+
+  var instaWrap = document.getElementById('feed-insta-wrap');
+  var tiktokWrap = document.getElementById('feed-tiktok-wrap');
+
+  if (instaWrap) instaWrap.style.display = plat === 'insta' ? '' : 'none';
+  if (tiktokWrap) tiktokWrap.style.display = plat === 'tiktok' ? '' : 'none';
+}
+
+function updateFeedCount() {
+  var el = document.getElementById('ig-post-count');
+  if (el) el.textContent = FEED_DATA.insta.length;
+}
+
+// ═══════════════════════════════════════════════
+//  Feed Rendering
+// ═══════════════════════════════════════════════
+
+async function renderFeed() {
+  await loadFeedData();
+  renderFeedGrid('insta');
+  renderFeedGrid('tiktok');
+  updateFeedCount();
+  renderHighlights();
+}
+
+function renderFeedGrid(plat) {
+  var container = document.getElementById('feed-' + plat);
+  if (!container) return;
+
+  var posts = FEED_DATA[plat] || [];
+  var html = '';
+
+  // Render existing posts
+  for (var i = 0; i < posts.length; i++) {
+    var p = posts[i];
+    var mediaHtml = '';
+
+    if (p.media && p.media.indexOf('data:video') === 0) {
+      mediaHtml = '<video src="' + p.media + '" style="width:100%;height:100%;object-fit:cover;" muted></video>';
+    } else if (p.media && p.media.indexOf('data:') === 0) {
+      mediaHtml = '<img src="' + p.media + '" style="width:100%;height:100%;object-fit:cover;" alt="">';
+    } else if (p.emoji) {
+      mediaHtml = '<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:48px;background:#F3F4F6;">' + escapeHtml(p.emoji) + '</div>';
+    } else {
+      mediaHtml = '<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:#F3F4F6;color:#D1D5DB;font-size:32px;"><svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></div>';
+    }
+
+    var doneColor = p.done ? '#10B981' : '#D1D5DB';
+    var overlayTitle = p.title ? escapeHtml(p.title) : '';
+    var overlayDate = p.date ? escapeHtml(p.date) : '';
+    var overlayFormat = p.format ? escapeHtml(p.format) : '';
+
+    html += '<div class="feed-cell" draggable="true"'
+      + ' ondragstart="feedDragStart(event,' + i + ',\'' + plat + '\')"'
+      + ' ondragover="feedDragOver(event)"'
+      + ' ondrop="feedDrop(event,' + i + ',\'' + plat + '\')"'
+      + ' ondragend="feedDragEnd(event)"'
+      + ' onclick="openFeedModal(' + i + ',\'' + plat + '\')"'
+      + ' style="position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;cursor:grab;border:1.5px solid #E5E7EB;background:#fff;">'
+      // Position number
+      + '<div style="position:absolute;top:6px;left:6px;z-index:2;background:rgba(0,0,0,.55);color:#fff;font-size:10px;font-weight:700;border-radius:6px;padding:2px 7px;line-height:1.4;">' + (i + 1) + '</div>'
+      // Done status dot
+      + '<div style="position:absolute;top:6px;right:6px;z-index:2;width:10px;height:10px;border-radius:50%;background:' + doneColor + ';border:1.5px solid #fff;"></div>'
+      // Media
+      + '<div style="width:100%;height:100%;">' + mediaHtml + '</div>'
+      // Overlay
+      + '<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.7));padding:8px 8px 6px;z-index:1;">'
+      + (overlayTitle ? '<div style="font-size:11px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + overlayTitle + '</div>' : '')
+      + '<div style="display:flex;gap:4px;align-items:center;margin-top:2px;">'
+      + (overlayDate ? '<span style="font-size:9px;color:rgba(255,255,255,.75);">' + overlayDate + '</span>' : '')
+      + (overlayFormat ? '<span style="font-size:8px;color:#fff;background:rgba(255,255,255,.2);border-radius:4px;padding:1px 5px;">' + overlayFormat + '</span>' : '')
+      + '</div>'
+      + '</div>'
+      + '</div>';
+  }
+
+  // Add new post slot
+  html += '<div class="feed-cell feed-cell-add" onclick="addFeedPost()"'
+    + ' style="aspect-ratio:1;border-radius:8px;border:2px dashed #D1D5DB;display:flex;align-items:center;justify-content:center;cursor:pointer;background:#FAFAFA;transition:border-color .2s,background .2s;"'
+    + ' onmouseenter="this.style.borderColor=\'#8B5CF6\';this.style.background=\'#F5F3FF\'"'
+    + ' onmouseleave="this.style.borderColor=\'#D1D5DB\';this.style.background=\'#FAFAFA\'">'
+    + '<div style="text-align:center;color:#9CA3AF;">'
+    + '<div style="font-size:28px;line-height:1;">+</div>'
+    + '<div style="font-size:10px;margin-top:2px;">Ajouter</div>'
+    + '</div></div>';
+
+  // Fill to 9 cells minimum with empty placeholders
+  var total = posts.length + 1; // +1 for the add slot
+  for (var j = total; j < 9; j++) {
+    html += '<div class="feed-cell feed-cell-empty" style="aspect-ratio:1;border-radius:8px;background:#F9FAFB;border:1px solid #F3F4F6;"></div>';
+  }
+
+  container.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════
+//  Drag & Drop
+// ═══════════════════════════════════════════════
+
+function feedDragStart(e, idx, plat) {
+  dragSrcIdx = idx;
+  dragSrcPlat = plat;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', idx);
+  if (e.target && e.target.style) {
+    e.target.style.opacity = '0.5';
+  }
+}
+
+function feedDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+}
+
+function feedDrop(e, toIdx, plat) {
+  e.preventDefault();
+  e.stopPropagation();
+
+  // Only allow drop within same platform
+  if (dragSrcPlat !== plat || dragSrcIdx === null || dragSrcIdx === toIdx) return;
+
+  var arr = FEED_DATA[plat];
+  if (!arr || dragSrcIdx >= arr.length || toIdx >= arr.length) return;
+
+  // Move item from dragSrcIdx to toIdx
+  var item = arr.splice(dragSrcIdx, 1)[0];
+  arr.splice(toIdx, 0, item);
+
+  saveFeedData();
+  renderFeedGrid(plat);
+}
+
+function feedDragEnd(e) {
+  dragSrcIdx = null;
+  dragSrcPlat = null;
+  if (e.target && e.target.style) {
+    e.target.style.opacity = '1';
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  Feed Modal (uses dedicated #feed-modal)
+// ═══════════════════════════════════════════════
+
+function addFeedPost() {
+  feedEditIdx = null;
+  openFeedModal(null, feedPlat);
+}
+
+function openFeedModal(idx, plat) {
+  feedEditIdx = idx;
+  var isEdit = idx !== null && idx !== undefined;
+  var post = isEdit ? (FEED_DATA[plat] || [])[idx] || {} : {};
+
+  var titleVal = post.title || '';
+  var dateVal = post.date || '';
+  var formatVal = post.format || '';
+  var descVal = post.description || '';
+  var hashVal = post.hashtags || '';
+  var doneVal = post.done || false;
+  var mediaPreview = '';
+
+  if (post.media && post.media.indexOf('data:video') === 0) {
+    mediaPreview = '<video src="' + post.media + '" style="width:100%;max-height:200px;object-fit:contain;border-radius:8px;" controls muted></video>';
+  } else if (post.media && post.media.indexOf('data:') === 0) {
+    mediaPreview = '<img src="' + post.media + '" style="width:100%;max-height:200px;object-fit:contain;border-radius:8px;" alt="">';
+  }
+
+  var charCount = descVal.length;
+
+  var formatOptions = ['', 'Reel', 'Carousel', 'Photo', 'Story', 'IGTV', 'TikTok', 'Short'];
+  var formatSelect = '';
+  for (var f = 0; f < formatOptions.length; f++) {
+    var sel = formatVal === formatOptions[f] ? ' selected' : '';
+    var label = formatOptions[f] || '-- Format --';
+    formatSelect += '<option value="' + escapeHtml(formatOptions[f]) + '"' + sel + '>' + escapeHtml(label) + '</option>';
+  }
+
+  // Update modal title
+  var titleEl = document.getElementById('feed-modal-title');
+  if (titleEl) titleEl.textContent = isEdit ? 'Modifier le post' : 'Nouveau post';
+
+  var html = ''
+    // Media upload
+    + '<div style="margin-bottom:14px;">'
+    + '<label style="font-size:12px;font-weight:600;color:#6B7280;display:block;margin-bottom:6px;">Media</label>'
+    + '<div id="feed-media-preview" style="margin-bottom:8px;">' + mediaPreview + '</div>'
+    + '<input type="file" id="feed-media-input" accept="image/*,video/*" onchange="handleFeedMediaUpload(event)" style="font-size:12px;">'
+    + '</div>'
+
+    // Date
+    + '<div style="margin-bottom:14px;">'
+    + '<label style="font-size:12px;font-weight:600;color:#6B7280;display:block;margin-bottom:6px;">Date</label>'
+    + '<input type="date" id="feed-date" value="' + escapeHtml(dateVal) + '" style="width:100%;padding:8px 10px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box;">'
+    + '</div>'
+
+    // Format
+    + '<div style="margin-bottom:14px;">'
+    + '<label style="font-size:12px;font-weight:600;color:#6B7280;display:block;margin-bottom:6px;">Format</label>'
+    + '<select id="feed-format" style="width:100%;padding:8px 10px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;background:#fff;box-sizing:border-box;">'
+    + formatSelect
+    + '</select>'
+    + '</div>'
+
+    // Title
+    + '<div style="margin-bottom:14px;">'
+    + '<label style="font-size:12px;font-weight:600;color:#6B7280;display:block;margin-bottom:6px;">Titre</label>'
+    + '<input type="text" id="feed-title" value="' + escapeHtml(titleVal) + '" placeholder="Titre du post..." style="width:100%;padding:8px 10px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box;">'
+    + '</div>'
+
+    // Description with char count
+    + '<div style="margin-bottom:14px;">'
+    + '<label style="font-size:12px;font-weight:600;color:#6B7280;display:block;margin-bottom:6px;">Description</label>'
+    + '<textarea id="feed-desc" rows="4" placeholder="Description du post..." oninput="var c=this.value.length;document.getElementById(\'feed-char-count\').textContent=c+\'/2200\';document.getElementById(\'feed-char-count\').style.color=c>2200?\'#EF4444\':\'#9CA3AF\';" style="width:100%;padding:8px 10px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;box-sizing:border-box;">' + escapeHtml(descVal) + '</textarea>'
+    + '<div id="feed-char-count" style="text-align:right;font-size:11px;color:' + (charCount > 2200 ? '#EF4444' : '#9CA3AF') + ';margin-top:4px;">' + charCount + '/2200</div>'
+    + '</div>'
+
+    // Hashtags
+    + '<div style="margin-bottom:14px;">'
+    + '<label style="font-size:12px;font-weight:600;color:#6B7280;display:block;margin-bottom:6px;">Hashtags</label>'
+    + '<input type="text" id="feed-hashtags" value="' + escapeHtml(hashVal) + '" placeholder="#mode #lifestyle #inspiration" oninput="updateHashPreview()" style="width:100%;padding:8px 10px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box;">'
+    + '<div id="feed-hash-preview" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:2px;"></div>'
+    + '</div>'
+
+    // Done checkbox
+    + '<div style="margin-bottom:18px;display:flex;align-items:center;gap:8px;">'
+    + '<input type="checkbox" id="feed-done"' + (doneVal ? ' checked' : '') + ' style="width:16px;height:16px;accent-color:#8B5CF6;">'
+    + '<label for="feed-done" style="font-size:13px;color:#374151;cursor:pointer;">Marquer comme fait</label>'
+    + '</div>'
+
+    // Action buttons
+    + '<div style="display:flex;gap:8px;justify-content:flex-end;">'
+    + (isEdit ? '<button onclick="deleteFeedPost()" style="padding:8px 16px;border-radius:8px;border:1.5px solid #FCA5A5;background:#FEF2F2;color:#EF4444;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;margin-right:auto;">Supprimer</button>' : '')
+    + '<button onclick="closeFeedModal()" style="padding:8px 16px;border-radius:8px;border:1.5px solid #E5E7EB;background:#F9FAFB;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Annuler</button>'
+    + '<button onclick="saveFeedPost()" style="padding:8px 16px;border-radius:8px;border:none;background:#8B5CF6;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Enregistrer</button>'
+    + '</div>';
+
+  // Render into dedicated feed-modal
+  var body = document.getElementById('feed-modal-body');
+  if (body) body.innerHTML = html;
+  var modal = document.getElementById('feed-modal');
+  if (modal) modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+
+  // Render hash preview after modal opens
+  setTimeout(function() { updateHashPreview(); }, 50);
+}
+
+function updateHashPreview() {
+  var input = document.getElementById('feed-hashtags');
+  var preview = document.getElementById('feed-hash-preview');
+  if (!input || !preview) return;
+
+  var val = input.value.trim();
+  if (!val) {
+    preview.innerHTML = '';
+    return;
+  }
+  var tags = val.split(/[\s,]+/).filter(function(t) { return t; });
+  var html = '';
+  for (var i = 0; i < tags.length; i++) {
+    var tag = tags[i].charAt(0) === '#' ? tags[i] : '#' + tags[i];
+    html += '<span style="display:inline-block;background:#EDE9FE;color:#7C3AED;font-size:11px;padding:2px 8px;border-radius:12px;margin:2px;">' + escapeHtml(tag) + '</span>';
+  }
+  preview.innerHTML = html;
+}
+
+function closeFeedModal() {
+  feedEditIdx = null;
+  var modal = document.getElementById('feed-modal');
+  if (modal) modal.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+// ═══════════════════════════════════════════════
+//  Feed Media Upload
+// ═══════════════════════════════════════════════
+
+function handleFeedMediaUpload(event) {
+  var file = event.target.files && event.target.files[0];
+  if (!file) return;
+
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    var dataUrl = ev.target.result;
+    var preview = document.getElementById('feed-media-preview');
+
+    if (file.type.indexOf('video') === 0) {
+      // Store video data URL directly (no compression for video)
+      if (preview) {
+        preview.innerHTML = '<video src="' + dataUrl + '" style="width:100%;max-height:200px;object-fit:contain;border-radius:8px;" controls muted></video>';
+      }
+      preview.setAttribute('data-media', dataUrl);
+    } else {
+      // Compress image
+      compressImage(dataUrl, function(compressed) {
+        if (preview) {
+          preview.innerHTML = '<img src="' + compressed + '" style="width:100%;max-height:200px;object-fit:contain;border-radius:8px;" alt="">';
+          preview.setAttribute('data-media', compressed);
+        }
+      });
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+// ═══════════════════════════════════════════════
+//  Save / Delete Feed Post
+// ═══════════════════════════════════════════════
+
+function saveFeedPost() {
+  var title = (document.getElementById('feed-title') || {}).value || '';
+  var date = (document.getElementById('feed-date') || {}).value || '';
+  var format = (document.getElementById('feed-format') || {}).value || '';
+  var desc = (document.getElementById('feed-desc') || {}).value || '';
+  var hashtags = (document.getElementById('feed-hashtags') || {}).value || '';
+  var done = (document.getElementById('feed-done') || {}).checked || false;
+
+  // Get media from preview data attribute or from existing post
+  var mediaPreview = document.getElementById('feed-media-preview');
+  var media = null;
+  if (mediaPreview && mediaPreview.getAttribute('data-media')) {
+    media = mediaPreview.getAttribute('data-media');
+  } else if (feedEditIdx !== null && FEED_DATA[feedPlat] && FEED_DATA[feedPlat][feedEditIdx]) {
+    media = FEED_DATA[feedPlat][feedEditIdx].media || null;
+  }
+
+  var post = {
+    title: title,
+    date: date,
+    format: format,
+    description: desc,
+    hashtags: hashtags,
+    done: done,
+    media: media
+  };
+
+  if (!FEED_DATA[feedPlat]) FEED_DATA[feedPlat] = [];
+
+  if (feedEditIdx !== null && feedEditIdx < FEED_DATA[feedPlat].length) {
+    // Update existing
+    FEED_DATA[feedPlat][feedEditIdx] = post;
+  } else {
+    // Add new
+    FEED_DATA[feedPlat].push(post);
+  }
+
+  saveFeedData();
+  renderFeedGrid(feedPlat);
+  updateFeedCount();
+  closeFeedModal();
+  showSync('Post enregistre', null);
+}
+
+function deleteFeedPost() {
+  if (feedEditIdx === null) return;
+
+  askConfirm('Supprimer ce post du feed ?', function() {
+    if (FEED_DATA[feedPlat] && feedEditIdx < FEED_DATA[feedPlat].length) {
+      FEED_DATA[feedPlat].splice(feedEditIdx, 1);
+      saveFeedData();
+      renderFeedGrid(feedPlat);
+      updateFeedCount();
+    }
+    closeFeedModal();
+    showSync('Post supprime', null);
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  IG Profile
+// ═══════════════════════════════════════════════
+
+async function loadIgProfile() {
+  var prof = await cloudLoad('ig_profile', { handle: 'meryne.eis', bio: '', avatar: null, followers: null });
+  IG_PROFILE = prof;
+  if (!IG_PROFILE.handle) IG_PROFILE.handle = 'meryne.eis';
+
+  var hl = await cloudLoad('ig_highlights', []);
+  IG_HIGHLIGHTS = hl;
+  if (!Array.isArray(IG_HIGHLIGHTS)) IG_HIGHLIGHTS = [];
+}
+
+function saveIgProfile() {
+  cloudSave('ig_profile', IG_PROFILE);
+  cloudSave('ig_highlights', IG_HIGHLIGHTS);
+}
+
+// ═══════════════════════════════════════════════
+//  Highlights Rendering
+// ═══════════════════════════════════════════════
+
+function renderHighlights() {
+  // Render avatar
+  var avatarEl = document.getElementById('ig-avatar-img');
+  if (avatarEl) {
+    if (IG_PROFILE.avatar) {
+      avatarEl.innerHTML = '<img src="' + IG_PROFILE.avatar + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">';
+    } else {
+      avatarEl.innerHTML = '<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#667EEA,#764BA2);display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:700;">' + escapeHtml(IG_PROFILE.handle.charAt(0).toUpperCase()) + '</div>';
+    }
+  }
+
+  // Render bio
+  var bioEl = document.getElementById('ig-bio-display');
+  if (bioEl && IG_PROFILE.bio) {
+    bioEl.innerHTML = '<strong>' + escapeHtml(IG_PROFILE.handle) + '</strong><br>' + escapeHtml(IG_PROFILE.bio);
+  }
+
+  // Render followers
+  var followersEl = document.getElementById('ig-followers-count');
+  if (followersEl && IG_PROFILE.followers !== null) {
+    followersEl.textContent = IG_PROFILE.followers.toLocaleString('fr-FR');
+  }
+
+  // Render highlights row
+  var hlContainer = document.getElementById('ig-highlights-row');
+  if (!hlContainer) return;
+
+  var html = '';
+  for (var i = 0; i < IG_HIGHLIGHTS.length; i++) {
+    var hl = IG_HIGHLIGHTS[i];
+    var cover = '';
+    if (hl.media) {
+      cover = '<img src="' + hl.media + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">';
+    } else {
+      cover = '<div style="width:100%;height:100%;border-radius:50%;background:#F3F4F6;display:flex;align-items:center;justify-content:center;color:#D1D5DB;font-size:18px;">+</div>';
+    }
+
+    html += '<div onclick="editHighlight(' + i + ')" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;flex-shrink:0;">'
+      + '<div style="width:56px;height:56px;border-radius:50%;border:2px solid #E5E7EB;padding:2px;background:#fff;">'
+      + '<div style="width:100%;height:100%;border-radius:50%;overflow:hidden;">' + cover + '</div>'
+      + '</div>'
+      + '<span style="font-size:10px;color:#374151;max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;">' + escapeHtml(hl.label || '') + '</span>'
+      + '</div>';
+  }
+
+  // Add new highlight button
+  html += '<div onclick="addHighlight()" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;flex-shrink:0;">'
+    + '<div style="width:56px;height:56px;border-radius:50%;border:2px dashed #D1D5DB;display:flex;align-items:center;justify-content:center;background:#FAFAFA;transition:border-color .2s;"'
+    + ' onmouseenter="this.style.borderColor=\'#8B5CF6\'" onmouseleave="this.style.borderColor=\'#D1D5DB\'">'
+    + '<span style="font-size:22px;color:#9CA3AF;line-height:1;">+</span>'
+    + '</div>'
+    + '<span style="font-size:10px;color:#9CA3AF;">Ajouter</span>'
+    + '</div>';
+
+  hlContainer.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════
+//  Highlight CRUD (uses generic modal)
+// ═══════════════════════════════════════════════
+
+function addHighlight() {
+  openHighlightModal(null);
+}
+
+function editHighlight(i) {
+  openHighlightModal(i);
+}
+
+function openHighlightModal(idx) {
+  var isEdit = idx !== null && idx !== undefined;
+  var hl = isEdit ? IG_HIGHLIGHTS[idx] || {} : {};
+  var labelVal = hl.label || '';
+  var mediaPreview = '';
+
+  if (hl.media) {
+    mediaPreview = '<img src="' + hl.media + '" style="width:64px;height:64px;object-fit:cover;border-radius:50%;" alt="">';
+  }
+
+  var html = '<button class="modal-x" onclick="closeModal()">&times;</button>'
+    + '<h2>' + (isEdit ? 'Modifier la story' : 'Nouvelle story a la une') + '</h2>'
+
+    // Media
+    + '<div style="margin-bottom:14px;text-align:center;">'
+    + '<div id="hl-media-preview" style="margin-bottom:8px;display:inline-block;">' + mediaPreview + '</div>'
+    + '<div><input type="file" id="hl-media-input" accept="image/*" onchange="handleHlMedia(event)" style="font-size:12px;"></div>'
+    + '</div>'
+
+    // Label
+    + '<div style="margin-bottom:18px;">'
+    + '<label style="font-size:12px;font-weight:600;color:#6B7280;display:block;margin-bottom:6px;">Label</label>'
+    + '<input type="text" id="hl-label" value="' + escapeHtml(labelVal) + '" placeholder="Nom de la story..." maxlength="20" style="width:100%;padding:8px 10px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box;">'
+    + '</div>'
+
+    // Actions
+    + '<div style="display:flex;gap:8px;justify-content:flex-end;">'
+    + (isEdit ? '<button onclick="deleteHighlight(' + idx + ')" style="padding:8px 16px;border-radius:8px;border:1.5px solid #FCA5A5;background:#FEF2F2;color:#EF4444;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;margin-right:auto;">Supprimer</button>' : '')
+    + '<button onclick="closeModal()" style="padding:8px 16px;border-radius:8px;border:1.5px solid #E5E7EB;background:#F9FAFB;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Annuler</button>'
+    + '<button onclick="saveHighlight(' + (isEdit ? idx : 'null') + ')" style="padding:8px 16px;border-radius:8px;border:none;background:#8B5CF6;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Enregistrer</button>'
+    + '</div>';
+
+  openModal(html);
+}
+
+function handleHlMedia(ev) {
+  var file = ev.target.files && ev.target.files[0];
+  if (!file) return;
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var dataUrl = e.target.result;
+    compressImage(dataUrl, function(compressed) {
+      var preview = document.getElementById('hl-media-preview');
+      if (preview) {
+        preview.innerHTML = '<img src="' + compressed + '" style="width:64px;height:64px;object-fit:cover;border-radius:50%;" alt="">';
+        preview.setAttribute('data-media', compressed);
+      }
+    });
+  };
+  reader.readAsDataURL(file);
+}
+
+function saveHighlight(idx) {
+  var label = (document.getElementById('hl-label') || {}).value || '';
+  var preview = document.getElementById('hl-media-preview');
+  var media = null;
+
+  if (preview && preview.getAttribute('data-media')) {
+    media = preview.getAttribute('data-media');
+  } else if (idx !== null && IG_HIGHLIGHTS[idx]) {
+    media = IG_HIGHLIGHTS[idx].media || null;
+  }
+
+  var hl = { label: label, media: media };
+
+  if (idx !== null && idx < IG_HIGHLIGHTS.length) {
+    IG_HIGHLIGHTS[idx] = hl;
+  } else {
+    IG_HIGHLIGHTS.push(hl);
+  }
+
+  saveIgProfile();
+  renderHighlights();
+  closeModal();
+  showSync('Story enregistree', null);
+}
+
+function deleteHighlight(idx) {
+  askConfirm('Supprimer cette story a la une ?', function() {
+    if (idx < IG_HIGHLIGHTS.length) {
+      IG_HIGHLIGHTS.splice(idx, 1);
+      saveIgProfile();
+      renderHighlights();
+    }
+    closeModal();
+    showSync('Story supprimee', null);
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  IG Profile Modal (uses generic modal)
+// ═══════════════════════════════════════════════
+
+function openIgProfileModal() {
+  var avatarPreview = '';
+  if (IG_PROFILE.avatar) {
+    avatarPreview = '<img src="' + IG_PROFILE.avatar + '" style="width:72px;height:72px;object-fit:cover;border-radius:50%;" alt="">';
+  } else {
+    avatarPreview = '<div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#667EEA,#764BA2);display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:700;">' + escapeHtml(IG_PROFILE.handle.charAt(0).toUpperCase()) + '</div>';
+  }
+
+  var html = '<button class="modal-x" onclick="closeModal()">&times;</button>'
+    + '<h2>Profil Instagram</h2>'
+
+    // Avatar
+    + '<div style="margin-bottom:16px;text-align:center;">'
+    + '<div id="ig-avatar-preview" style="display:inline-block;margin-bottom:8px;">' + avatarPreview + '</div>'
+    + '<div><input type="file" id="ig-avatar-input" accept="image/*" onchange="handleAvatarUpload(event)" style="font-size:12px;"></div>'
+    + '</div>'
+
+    // Handle
+    + '<div class="fr"><label>Nom d\'utilisateur</label>'
+    + '<input type="text" id="ig-handle-input" value="' + escapeHtml(IG_PROFILE.handle) + '" placeholder="@handle"></div>'
+
+    // Bio
+    + '<div class="fr"><label>Bio</label>'
+    + '<textarea id="ig-bio-input" rows="3" placeholder="Votre bio Instagram...">' + escapeHtml(IG_PROFILE.bio || '') + '</textarea></div>'
+
+    // Followers
+    + '<div class="fr"><label>Abonnes</label>'
+    + '<input type="number" id="ig-followers-input" value="' + (IG_PROFILE.followers !== null ? IG_PROFILE.followers : '') + '" placeholder="Nombre d\'abonnes"></div>'
+
+    // Actions
+    + '<div class="modal-acts">'
+    + '<button class="btn-s" onclick="closeModal()">Annuler</button>'
+    + '<button class="btn-p" onclick="saveIgProfileModal()">Enregistrer</button>'
+    + '</div>';
+
+  openModal(html);
+}
+
+function handleAvatarUpload(ev) {
+  var file = ev.target.files && ev.target.files[0];
+  if (!file) return;
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var dataUrl = e.target.result;
+    compressImage(dataUrl, function(compressed) {
+      var preview = document.getElementById('ig-avatar-preview');
+      if (preview) {
+        preview.innerHTML = '<img src="' + compressed + '" style="width:72px;height:72px;object-fit:cover;border-radius:50%;" alt="">';
+        preview.setAttribute('data-avatar', compressed);
+      }
+    });
+  };
+  reader.readAsDataURL(file);
+}
+
+function saveIgProfileModal() {
+  var handle = (document.getElementById('ig-handle-input') || {}).value || 'meryne.eis';
+  var bio = (document.getElementById('ig-bio-input') || {}).value || '';
+  var followersVal = (document.getElementById('ig-followers-input') || {}).value;
+  var followers = followersVal ? parseInt(followersVal, 10) : null;
+
+  // Get avatar from preview data attribute or keep existing
+  var preview = document.getElementById('ig-avatar-preview');
+  if (preview && preview.getAttribute('data-avatar')) {
+    IG_PROFILE.avatar = preview.getAttribute('data-avatar');
+  }
+
+  IG_PROFILE.handle = handle;
+  IG_PROFILE.bio = bio;
+  IG_PROFILE.followers = isNaN(followers) ? null : followers;
+
+  saveIgProfile();
+  renderHighlights();
+  closeModal();
+  showSync('Profil mis a jour', null);
+}
