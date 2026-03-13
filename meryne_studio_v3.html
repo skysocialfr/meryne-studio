@@ -1,0 +1,1798 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>meryne.eis — Studio</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --rose:#FF2D7A;--violet:#7C3AED;--tt:#FF004F;--ig:#C13584;
+  --cyan:#06B6D4;--green:#059669;--amber:#F59E0B;--red:#EF4444;
+  --bord:#E5E7EB;--surf:#F8F8FA;--muted:#6B7280;--ink:#18181B;
+  --dark:#0A0A14;
+}
+body{font-family:'DM Sans',sans-serif;background:#F4F4F6;color:var(--ink);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased;}
+::-webkit-scrollbar{width:4px;height:4px;}::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:99px;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+
+/* ═══ LOGIN ═══ */
+#login-page{position:fixed;inset:0;background:var(--dark);display:flex;align-items:center;justify-content:center;z-index:999;padding:20px;}
+#login-page::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 70% at 20% 60%,rgba(255,45,122,.18),transparent 55%),radial-gradient(ellipse 50% 60% at 80% 30%,rgba(124,58,237,.15),transparent 50%);pointer-events:none;}
+.lbox{position:relative;width:100%;max-width:360px;animation:fadeUp .4s ease;}
+.llogo{font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:700;color:#fff;text-align:center;margin-bottom:4px;letter-spacing:-.3px;}
+.llogo em{color:var(--rose);font-style:italic;}
+.lsub{text-align:center;font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.25);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:32px;}
+.lf{margin-bottom:12px;}
+.lf label{display:block;font-size:9px;font-weight:700;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px;}
+.lf input{width:100%;padding:11px 14px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.1);border-radius:10px;color:#fff;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .18s;}
+.lf input:focus{border-color:var(--rose);}
+.lbtn{width:100%;padding:12px;background:var(--rose);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;margin-top:4px;transition:opacity .18s,transform .15s;}
+.lbtn:hover{opacity:.88;transform:translateY(-1px);}
+.lerr{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:9px 13px;font-size:12px;color:#FCA5A5;margin-top:10px;text-align:center;opacity:0;transition:opacity .2s;}
+.lerr.show{opacity:1;animation:shake .35s ease;}
+
+/* ═══ APP ═══ */
+#app{display:none;min-height:100vh;}
+/* ═══ DATE/TIME INPUTS ═══ */
+input[type="date"],input[type="time"]{background:#fff;border:1.5px solid var(--bord);border-radius:9px;padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);outline:none;width:100%;cursor:pointer;transition:border-color .15s;}
+input[type="date"]:focus,input[type="time"]:focus{border-color:var(--rose);}
+input[type="date"]::-webkit-calendar-picker-indicator{cursor:pointer;opacity:.5;}
+#sync-indicator{position:fixed;top:12px;right:12px;z-index:9999;font-size:11px;font-weight:700;padding:5px 12px;border-radius:20px;background:rgba(5,150,105,.12);color:#059669;opacity:0;transition:opacity .4s;pointer-events:none;font-family:'DM Mono',monospace;letter-spacing:.3px;}
+.supa-setup-banner{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#0A0A14;color:#fff;padding:12px 20px;border-radius:12px;font-size:12px;font-weight:600;z-index:9998;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,.3);border:1px solid rgba(255,45,122,.3);max-width:340px;line-height:1.6;}
+.supa-setup-banner a{color:var(--rose);text-decoration:none;font-weight:700;}
+
+/* ═══ HEADER ═══ */
+.hdr{background:var(--dark);position:relative;overflow:hidden;}
+.hdr::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 55% 90% at 15% 60%,rgba(255,45,122,.16),transparent 55%),radial-gradient(ellipse 45% 70% at 85% 25%,rgba(124,58,237,.13),transparent 50%);pointer-events:none;}
+.hdr-inner{position:relative;max-width:1020px;margin:0 auto;padding:14px 20px;}
+.hdr-main{display:flex;align-items:center;gap:12px;}
+.hdr-left{flex-shrink:0;}
+.hdr-eyebrow{font-family:'DM Mono',monospace;font-size:8px;color:rgba(255,255,255,.28);letter-spacing:2px;text-transform:uppercase;margin-bottom:2px;}
+.hdr-brand{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;color:#fff;letter-spacing:-.3px;line-height:1;}
+.hdr-brand em{color:var(--rose);font-style:italic;}
+.hdr-sub{font-size:10px;color:rgba(255,255,255,.3);margin-top:2px;}
+.hdr-center{flex:1;overflow:hidden;}
+.kpi-row{display:flex;gap:5px;flex-wrap:nowrap;overflow-x:auto;}
+.kpi{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:9px;padding:7px 11px;flex-shrink:0;}
+.kl{font-size:8px;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:1px;font-weight:600;}
+.kv{font-size:14px;font-weight:800;font-family:'DM Mono',monospace;line-height:1;}
+.hdr-right{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.hdr-goals{display:flex;align-items:center;gap:8px;}
+.hdr-goal{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:9px;padding:6px 10px;}
+.hdr-goal svg{width:14px;height:14px;color:rgba(255,255,255,.4);}
+.hg-label{font-family:'DM Mono',monospace;font-size:8px;color:rgba(255,255,255,.3);letter-spacing:.5px;text-transform:uppercase;}
+.hg-val{font-size:13px;font-weight:800;color:#fff;font-family:'DM Mono',monospace;line-height:1.1;}
+.hdr-goal-sep{width:1px;height:20px;background:rgba(255,255,255,.08);}
+.logout-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:rgba(255,255,255,.4);padding:7px 9px;cursor:pointer;transition:all .18s;display:flex;align-items:center;}
+.logout-btn:hover{color:#fff;border-color:rgba(255,255,255,.25);}
+
+/* ═══ BOTTOM NAV ═══ */
+.bnav{background:rgba(255,255,255,.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid rgba(0,0,0,.07);position:fixed;bottom:0;left:0;right:0;z-index:200;box-shadow:0 -4px 24px rgba(0,0,0,.09);padding-bottom:env(safe-area-inset-bottom,0px);}
+.bnav-inner{max-width:600px;margin:0 auto;display:flex;padding:0;}
+.bnav-inner::-webkit-scrollbar{display:none;}
+.bnt{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;flex:1;padding:8px 4px 10px;font-size:9.5px;font-weight:700;letter-spacing:.3px;color:#9CA3AF;border:none;background:transparent;cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif;transition:all .18s;text-transform:uppercase;}
+.bnt svg{width:20px;height:20px;flex-shrink:0;transition:transform .18s;}
+.bnt:hover{color:var(--ink);}
+.bnt.active{color:var(--rose);}
+.bnt.active svg{transform:translateY(-1px);}
+#app{padding-bottom:72px;}
+
+/* ═══ CONTENT ═══ */
+.cwrap{max-width:1020px;margin:0 auto;padding:18px 16px;}
+.tab-panel{display:none;animation:fadeUp .22s ease;}
+.tab-panel.active{display:block;}
+
+/* ═══ MODAL SYSTEM ═══ */
+#modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:none;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);}
+#modal-overlay.open{display:flex;animation:fadeIn .18s ease;}
+.modal-box{background:#fff;border-radius:16px;width:100%;max-width:560px;max-height:88vh;overflow-y:auto;padding:22px;position:relative;animation:fadeUp .2s ease;box-shadow:0 20px 60px rgba(0,0,0,.18);}
+.modal-x{position:absolute;top:14px;right:14px;background:none;border:none;font-size:18px;cursor:pointer;color:#aaa;line-height:1;padding:4px;}
+.modal-x:hover{color:var(--ink);}
+.modal-box h2{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;margin-bottom:16px;color:var(--ink);}
+.fr{margin-bottom:12px;}
+.fr label{display:block;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}
+.fr input,.fr select,.fr textarea{width:100%;padding:9px 12px;border:1.5px solid var(--bord);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--ink);background:#fff;outline:none;transition:border-color .15s;}
+.fr input:focus,.fr select:focus,.fr textarea:focus{border-color:var(--rose);}
+.fr textarea{resize:vertical;min-height:72px;}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:0;}
+.fg .fr{margin-bottom:12px;}
+hr.sep{border:none;border-top:1.5px solid var(--bord);margin:14px 0;}
+.shot-edit{display:grid;grid-template-columns:68px 1fr auto;gap:8px;align-items:start;margin-bottom:8px;}
+.shot-edit-n{font-family:'DM Mono',monospace;font-size:9px;color:var(--rose);background:rgba(255,45,122,.08);border:1px solid rgba(255,45,122,.2);padding:4px 6px;border-radius:6px;text-align:center;margin-top:2px;}
+.shot-edit textarea{background:rgba(124,58,237,.03);border:1.5px solid rgba(124,58,237,.15);border-radius:7px;color:var(--ink);padding:7px 9px;font-size:12px;font-family:'DM Sans',sans-serif;resize:vertical;width:100%;outline:none;min-height:44px;}
+.shot-edit textarea:focus{border-color:var(--violet);}
+.shot-edit-del{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:var(--red);border-radius:6px;padding:4px 8px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;margin-top:2px;}
+.add-btn{width:100%;margin-top:6px;padding:8px;background:transparent;border:1.5px dashed var(--bord);border-radius:8px;color:var(--muted);font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;}
+.add-btn:hover{border-color:var(--rose);color:var(--rose);}
+.modal-acts{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:14px;border-top:1.5px solid var(--bord);flex-wrap:wrap;}
+.btn-s{padding:8px 16px;border-radius:8px;border:1.5px solid var(--bord);background:var(--surf);font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--muted);transition:all .15s;}
+.btn-s:hover{border-color:var(--ink);color:var(--ink);}
+.btn-p{padding:8px 18px;border-radius:8px;border:none;background:var(--rose);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;}
+.btn-p:hover{opacity:.88;}
+.btn-d{padding:8px 14px;border-radius:8px;border:none;background:rgba(239,68,68,.08);color:var(--red);font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;border:1px solid rgba(239,68,68,.2);margin-right:auto;transition:all .15s;}
+.btn-d:hover{background:rgba(239,68,68,.15);}
+
+/* FEED MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);}
+.modal-overlay.open{display:flex;}
+.modal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.modal-title{font-size:15px;font-weight:800;color:var(--ink);}
+.modal-close{background:none;border:none;font-size:18px;cursor:pointer;color:#aaa;padding:4px;}
+.modal-close:hover{color:var(--ink);}
+.fm-field{margin-bottom:12px;}
+.fm-label{display:block;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}
+.fm-input{width:100%;padding:9px 12px;border:1.5px solid var(--bord);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--ink);background:#fff;outline:none;transition:border-color .15s;}
+.fm-input:focus{border-color:var(--rose);}
+.fm-row{display:grid;grid-template-columns:1fr 2fr;gap:10px;}
+.fm-char{text-align:right;font-size:10px;color:var(--muted);margin-top:3px;}
+.fm-hashtags{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;}
+.fm-hashtag{font-size:10px;padding:2px 7px;background:rgba(124,58,237,.07);color:var(--violet);border-radius:5px;font-weight:600;}
+.fm-actions{display:flex;gap:8px;justify-content:flex-end;padding-top:12px;border-top:1.5px solid var(--bord);flex-wrap:wrap;}
+.fm-btn-save{padding:8px 18px;border-radius:8px;border:none;background:var(--rose);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.fm-btn-cancel{padding:8px 14px;border-radius:8px;border:1.5px solid var(--bord);background:var(--surf);font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--muted);}
+.fm-btn-del{padding:8px 14px;border-radius:8px;border:1px solid rgba(239,68,68,.2);background:rgba(239,68,68,.06);color:var(--red);font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;margin-right:auto;}
+.feed-modal-upload{border:2px dashed var(--bord);border-radius:12px;padding:24px;text-align:center;cursor:pointer;transition:all .15s;margin-bottom:14px;position:relative;overflow:hidden;min-height:160px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;}
+.feed-modal-upload:hover{border-color:var(--rose);background:rgba(255,45,122,.03);}
+.feed-modal-upload.has-media{padding:0;border-style:solid;}
+.feed-modal-upload img,.feed-modal-upload video{width:100%;max-height:220px;object-fit:cover;border-radius:10px;display:block;}
+.fmu-icon{font-size:28px;}
+.fmu-text{font-size:13px;font-weight:600;color:var(--ink);}
+.fmu-sub{font-size:10px;color:var(--muted);}
+.feed-modal-upload input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;}
+
+/* ═══ PRODUCTION ═══ */
+.prod-toolbar{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
+.prod-header{background:#fff;border:1.5px solid var(--bord);border-radius:12px;padding:13px 16px;margin-bottom:10px;}
+.ph-row{display:flex;justify-content:space-between;margin-bottom:5px;font-size:12px;}
+.pb-outer{background:#F0F0F0;border-radius:99px;height:4px;overflow:hidden;}
+.pb-inner{height:100%;border-radius:99px;transition:width .4s ease;background:var(--amber);}
+.add-row{margin-bottom:10px;}
+.add-btn-main{display:flex;align-items:center;gap:6px;padding:8px 14px;border:1.5px dashed #D1D5DB;border-radius:9px;background:transparent;color:#9CA3AF;font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;}
+.add-btn-main:hover{border-color:var(--rose);color:var(--rose);}
+.prod-card{background:#fff;border:1.5px solid var(--bord);border-radius:12px;margin-bottom:7px;overflow:hidden;transition:box-shadow .18s;}
+.prod-card:hover{box-shadow:0 3px 14px rgba(0,0,0,.07);}
+.prod-card.done{background:#F0FDF4;border-color:rgba(5,150,105,.2);}
+.prod-card.lt{border-color:rgba(255,45,122,.3);}
+.pc-main{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;}
+.pc-chk{width:20px;height:20px;border-radius:5px;border:2px solid #D1D5DB;background:transparent;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:all .18s;margin-top:2px;}
+.pc-chk.on{background:var(--green);border-color:var(--green);}
+.pc-body{flex:1;}
+.pc-meta{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-bottom:3px;}
+.pc-date{font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);}
+.tag{font-size:9px;padding:2px 7px;border-radius:4px;font-weight:600;}
+.tg-amber{background:#FFFBEB;color:#92400E;}
+.tg-rose{background:#FFF5F9;color:#BE185D;}
+.tg-green{background:#DCFCE7;color:#166534;}
+.tg-cyan{background:rgba(6,182,212,.08);color:var(--cyan);}
+.pc-title{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:2px;}
+.pc-title.done{text-decoration:line-through;color:var(--green);}
+.pc-desc{font-size:11px;color:var(--muted);margin-bottom:5px;}
+.pc-actions{display:flex;gap:5px;flex-wrap:wrap;}
+.sb{font-size:10px;font-weight:700;padding:4px 10px;border-radius:7px;cursor:pointer;border:1.5px solid var(--bord);background:var(--surf);color:var(--muted);font-family:'DM Sans',sans-serif;transition:all .15s;white-space:nowrap;}
+.sb-edit{color:var(--violet);border-color:rgba(124,58,237,.2);background:rgba(124,58,237,.05);}
+.sb-edit:hover{background:rgba(124,58,237,.12);}
+.sb-del{color:#EF4444;border-color:rgba(239,68,68,.15);background:rgba(239,68,68,.04);}
+.sb-del:hover{background:rgba(239,68,68,.1);}
+.sb-script{color:var(--cyan);border-color:rgba(6,182,212,.2);background:rgba(6,182,212,.04);}
+.sb-script:hover{background:rgba(6,182,212,.12);}
+
+/* Script panel - prod */
+.prod-script-panel{overflow:hidden;max-height:0;opacity:0;transition:max-height .35s ease,opacity .3s ease;}
+.prod-script-panel.open{max-height:800px;opacity:1;}
+.psp-inner{margin:0 14px 12px;padding:14px 16px;background:var(--dark);border-radius:10px;}
+.psp-hdr{display:flex;align-items:center;gap:6px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.07);}
+.psp-dots{display:flex;gap:5px;}
+.psp-dot{width:9px;height:9px;border-radius:50%;}
+.psp-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;color:rgba(255,255,255,.25);text-transform:uppercase;}
+.psp-head{font-size:10px;font-weight:700;color:var(--rose) !important;letter-spacing:.5px;margin-bottom:10px;font-family:'DM Mono',monospace;}
+.psp-shot{display:grid;grid-template-columns:52px 1fr;gap:10px;margin-bottom:8px;align-items:start;}
+.psp-n{font-family:'DM Mono',monospace;font-size:9px;color:var(--rose);background:rgba(255,45,122,.1);border:1px solid rgba(255,45,122,.2);padding:3px 5px;border-radius:5px;text-align:center;line-height:1.4;}
+.psp-d{font-size:12px;color:#D1D5DB !important;line-height:1.55;}
+
+/* ═══ PLANNING ═══ */
+#filter-bar{display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-bottom:12px;}
+.fb-label{font-size:10px;color:#9CA3AF;font-weight:600;}
+.fb-sep{width:1px;height:14px;background:var(--bord);margin:0 2px;}
+.fb-btn{padding:4px 10px;border-radius:6px;border:1.5px solid var(--bord);background:#fff;color:var(--muted);font-size:10px;font-weight:600;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;}
+.fb-btn.a-sem{border-color:var(--rose);background:var(--rose);color:#fff;}
+.fb-btn.a-plat{border-color:var(--violet);background:var(--violet);color:#fff;}
+.week-hdr{background:#fff;border-left:4px solid;border-radius:0 10px 10px 0;border-top:1px solid var(--bord);border-right:1px solid var(--bord);border-bottom:1px solid var(--bord);padding:8px 13px;margin-bottom:7px;display:flex;justify-content:space-between;align-items:center;}
+.wn{font-size:13px;font-weight:800;}
+.wd{font-size:10px;color:var(--muted);margin-left:5px;}
+.wdesc{font-size:10px;color:#C4C4C4;}
+.wcnt{font-size:11px;font-weight:700;color:var(--muted);}
+.pub-card{background:#fff;border:1.5px solid var(--bord);border-radius:14px;margin-bottom:9px;overflow:hidden;transition:box-shadow .18s,border-color .18s;}
+.pub-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.07);}
+.pub-card.done{background:#F0FDF4;border-color:rgba(5,150,105,.2);}
+.pub-card.lc{border-left:3px solid var(--rose);}
+.pub-top{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;}
+.pub-chk{width:20px;height:20px;border-radius:6px;border:2px solid #D1D5DB;background:transparent;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:all .18s;margin-top:2px;}
+.pub-chk.on{background:var(--green);border-color:var(--green);}
+.pub-body{flex:1;min-width:0;}
+.pub-meta{display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-bottom:5px;}
+.badge{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;letter-spacing:.4px;text-transform:uppercase;white-space:nowrap;}
+.b-tt{background:rgba(255,0,79,.07);color:var(--tt);border:1px solid rgba(255,0,79,.18);}
+.b-ig{background:rgba(193,53,132,.07);color:var(--ig);border:1px solid rgba(193,53,132,.18);}
+.b-st{background:rgba(124,58,237,.07);color:var(--violet);border:1px solid rgba(124,58,237,.18);}
+.b-launch{background:var(--rose);color:#fff;}
+.fmt-t{font-size:9px;color:var(--muted);background:#F4F4F5;padding:2px 7px;border-radius:4px;}
+.time-t{font-size:9px;color:var(--muted);font-family:'DM Mono',monospace;}
+.pub-title-main{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:3px;line-height:1.4;}
+.pub-date-inline{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);font-weight:600;}
+.pub-son{font-size:10px;color:#9CA3AF;font-style:italic;margin-bottom:5px;}
+.pub-actions{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px;}
+.pub-btns{display:flex;gap:4px;flex-wrap:wrap;}
+.src-t{font-size:9px;color:#C4C4C4;}
+
+/* Script panel - pub */
+.pub-script-panel{display:none;background:var(--dark);border-top:1px solid rgba(255,255,255,.07);}
+.pub-script-panel.open{display:block;}
+.psp-pub-head{font-family:'DM Mono',monospace;font-size:9px;font-weight:700;color:var(--rose) !important;letter-spacing:1.5px;text-transform:uppercase;padding:10px 14px 6px;}
+.psp-pub-shot{display:grid;grid-template-columns:44px 1fr;gap:8px;padding:4px 14px;align-items:start;}
+.psp-pub-n{font-family:'DM Mono',monospace;font-size:8px;font-weight:700;color:var(--rose) !important;background:rgba(255,45,122,.15);border:1px solid rgba(255,45,122,.3);padding:3px 5px;border-radius:4px;text-align:center;white-space:nowrap;}
+.psp-pub-d{font-size:11px;color:#D1D5DB !important;line-height:1.65;}
+.psp-pub-foot{font-size:9px;color:rgba(255,255,255,.3);padding:6px 14px 10px;font-style:italic;}
+
+/* Stats panel */
+.stats-panel{overflow:hidden;max-height:0;transition:max-height .35s ease;}
+.stats-panel.open{max-height:340px;}
+.sp-inner{padding:12px 14px;background:rgba(124,58,237,.03);border-top:1px solid rgba(124,58,237,.1);}
+.sp-title{font-size:9px;font-weight:700;color:var(--violet);letter-spacing:.8px;text-transform:uppercase;margin-bottom:9px;}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px;margin-bottom:7px;}
+.sf label{display:block;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;}
+.sf input{width:100%;padding:5px 7px;background:#fff;border-radius:6px;border:1.5px solid var(--bord);font-size:12px;font-weight:700;text-align:center;outline:none;transition:border-color .15s;font-family:'DM Mono',monospace;}
+.eng-row{display:flex;justify-content:space-between;background:#F9FAFB;border:1px solid var(--bord);border-radius:7px;padding:6px 10px;align-items:center;margin-top:6px;}
+.eng-v{font-size:17px;font-weight:800;font-family:'DM Mono',monospace;}
+
+/* View toggle */
+.plan-view-toggle{display:flex;background:#F0F0F3;border-radius:9px;padding:3px;gap:2px;}
+.pvt{display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:7px;border:none;background:transparent;font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--muted);transition:all .15s;}
+.pvt.active{background:#fff;color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.1);}
+.plan-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap;}
+
+/* ═══ PLANNING CALENDAR ═══ */
+.pcal-wrap{background:#fff;border-radius:14px;border:1.5px solid var(--bord);overflow:hidden;margin-top:4px;}
+.pcal-nav{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--bord);}
+.pcal-month{font-size:14px;font-weight:800;color:var(--ink);}
+.pcal-nav-btn{width:30px;height:30px;border-radius:8px;border:1.5px solid var(--bord);background:var(--surf);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s;color:var(--ink);}
+.pcal-nav-btn:hover{background:var(--rose);color:#fff;border-color:var(--rose);}
+.pcal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:0;}
+.pcal-dname{text-align:center;font-size:9px;font-weight:700;color:var(--muted);padding:8px 2px;text-transform:uppercase;letter-spacing:.5px;background:#FAFAFA;border-bottom:1px solid var(--bord);}
+.pcal-cell{min-height:72px;padding:5px 4px;border-right:1px solid #F0F0F3;border-bottom:1px solid #F0F0F3;cursor:pointer;transition:background .12s;position:relative;}
+.pcal-cell:nth-child(7n){border-right:none;}
+.pcal-cell:hover{background:#FFF5F9;}
+.pcal-cell.today{background:rgba(255,45,122,.04);}
+.pcal-cell.today .pcal-day{color:var(--rose);}
+.pcal-cell.other-month{background:#FAFAFA;pointer-events:none;}
+.pcal-cell.other-month .pcal-day{color:#D1D5DB;}
+.pcal-day{font-size:11px;font-weight:700;color:#374151;margin-bottom:3px;line-height:1;}
+.today-badge{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;background:var(--rose);color:#fff;border-radius:50%;font-size:10px;font-weight:800;}
+.pcal-pip{font-size:7.5px;font-weight:700;padding:2px 4px;border-radius:3px;margin-bottom:1.5px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;display:block;transition:opacity .12s;}
+.pcal-pip:hover{opacity:.75;}
+.pcal-pip.ig{background:rgba(193,53,132,.1);color:#C13584;border-left:2px solid #C13584;}
+.pcal-pip.tt{background:rgba(255,0,79,.1);color:#FF004F;border-left:2px solid #FF004F;}
+.pcal-pip.st{background:rgba(124,58,237,.1);color:#7C3AED;border-left:2px solid #7C3AED;}
+.pcal-pip.done{opacity:.5;text-decoration:line-through;}
+
+/* PROD CALENDAR */
+.ecal-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;flex-wrap:wrap;}
+.ecal-add-btn{display:flex;align-items:center;gap:5px;padding:7px 14px;border-radius:9px;border:none;background:var(--rose);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.ecal-nav{display:flex;align-items:center;gap:8px;}
+.ecal-month{font-size:15px;font-weight:800;color:var(--ink);}
+.ecal-nav-btn{background:#fff;border:1.5px solid var(--bord);border-radius:8px;padding:5px 10px;cursor:pointer;font-size:14px;transition:all .15s;}
+.ecal-nav-btn:hover{border-color:var(--rose);}
+.ecal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.ecal-dname{text-align:center;font-size:9px;font-weight:700;color:var(--muted);padding:4px 0;text-transform:uppercase;letter-spacing:.5px;}
+.ecal-cell{background:#fff;border:1.5px solid var(--bord);border-radius:9px;min-height:72px;padding:5px 4px;cursor:pointer;transition:border-color .15s;}
+.ecal-cell:hover{border-color:var(--rose);}
+.ecal-cell.today{border-color:var(--rose);background:rgba(255,45,122,.02);}
+.ecal-cell.other-month{background:#FAFAFA;opacity:.4;pointer-events:none;}
+.ecal-day{font-size:10px;font-weight:700;color:var(--muted);margin-bottom:3px;}
+.ecal-cell.today .ecal-day-num{background:var(--rose);color:#fff;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:9px;}
+.ecal-event{font-size:9px;font-weight:600;padding:2px 5px;border-radius:4px;margin-bottom:2px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;display:block;}
+.ecal-event.type-prod{background:rgba(245,158,11,.15);color:#92400E;border-left:2px solid #F59E0B;}
+.ecal-event.type-shoot{background:rgba(255,45,122,.12);color:#9D174D;border-left:2px solid var(--rose);}
+.ecal-event.type-event{background:rgba(124,58,237,.12);color:#4C1D95;border-left:2px solid var(--violet);}
+.ecal-event.type-collab{background:rgba(5,150,105,.12);color:#065F46;border-left:2px solid #059669;}
+.ecal-event.type-other{background:rgba(107,114,128,.1);color:#374151;border-left:2px solid #9CA3AF;}
+.ecal-more{font-size:8px;color:var(--muted);margin-top:1px;}
+.em-type-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+.em-type-btn{padding:7px 13px;border-radius:20px;border:2px solid var(--bord);font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;background:#fff;color:var(--muted);}
+.em-type-btn:hover{border-color:var(--ink);color:var(--ink);}
+.em-type-btn.type-prod.active{background:linear-gradient(135deg,#F59E0B,#FBBF24);border-color:#F59E0B;color:#fff;box-shadow:0 3px 10px rgba(245,158,11,.35);}
+.em-type-btn.type-shoot.active{background:linear-gradient(135deg,#FF2D7A,#FF6BA8);border-color:var(--rose);color:#fff;box-shadow:0 3px 10px rgba(255,45,122,.35);}
+.em-type-btn.type-event.active{background:linear-gradient(135deg,#7C3AED,#A78BFA);border-color:var(--violet);color:#fff;box-shadow:0 3px 10px rgba(124,58,237,.35);}
+.em-type-btn.type-collab.active{background:linear-gradient(135deg,#059669,#34D399);border-color:#059669;color:#fff;box-shadow:0 3px 10px rgba(5,150,105,.35);}
+.em-type-btn.type-other.active{background:linear-gradient(135deg,#6B7280,#9CA3AF);border-color:#9CA3AF;color:#fff;box-shadow:0 3px 10px rgba(107,114,128,.25);}
+.em-date-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+.em-time-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+
+/* ═══ FEED SECTION ═══ */
+.ig-profile-wrap{background:#fff;border-radius:12px;border:1.5px solid var(--bord);overflow:hidden;margin-bottom:14px;}
+.ig-profile-top{display:flex;gap:16px;padding:16px 16px 12px;align-items:flex-start;}
+.ig-avatar-wrap{flex-shrink:0;}
+.ig-avatar-ring{width:80px;height:80px;border-radius:50%;background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);padding:2.5px;}
+.ig-avatar{width:100%;height:100%;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.ig-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.ig-profile-info{flex:1;min-width:0;}
+.ig-handle-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;}
+.ig-handle{font-size:16px;font-weight:700;color:var(--ink);}
+.ig-edit-btn{font-size:11px;font-weight:700;padding:5px 12px;border-radius:8px;border:1.5px solid var(--bord);background:var(--surf);color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;}
+.ig-edit-btn:hover{border-color:var(--rose);color:var(--rose);}
+.ig-stats-row{display:flex;gap:16px;margin-bottom:8px;}
+.ig-stat{display:flex;flex-direction:column;align-items:center;gap:1px;}
+.ig-stat-n{font-size:14px;font-weight:800;color:var(--ink);font-family:'DM Mono',monospace;}
+.ig-stat-l{font-size:10px;color:var(--muted);}
+.ig-bio{font-size:12px;line-height:1.6;color:var(--ink);}
+.ig-highlights-row{display:flex;gap:12px;padding:10px 16px 14px;overflow-x:auto;scrollbar-width:none;border-top:1px solid var(--bord);}
+.ig-highlights-row::-webkit-scrollbar{display:none;}
+.ig-highlight,.ig-hl-add{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;flex-shrink:0;}
+.ig-hl-circle{width:58px;height:58px;border-radius:50%;background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);padding:2.5px;display:flex;align-items:center;justify-content:center;}
+.ig-hl-circle-inner{width:100%;height:100%;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;overflow:hidden;}
+.ig-hl-circle-inner img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.ig-hl-add-circle{background:#F4F4F5;border:1.5px dashed #C4C4C4;padding:0;}
+.ig-hl-label{font-size:10px;color:var(--ink);text-align:center;max-width:62px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ig-feed-tabs{display:flex;border-top:1px solid var(--bord);align-items:center;}
+.ig-feed-tab{flex:1;display:flex;justify-content:center;padding:11px;border:none;background:transparent;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:all .15s;}
+.ig-feed-tab:hover{color:var(--ink);}
+.ig-feed-tab.active{color:var(--ink);border-bottom-color:var(--ink);}
+.ig-feed-add-btn{display:flex;align-items:center;gap:5px;padding:7px 14px;margin:5px 12px 5px auto;border-radius:9px;border:none;background:var(--rose);color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;flex-shrink:0;}
+
+/* Feed grid with drag & drop */
+.feed-grid-wrap{background:#fff;border-radius:12px;border:1.5px solid var(--bord);overflow:hidden;}
+.feed-grid-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--bord);}
+.feed-grid-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+.feed-grid-hint{font-size:10px;color:#C4C4C4;font-style:italic;}
+.feed-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:#E5E5E5;}
+.feed-cell{position:relative;aspect-ratio:1;overflow:hidden;cursor:grab;background:#F3F4F6;transition:opacity .2s;}
+.feed-cell:active{cursor:grabbing;}
+.feed-cell.drag-over{outline:2.5px solid var(--rose);outline-offset:-2px;opacity:.7;}
+.feed-cell.dragging{opacity:.4;}
+.fc-media{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;}
+.fc-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#F3F4F6,#E9EAEC);}
+.fc-placeholder-emoji{font-size:clamp(20px,5vw,30px);}
+.fc-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.75) 0%,rgba(0,0,0,0) 50%);opacity:0;transition:opacity .2s;display:flex;flex-direction:column;justify-content:flex-end;padding:6px;}
+.feed-cell:hover .fc-overlay{opacity:1;}
+.fc-ov-title{font-size:9px;font-weight:700;color:#fff;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.fc-ov-meta{font-size:8px;color:rgba(255,255,255,.65);margin-top:1px;}
+.fc-pos{position:absolute;top:4px;left:4px;background:rgba(0,0,0,.55);color:#fff;font-size:8px;font-weight:700;padding:2px 5px;border-radius:4px;font-family:'DM Mono',monospace;}
+.fc-done-dot{position:absolute;top:5px;right:5px;width:8px;height:8px;border-radius:50%;border:1.5px solid rgba(255,255,255,.8);}
+.fc-done-dot.done{background:#10B981;}
+.fc-done-dot.pending{background:#F59E0B;}
+.feed-empty-add{aspect-ratio:1;background:#FAFAFA;border:1.5px dashed #D1D5DB;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;transition:all .15s;}
+.feed-empty-add:hover{background:#F3F4F6;border-color:var(--rose);}
+.feed-empty-cell{aspect-ratio:1;background:#F8F8FA;}
+
+/* ═══ FOLLOWERS ═══ */
+.fw-tip{background:rgba(255,45,122,.04);border:1px solid rgba(255,45,122,.12);border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:12px;color:var(--muted);line-height:1.6;}
+.fw-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-bottom:14px;}
+.fw-week{background:#fff;border:1.5px solid var(--bord);border-radius:10px;padding:11px 13px;transition:border-color .15s;}
+.fw-week:hover{border-color:rgba(255,45,122,.3);}
+.fw-wl{font-size:11px;font-weight:700;color:var(--ink);margin-bottom:2px;}
+.fw-wdt{font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:8px;}
+.fw-inputs{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.fw-inp-wrap{display:flex;flex-direction:column;gap:2px;}
+.fw-inp-lbl{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;}
+.fw-inp{width:100%;padding:5px 7px;border:1.5px solid var(--bord);border-radius:6px;font-size:12px;font-weight:700;text-align:center;outline:none;font-family:'DM Mono',monospace;transition:border-color .15s;}
+.fw-inp:focus{border-color:var(--rose);}
+.fw-delta{display:flex;justify-content:space-between;margin-top:7px;font-size:9px;}
+.fw-d-val{font-weight:700;font-family:'DM Mono',monospace;}
+.fw-ps{background:#fff;border:1.5px solid var(--bord);border-radius:12px;padding:14px 16px;display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.fw-prog-item{}
+.fw-prog-label{font-size:10px;font-weight:700;color:var(--muted);margin-bottom:4px;}
+.fw-prog-bar{background:#F0F0F0;border-radius:99px;height:6px;overflow:hidden;margin-bottom:4px;}
+.fw-prog-fill{height:100%;border-radius:99px;transition:width .5s ease;}
+.fw-prog-text{font-size:10px;color:var(--muted);}
+.fw-prog-text strong{color:var(--ink);}
+
+/* ═══ ANALYTICS ═══ */
+.ana-tip{background:rgba(6,182,212,.04);border:1px solid rgba(6,182,212,.15);border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:12px;color:var(--muted);line-height:1.7;}
+.ana-kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:12px;}
+.ana-kpi{background:#fff;border:1.5px solid var(--bord);border-radius:11px;padding:12px 14px;}
+.ak-l{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}
+.ak-v{font-size:22px;font-weight:800;font-family:'DM Mono',monospace;line-height:1;}
+.ak-sub{font-size:10px;color:var(--muted);margin-top:2px;}
+.plat-split{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.ps-card{background:#fff;border:1.5px solid var(--bord);border-radius:11px;padding:12px 14px;}
+.ps-head{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;}
+.ps-stat{display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;}
+.ps-val{font-weight:700;font-family:'DM Mono',monospace;}
+.chart-block{background:#fff;border:1.5px solid var(--bord);border-radius:12px;padding:14px;margin-bottom:10px;}
+.chart-title{font-size:12px;font-weight:800;color:var(--ink);margin-bottom:12px;}
+.chart-block canvas{width:100%!important;}
+.best-block{background:#fff;border:1.5px solid var(--bord);border-radius:12px;padding:14px;margin-bottom:10px;}
+.best-item{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--bord);align-items:center;}
+.best-item:last-child{border-bottom:none;}
+.best-rank{font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:var(--muted);width:20px;}
+.best-title{flex:1;font-size:12px;font-weight:600;}
+.best-val{font-family:'DM Mono',monospace;font-size:11px;font-weight:700;}
+.ana-tw{background:#fff;border:1.5px solid var(--bord);border-radius:12px;padding:14px;margin-bottom:10px;}
+.ana-tt{font-size:12px;font-weight:800;color:var(--ink);margin-bottom:10px;}
+.ana-tbl{overflow-x:auto;}
+.ana-tbl table{width:100%;border-collapse:collapse;font-size:11px;}
+.ana-tbl th{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);padding:5px 8px;text-align:left;border-bottom:1.5px solid var(--bord);}
+.ana-tbl td{padding:7px 8px;border-bottom:1px solid var(--bord);vertical-align:top;}
+.sem-prog-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.sem-prog-lbl{font-size:10px;color:var(--muted);width:70px;flex-shrink:0;}
+.sem-prog-bar{flex:1;background:#F0F0F0;border-radius:99px;height:5px;overflow:hidden;}
+.sem-prog-fill{height:100%;border-radius:99px;transition:width .4s ease;}
+.sem-prog-val{font-size:10px;font-weight:700;font-family:'DM Mono',monospace;width:40px;text-align:right;}
+
+/* ═══ RESPONSIVE ═══ */
+@media(max-width:640px){
+  .hdr-left{display:none;}
+  .hdr-goals{display:none;}
+  .kpi{padding:6px 9px;}
+  .kv{font-size:12px;}
+  .cwrap{padding:14px 12px;}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-page">
+  <div class="lbox">
+    <div class="llogo">meryne<em>.</em>eis</div>
+    <div class="lsub">Content Studio · 2026</div>
+    <div style="margin-bottom:20px;">
+      <div style="font-family:'DM Mono',monospace;font-size:8px;color:rgba(255,255,255,.2);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;text-align:center;">Choisir un compte</div>
+      <div onclick="document.getElementById('lu').value='Meryne';document.getElementById('lp').focus()" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(255,45,122,.07);border:1.5px solid rgba(255,45,122,.2);border-radius:12px;cursor:pointer;transition:all .2s;" onmouseover="this.style.background='rgba(255,45,122,.12)'" onmouseout="this.style.background='rgba(255,45,122,.07)'">
+        <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#FF2D7A,#7C3AED);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">✨</div>
+        <div><div style="font-size:13px;font-weight:700;color:#fff;line-height:1.2;">Meryne</div><div style="font-size:10px;color:rgba(255,255,255,.3);">Compte principal</div></div>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:6px;"><div style="width:7px;height:7px;border-radius:50%;background:#34D399;box-shadow:0 0 6px #34D399;"></div><span style="font-size:10px;color:rgba(255,255,255,.25);">actif</span></div>
+      </div>
+    </div>
+    <div class="lf"><label>Identifiant</label><input type="text" id="lu" placeholder="Meryne" autocomplete="username"></div>
+    <div class="lf"><label>Mot de passe</label><input type="password" id="lp" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <button class="lbtn" onclick="doLogin()">Accéder au studio →</button>
+    <div id="lerr" class="lerr">Identifiants incorrects</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="sync-indicator"></div>
+<div id="app">
+
+  <!-- HEADER -->
+  <div class="hdr">
+    <div class="hdr-inner">
+      <div class="hdr-main">
+        <div class="hdr-left">
+          <div class="hdr-eyebrow">CONTENT STUDIO 2026</div>
+          <div class="hdr-brand">meryne<em>.</em>eis</div>
+          <div class="hdr-sub">Mode · Paris · 1m82</div>
+        </div>
+        <div class="hdr-center">
+          <div id="kpi-row" class="kpi-row"></div>
+        </div>
+        <div class="hdr-right">
+          <div class="hdr-goals">
+            <div class="hdr-goal">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+              <div><div class="hg-label">Instagram</div><div class="hg-val">30K</div></div>
+            </div>
+            <div class="hdr-goal-sep"></div>
+            <div class="hdr-goal">
+              <svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px;color:rgba(255,255,255,.4)"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.77 1.52V6.76a4.85 4.85 0 01-1-.07z"/></svg>
+              <div><div class="hg-label">TikTok</div><div class="hg-val">100K</div></div>
+            </div>
+          </div>
+          <button class="logout-btn" onclick="doLogout()" title="Déconnexion">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NAV -->
+  <div class="bnav">
+    <div class="bnav-inner">
+      <button class="bnt active" onclick="setTab('feed',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        <span>Feed</span>
+      </button>
+      <button class="bnt" onclick="setTab('prod',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none"/></svg>
+        <span>Production</span>
+      </button>
+      <button class="bnt" onclick="setTab('planning',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span>Planning</span>
+      </button>
+      <button class="bnt" onclick="setTab('followers',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>Abonnés</span>
+      </button>
+      <button class="bnt" onclick="setTab('analytics',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <span>Stats</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="cwrap">
+
+    <!-- TAB FEED -->
+    <div id="tab-feed" class="tab-panel active">
+      <div class="ig-profile-wrap">
+        <div class="ig-profile-top">
+          <div class="ig-avatar-wrap">
+            <div class="ig-avatar-ring">
+              <div class="ig-avatar" id="ig-avatar-img"><span style="font-size:36px">👩🏽</span></div>
+            </div>
+          </div>
+          <div class="ig-profile-info">
+            <div class="ig-handle-row">
+              <span class="ig-handle">meryne.eis</span>
+              <button class="ig-edit-btn" onclick="openIgProfileModal()">✏️ Modifier</button>
+            </div>
+            <div class="ig-stats-row">
+              <div class="ig-stat"><span class="ig-stat-n" id="ig-post-count">0</span><span class="ig-stat-l">posts</span></div>
+              <div class="ig-stat"><span class="ig-stat-n" id="ig-followers-count">—</span><span class="ig-stat-l">abonnés</span></div>
+              <div class="ig-stat"><span class="ig-stat-n">30K</span><span class="ig-stat-l">objectif</span></div>
+            </div>
+            <div class="ig-bio" id="ig-bio-display">
+              <strong>meryne.eis</strong> 🌸<br>Mode · Paris · 1m82 ✨<br>
+              <span style="color:var(--muted)">Grande taille &amp; style parisien 🗼</span><br>
+              <span style="color:var(--rose)">🎯 Objectif 30K — rejoins l'aventure !</span>
+            </div>
+          </div>
+        </div>
+        <div class="ig-highlights-row" id="ig-highlights-row">
+          <div class="ig-hl-add" onclick="addHighlight()">
+            <div class="ig-hl-circle ig-hl-add-circle"><span style="font-size:18px;color:#9CA3AF">＋</span></div>
+            <span class="ig-hl-label">Nouveau</span>
+          </div>
+        </div>
+        <div class="ig-feed-tabs">
+          <button class="ig-feed-tab active" id="fpt-insta" onclick="switchFeed('insta',this)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          </button>
+          <button class="ig-feed-tab" id="fpt-tiktok" onclick="switchFeed('tiktok',this)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.77 1.52V6.76a4.85 4.85 0 01-1-.07z"/></svg>
+          </button>
+          <button class="ig-feed-add-btn" onclick="addFeedPost()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Ajouter
+          </button>
+        </div>
+      </div>
+      <!-- Feed grids with drag & drop -->
+      <div class="feed-grid-wrap" id="feed-insta-wrap">
+        <div class="feed-grid-header">
+          <span class="feed-grid-title">📷 Instagram</span>
+          <span class="feed-grid-hint">Glisse pour réorganiser</span>
+        </div>
+        <div id="feed-insta" class="feed-grid"></div>
+      </div>
+      <div class="feed-grid-wrap" id="feed-tiktok-wrap" style="display:none;">
+        <div class="feed-grid-header">
+          <span class="feed-grid-title">🎵 TikTok</span>
+          <span class="feed-grid-hint">Glisse pour réorganiser</span>
+        </div>
+        <div id="feed-tiktok" class="feed-grid"></div>
+      </div>
+    </div>
+
+    <!-- TAB PROD -->
+    <div id="tab-prod" class="tab-panel">
+      <div class="prod-toolbar">
+        <div class="prod-header" style="flex:1;margin-bottom:0;">
+          <div class="ph-row">
+            <span id="prod-lbl" style="font-weight:600;color:var(--muted)"></span>
+            <span id="prod-pct" style="font-weight:700;color:var(--amber)"></span>
+          </div>
+          <div class="pb-outer"><div id="prod-prog" class="pb-inner" style="width:0%"></div></div>
+        </div>
+        <div class="plan-view-toggle" style="align-self:center;">
+          <button class="pvt active" id="pvt-prod-list" onclick="setProdView('list',this)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            Liste
+          </button>
+          <button class="pvt" id="pvt-prod-cal" onclick="setProdView('cal',this)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Calendrier
+          </button>
+        </div>
+      </div>
+      <div id="prod-list-view">
+        <div class="add-row"><button class="add-btn-main" onclick="openProdModal(-1)">＋ Ajouter une tâche</button></div>
+        <div id="prod-list"></div>
+      </div>
+      <div id="prod-cal-view" style="display:none;">
+        <div id="prod-cal-inner"></div>
+      </div>
+    </div>
+
+    <!-- TAB PLANNING -->
+    <div id="tab-planning" class="tab-panel">
+      <div class="plan-toolbar">
+        <div id="filter-bar"></div>
+        <div class="plan-view-toggle">
+          <button class="pvt active" id="pvt-list" onclick="setPlanView('list',this)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/></svg>
+            Liste
+          </button>
+          <button class="pvt" id="pvt-cal" onclick="setPlanView('cal',this)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Calendrier
+          </button>
+        </div>
+      </div>
+      <div id="plan-list-view">
+        <div class="add-row"><button class="add-btn-main" onclick="openPubModal(-1)">＋ Ajouter un post</button></div>
+        <div id="pubs-container"></div>
+      </div>
+      <div id="plan-cal-view" style="display:none;">
+        <div class="pcal-wrap"><div id="plan-cal-inner"></div></div>
+      </div>
+    </div>
+
+    <!-- TAB FOLLOWERS -->
+    <div id="tab-followers" class="tab-panel">
+      <div class="fw-tip">
+        <strong style="font-size:9px;font-weight:700;color:var(--rose);letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px;">📈 Suivi hebdomadaire</strong>
+        Saisis ton nombre d'abonnés chaque lundi. La croissance (+/-) se calcule automatiquement.<br>
+        🎯 Objectif : Instagram <strong style="color:var(--ink)">30K</strong> · TikTok <strong style="color:var(--ink)">100K</strong> en décembre 2026.
+      </div>
+      <div id="fw-grid" class="fw-grid"></div>
+      <div id="fw-prog" class="fw-ps"></div>
+    </div>
+
+    <!-- TAB ANALYTICS -->
+    <div id="tab-analytics" class="tab-panel">
+      <div class="ana-tip">
+        <strong style="font-size:9px;font-weight:700;color:var(--rose);letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px;">📊 Comment saisir tes stats</strong>
+        <strong>1.</strong> Onglet <strong style="color:var(--rose)">📅 Planning</strong> → coche un post ✓ → clique <strong style="color:var(--violet)">📊 Stats</strong><br>
+        <strong>2.</strong> Rentre tes chiffres depuis <strong>Instagram Insights</strong> ou <strong>TikTok Analytics</strong><br>
+        <strong>3.</strong> Les KPIs se mettent à jour <strong style="color:var(--rose)">automatiquement ✨</strong>
+      </div>
+      <div id="ana-kpis" class="ana-kpis"></div>
+      <div id="plat-split" class="plat-split"></div>
+      <div id="best-block"></div>
+      <div style="background:#fff;border:1.5px solid var(--bord);border-radius:12px;padding:14px;margin-bottom:12px;">
+        <div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:12px;">📈 Progression par semaine</div>
+        <div id="sem-progs"></div>
+      </div>
+      <div id="ch-views" class="chart-block"><div class="chart-title">👁 Vues par semaine</div></div>
+      <div id="ch-metrics" class="chart-block"><div class="chart-title">📊 Likes · Saves · Comments</div></div>
+      <div id="ch-top5" class="chart-block"><div class="chart-title">🏆 Top 5 posts</div></div>
+      <div id="ch-eng" class="chart-block"><div class="chart-title">⚡ Engagement par post</div></div>
+      <div class="ana-tw"><div class="ana-tt">📋 Tous les posts publiés</div><div id="ana-tbl"></div></div>
+      <div style="background:#fff;border:1.5px solid var(--bord);border-radius:12px;padding:14px;margin-bottom:12px;">
+        <div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:4px;">👥 Suivi des abonnés</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:12px;">Progression hebdomadaire · Objectif 30K IG · 100K TT</div>
+        <div id="fw-ana-kpis" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;"></div>
+        <div id="ch-followers" class="chart-block" style="margin-bottom:0;"><div class="chart-title">📈 Croissance abonnés</div></div>
+      </div>
+    </div>
+
+  </div><!-- /cwrap -->
+</div><!-- /app -->
+
+<!-- MODAL (prod + pub) -->
+<div id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box" id="modal-body"></div>
+</div>
+
+<!-- ECAL MODAL -->
+<div id="ecal-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeEcalModal()">
+  <div class="modal-box" style="max-width:440px;max-height:90vh;overflow-y:auto;">
+    <div class="modal-hdr"><div class="modal-title" id="ecal-modal-title">Nouvel événement</div><button class="modal-close" onclick="closeEcalModal()">&#10005;</button></div>
+    <div id="ecal-modal-body"></div>
+  </div>
+</div>
+
+<!-- FEED MODAL -->
+<div id="feed-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeFeedModal()">
+  <div class="modal-box" style="max-width:480px;max-height:90vh;overflow-y:auto;">
+    <div class="modal-hdr"><div class="modal-title" id="feed-modal-title">Post Feed</div><button class="modal-close" onclick="closeFeedModal()">&#10005;</button></div>
+    <div id="feed-modal-body"></div>
+  </div>
+</div>
+
+<script>
+// ─── CONFIRM ───
+function askConfirm(msg, onYes) {
+  var existing = document.getElementById('cfrm-overlay');
+  if (existing) existing.remove();
+  var el = document.createElement('div');
+  el.id = 'cfrm-overlay';
+  el.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:16px;padding:24px;max-width:320px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);';
+  box.innerHTML = '<div style="font-size:15px;font-weight:700;color:#18181B;margin-bottom:8px;">Confirmation</div>'
+    + '<div style="font-size:13px;color:#6B7280;margin-bottom:20px;">' + msg + '</div>'
+    + '<div style="display:flex;gap:8px;justify-content:flex-end;">'
+    + '<button class="cfrm-no" style="padding:8px 16px;border-radius:8px;border:1.5px solid #E5E7EB;background:#F9FAFB;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Annuler</button>'
+    + '<button class="cfrm-yes" style="padding:8px 16px;border-radius:8px;border:none;background:#EF4444;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Supprimer</button>'
+    + '</div>';
+  el.appendChild(box);
+  document.body.appendChild(el);
+  box.querySelector('.cfrm-no').onclick = function() { el.remove(); };
+  box.querySelector('.cfrm-yes').onclick = function() { el.remove(); onYes(); };
+}
+
+// ─── MODAL SYSTEM (FIXED) ───
+function openModal(html) {
+  document.getElementById('modal-body').innerHTML = html;
+  document.getElementById('modal-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// ─── FEED ───
+var FEED_DATA = { insta: [], tiktok: [] };
+var feedPlat = 'insta';
+var feedEditIdx = null;
+var dragSrcIdx = null;
+var dragSrcPlat = null;
+
+async function loadFeedData() {
+  var saved = await cloudLoad('feeddata2', { insta: [], tiktok: [] });
+  FEED_DATA = saved || { insta: [], tiktok: [] };
+  if (!FEED_DATA.insta) FEED_DATA.insta = [];
+  if (!FEED_DATA.tiktok) FEED_DATA.tiktok = [];
+}
+function saveFeedData() {
+  cloudSave('feeddata2', FEED_DATA);
+}
+// Compress image before storing (canvas resize → max 600px, quality 0.65 → ~80-120KB)
+function compressImage(dataUrl, cb) {
+  var img = new Image();
+  img.onload = function() {
+    var MAX = 600;
+    var ratio = Math.min(MAX / img.width, MAX / img.height, 1);
+    var w = Math.round(img.width * ratio), h = Math.round(img.height * ratio);
+    var canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+    cb(canvas.toDataURL('image/jpeg', 0.65));
+  };
+  img.src = dataUrl;
+}
+function switchFeed(plat, btn) {
+  feedPlat = plat;
+  document.querySelectorAll('.ig-feed-tab').forEach(function(b) { b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  document.getElementById('feed-insta-wrap').style.display = plat === 'insta' ? 'block' : 'none';
+  document.getElementById('feed-tiktok-wrap').style.display = plat === 'tiktok' ? 'block' : 'none';
+}
+function updateFeedCount() {
+  var cnt = (FEED_DATA.insta || []).length;
+  var el = document.getElementById('ig-post-count');
+  if (el) el.textContent = cnt;
+}
+async function renderFeed() {
+  await loadFeedData(); renderFeedGrid('insta'); renderFeedGrid('tiktok'); updateFeedCount();
+  if (typeof renderHighlights === 'function') renderHighlights();
+}
+function renderFeedGrid(plat) {
+  var grid = document.getElementById('feed-' + plat);
+  if (!grid) return;
+  var posts = FEED_DATA[plat] || [];
+  var html = '';
+  posts.forEach(function(p, i) {
+    var media = '';
+    if (p.mediaData) {
+      if (p.mediaType === 'video') media = '<video class="fc-media" src="' + p.mediaData + '" muted playsinline></video>';
+      else media = '<img class="fc-media" src="' + p.mediaData + '" loading="lazy" />';
+    } else {
+      media = '<div class="fc-placeholder"><span class="fc-placeholder-emoji">' + (p.em || '📷') + '</span></div>';
+    }
+    html += '<div class="feed-cell" draggable="true" data-idx="' + i + '" data-plat="' + plat + '"'
+      + ' ondragstart="feedDragStart(event,' + i + ',\'' + plat + '\')"'
+      + ' ondragover="feedDragOver(event)"'
+      + ' ondrop="feedDrop(event,' + i + ',\'' + plat + '\')"'
+      + ' ondragend="feedDragEnd(event)"'
+      + ' onclick="openFeedModal(' + i + ',\'' + plat + '\')">'
+      + '<div class="fc-pos">' + (i + 1) + '</div>'
+      + media
+      + '<div class="fc-overlay"><div class="fc-ov-title">' + (p.title || '') + '</div><div class="fc-ov-meta">' + (p.date || '') + (p.fmt ? ' · ' + p.fmt : '') + '</div></div>'
+      + '<div class="fc-done-dot ' + (p.done ? 'done' : 'pending') + '"></div>'
+      + '</div>';
+  });
+  // Add empty slot
+  html += '<div class="feed-empty-add" onclick="addFeedPost()">'
+    + '<span style="font-size:22px">＋</span>'
+    + '<span style="font-size:10px;font-weight:600;color:#9CA3AF">Ajouter</span>'
+    + '</div>';
+  // Fill remaining to 9
+  var total = posts.length + 1;
+  for (var i = total; i < 9; i++) {
+    html += '<div class="feed-empty-cell"></div>';
+  }
+  grid.innerHTML = html;
+}
+
+// Drag & drop for feed
+function feedDragStart(e, idx, plat) {
+  dragSrcIdx = idx; dragSrcPlat = plat;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+function feedDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('drag-over');
+}
+function feedDrop(e, toIdx, plat) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if (dragSrcIdx === null || dragSrcIdx === toIdx || dragSrcPlat !== plat) return;
+  var arr = FEED_DATA[plat];
+  var moved = arr.splice(dragSrcIdx, 1)[0];
+  arr.splice(toIdx, 0, moved);
+  saveFeedData(); renderFeedGrid(plat); updateFeedCount();
+  dragSrcIdx = null;
+}
+function feedDragEnd(e) {
+  dragSrcIdx = null;
+  document.querySelectorAll('.feed-cell').forEach(function(c) { c.classList.remove('dragging','drag-over'); });
+}
+
+function addFeedPost() { feedEditIdx = null; openFeedModal(null, feedPlat); }
+function openFeedModal(idx, plat) {
+  var modal = document.getElementById('feed-modal');
+  var body = document.getElementById('feed-modal-body');
+  var titleEl = document.getElementById('feed-modal-title');
+  if (!modal || !body) return;
+  var post = null;
+  var isEdit = idx !== null && idx !== undefined;
+  if (isEdit) { post = (FEED_DATA[plat] || [])[idx]; feedEditIdx = { idx: idx, plat: plat }; }
+  else { feedEditIdx = { idx: null, plat: feedPlat }; }
+  titleEl.textContent = (isEdit ? 'Modifier le post' : 'Nouveau post') + ' — ' + (feedEditIdx.plat === 'tiktok' ? 'TikTok' : 'Instagram');
+  var hasMedia = post && post.mediaData;
+  var mediaPreview = '';
+  if (hasMedia) {
+    if (post.mediaType === 'image') mediaPreview = '<img src="' + post.mediaData + '" style="width:100%;max-height:220px;object-fit:cover;border-radius:10px;" />';
+    else mediaPreview = '<video src="' + post.mediaData + '" controls style="width:100%;max-height:220px;border-radius:10px;"></video>';
+  }
+  var tagsArr = post ? (post.hashtags || '') : '';
+  var tagsPreview = tagsArr ? tagsArr.split(' ').filter(function(t){return t.startsWith('#');}).map(function(t){return '<span class="fm-hashtag">'+t+'</span>';}).join('') : '';
+  body.innerHTML = '<div class="fm-field"><label class="fm-label">🖼️ Photo / Vidéo</label>'
+    + '<div class="feed-modal-upload ' + (hasMedia ? 'has-media' : '') + '" id="fmu-zone">'
+    + (hasMedia ? mediaPreview : '<span class="fmu-icon">📷</span><span class="fmu-text">Clique pour choisir une photo ou vidéo</span><span class="fmu-sub">JPG, PNG, MP4, MOV</span>')
+    + '<input type="file" id="fmu-input" accept="image/*,video/*" onchange="handleFeedMediaUpload(event)" /></div></div>'
+    + '<div class="fm-row"><div class="fm-field" style="flex:1"><label class="fm-label">🗓 Date</label><input class="fm-input" id="fm-date" type="text" placeholder="ex: 15/03" value="' + (post ? post.date || '' : '') + '" /></div>'
+    + '<div class="fm-field" style="flex:2"><label class="fm-label">🎞 Format</label><input class="fm-input" id="fm-fmt" type="text" placeholder="ex: Reel, Carousel, TikTok..." value="' + (post ? post.fmt || '' : '') + '" /></div></div>'
+    + '<div class="fm-field"><label class="fm-label">✏️ Titre</label><input class="fm-input" id="fm-title" type="text" value="' + (post ? post.title || '' : '') + '" /></div>'
+    + '<div class="fm-field"><label class="fm-label">📝 Description / Caption</label>'
+    + '<textarea class="fm-input" id="fm-desc" rows="4">' + (post ? post.description || '' : '') + '</textarea>'
+    + '<div class="fm-char"><span id="fm-desc-count">' + (post && post.description ? post.description.length : 0) + '</span> / 2200</div></div>'
+    + '<div class="fm-field"><label class="fm-label"># Hashtags</label>'
+    + '<textarea class="fm-input" id="fm-tags" rows="2">' + (post ? post.hashtags || '' : '') + '</textarea>'
+    + '<div class="fm-hashtags" id="fm-tags-preview">' + tagsPreview + '</div></div>'
+    + '<div class="fm-field"><label class="fm-label" style="cursor:pointer"><input type="checkbox" id="fm-done" ' + (post && post.done ? 'checked' : '') + ' style="margin-right:6px;">✅ Post publié</label></div>'
+    + '<div class="fm-actions">'
+    + (isEdit ? '<button class="fm-btn-del" onclick="deleteFeedPost()">Supprimer</button>' : '')
+    + '<button class="fm-btn-cancel" onclick="closeFeedModal()">Annuler</button>'
+    + '<button class="fm-btn-save" onclick="saveFeedPost()">Enregistrer</button>'
+    + '</div>';
+  setTimeout(function() {
+    var descEl = document.getElementById('fm-desc'), cntEl = document.getElementById('fm-desc-count');
+    if (descEl && cntEl) descEl.addEventListener('input', function(){ cntEl.textContent = descEl.value.length; });
+    var tagsEl = document.getElementById('fm-tags'), tpEl = document.getElementById('fm-tags-preview');
+    if (tagsEl && tpEl) tagsEl.addEventListener('input', function(){
+      tpEl.innerHTML = tagsEl.value.split(/\s+/).filter(function(t){return t.startsWith('#');}).map(function(t){return '<span class="fm-hashtag">'+t+'</span>';}).join('');
+    });
+  }, 50);
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+function closeFeedModal() {
+  var modal = document.getElementById('feed-modal');
+  if (modal) modal.style.display = 'none';
+  document.body.style.overflow = '';
+}
+function handleFeedMediaUpload(event) {
+  var file = event.target.files[0]; if (!file) return;
+  var zone = document.getElementById('fmu-zone');
+  var isVideo = file.type.startsWith('video/');
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var dataUrl = e.target.result;
+    if (isVideo) {
+      var preview = '<video src="'+dataUrl+'" controls style="width:100%;max-height:220px;border-radius:10px;"></video>';
+      if (zone) {
+        zone.innerHTML = preview + '<input type="file" id="fmu-input" accept="image/*,video/*" onchange="handleFeedMediaUpload(event)" style="position:absolute;inset:0;opacity:0;cursor:pointer;" />';
+        zone.classList.add('has-media');
+      }
+      zone._mediaData = dataUrl;
+      zone._mediaType = 'video';
+    } else {
+      // Compress image before storing
+      compressImage(dataUrl, function(compressed) {
+        var preview = '<img src="'+compressed+'" style="width:100%;max-height:220px;object-fit:cover;border-radius:10px;" />';
+        if (zone) {
+          zone.innerHTML = preview + '<input type="file" id="fmu-input" accept="image/*,video/*" onchange="handleFeedMediaUpload(event)" style="position:absolute;inset:0;opacity:0;cursor:pointer;" />';
+          zone.classList.add('has-media');
+        }
+        zone._mediaData = compressed;
+        zone._mediaType = 'image';
+      });
+    }
+  };
+  reader.readAsDataURL(file);
+}
+function saveFeedPost() {
+  var zone = document.getElementById('fmu-zone');
+  var title = (document.getElementById('fm-title')||{}).value||'';
+  var desc = (document.getElementById('fm-desc')||{}).value||'';
+  var tags = (document.getElementById('fm-tags')||{}).value||'';
+  var date = (document.getElementById('fm-date')||{}).value||'';
+  var fmt = (document.getElementById('fm-fmt')||{}).value||'';
+  var done = document.getElementById('fm-done') ? document.getElementById('fm-done').checked : false;
+  var plat = feedEditIdx.plat;
+  if (!FEED_DATA[plat]) FEED_DATA[plat] = [];
+  var existing = feedEditIdx.idx !== null ? FEED_DATA[plat][feedEditIdx.idx] : null;
+  var mediaData = zone && zone._mediaData ? zone._mediaData : (existing ? existing.mediaData : null);
+  var mediaType = zone && zone._mediaType ? zone._mediaType : (existing ? existing.mediaType : null);
+  var post = { id: existing ? existing.id : 'fp'+Date.now(), plat: plat, title: title, description: desc, hashtags: tags, date: date, fmt: fmt, done: done, mediaData: mediaData, mediaType: mediaType };
+  if (feedEditIdx.idx !== null) FEED_DATA[plat][feedEditIdx.idx] = post;
+  else FEED_DATA[plat].push(post);
+  saveFeedData(); closeFeedModal(); renderFeedGrid(plat); updateFeedCount();
+}
+function deleteFeedPost() {
+  if (!feedEditIdx || feedEditIdx.idx === null) return;
+  var plat = feedEditIdx.plat;
+  askConfirm('Supprimer ce post ?', function() {
+    FEED_DATA[plat].splice(feedEditIdx.idx, 1);
+    saveFeedData(); closeFeedModal(); renderFeedGrid(plat); updateFeedCount();
+  });
+}
+
+// ─── IG PROFILE ───
+var IG_PROFILE = { handle: 'meryne.eis', bio: '', avatar: null, followers: null };
+var IG_HIGHLIGHTS = [];
+async function loadIgProfile(){
+  var prof = await cloudLoad('igprofile2', null);
+  var hl   = await cloudLoad('ighl2', null);
+  if(prof) IG_PROFILE = prof;
+  if(hl)   IG_HIGHLIGHTS = hl;
+}
+function saveIgProfile(){ cloudSave('igprofile2', IG_PROFILE); cloudSave('ighl2', IG_HIGHLIGHTS); }
+function renderHighlights(){
+  var row = document.getElementById('ig-highlights-row');
+  if (!row) return;
+  var html = '<div class="ig-hl-add" onclick="addHighlight()"><div class="ig-hl-circle ig-hl-add-circle"><span style="font-size:18px;color:#9CA3AF">＋</span></div><span class="ig-hl-label">Nouveau</span></div>';
+  IG_HIGHLIGHTS.forEach(function(hl, i){
+    var inner = hl.mediaData ? '<img src="'+hl.mediaData+'">' : '<span style="font-size:22px">'+( hl.em || '⭐')+'</span>';
+    html += '<div class="ig-highlight" onclick="editHighlight('+i+')"><div class="ig-hl-circle"><div class="ig-hl-circle-inner">'+inner+'</div></div><span class="ig-hl-label">'+(hl.label||'Story')+'</span></div>';
+  });
+  row.innerHTML = html;
+  var avatarEl = document.getElementById('ig-avatar-img');
+  if (avatarEl && IG_PROFILE.avatarData) avatarEl.innerHTML = '<img src="'+IG_PROFILE.avatarData+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />';
+  var flwEl = document.getElementById('ig-followers-count');
+  if (flwEl) flwEl.textContent = IG_PROFILE.followers || '—';
+}
+function addHighlight(){ openHighlightModal(null); }
+function editHighlight(i){ openHighlightModal(i); }
+function openHighlightModal(idx){
+  var isNew = idx === null;
+  var hl = isNew ? {em:'⭐',label:'',mediaData:null} : JSON.parse(JSON.stringify(IG_HIGHLIGHTS[idx]));
+  openModal('<button class="modal-x" onclick="closeModal()">✕</button>'
+    +'<h2>'+(isNew?'Nouvelle story à la une':'Modifier la story')+'</h2>'
+    +'<div class="fr"><label>Emoji</label><input id="hl-em" value="'+(hl.em||'⭐')+'"></div>'
+    +'<div class="fr"><label>Nom</label><input id="hl-lbl" value="'+(hl.label||'')+'"></div>'
+    +'<div class="feed-modal-upload'+(hl.mediaData?' has-media':'')+ '" id="hl-zone" style="min-height:100px;">'
+    +(hl.mediaData?'<img src="'+hl.mediaData+'" style="width:100%;max-height:200px;object-fit:cover;border-radius:10px;">':'<span class="fmu-icon">📷</span><span class="fmu-text">Photo optionnelle</span>')
+    +'<input type="file" accept="image/*" onchange="handleHlMedia(event)" /></div>'
+    +'<div class="modal-acts"><button class="btn-s" onclick="closeModal()">Annuler</button>'
+    +(!isNew?'<button class="btn-d" onclick="deleteHighlight('+idx+')">Supprimer</button>':'')
+    +'<button class="btn-p" onclick="saveHighlight('+(isNew?'null':idx)+')">Enregistrer ✓</button></div>');
+}
+function handleHlMedia(ev){
+  var file = ev.target.files[0]; if(!file) return;
+  var zone = document.getElementById('hl-zone');
+  var reader = new FileReader();
+  reader.onload = function(e){ zone.innerHTML='<img src="'+e.target.result+'" style="width:100%;max-height:200px;object-fit:cover;border-radius:10px;"><input type="file" accept="image/*" onchange="handleHlMedia(event)" style="position:absolute;inset:0;opacity:0;cursor:pointer;"/>';zone._mediaData=e.target.result;zone.classList.add('has-media'); };
+  reader.readAsDataURL(file);
+}
+function saveHighlight(idx){
+  var zone = document.getElementById('hl-zone');
+  var hl = { em: document.getElementById('hl-em').value, label: document.getElementById('hl-lbl').value, mediaData: zone&&zone._mediaData?zone._mediaData:(idx!==null?IG_HIGHLIGHTS[idx].mediaData:null) };
+  if(idx===null) IG_HIGHLIGHTS.push(hl); else IG_HIGHLIGHTS[idx]=hl;
+  saveIgProfile(); closeModal(); renderHighlights();
+}
+function deleteHighlight(idx){ askConfirm('Supprimer cette story ?', function(){ IG_HIGHLIGHTS.splice(idx,1); saveIgProfile(); closeModal(); renderHighlights(); }); }
+function openIgProfileModal(){
+  openModal('<button class="modal-x" onclick="closeModal()">✕</button>'
+    +'<h2>Modifier le profil</h2>'
+    +'<div class="fr"><label>Nom</label><input id="igp-handle" value="'+(IG_PROFILE.handle||'meryne.eis')+'"></div>'
+    +'<div class="fr"><label>Bio</label><textarea id="igp-bio">'+(IG_PROFILE.bio||'')+'</textarea></div>'
+    +'<div class="fr"><label>Abonnés actuels</label><input id="igp-followers" value="'+(IG_PROFILE.followers||'')+'"></div>'
+    +'<div class="feed-modal-upload'+(IG_PROFILE.avatarData?' has-media':'')+ '" id="igp-av-zone" style="min-height:100px;">'
+    +(IG_PROFILE.avatarData?'<img src="'+IG_PROFILE.avatarData+'" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">':'<span class="fmu-icon">👩🏽</span><span class="fmu-text">Photo de profil</span>')
+    +'<input type="file" accept="image/*" onchange="handleAvatarUpload(event)" /></div>'
+    +'<div class="modal-acts"><button class="btn-s" onclick="closeModal()">Annuler</button>'
+    +'<button class="btn-p" onclick="saveIgProfileModal()">Enregistrer ✓</button></div>');
+}
+function handleAvatarUpload(ev){
+  var file = ev.target.files[0]; if(!file) return;
+  var zone = document.getElementById('igp-av-zone');
+  var reader = new FileReader();
+  reader.onload = function(e){ zone.innerHTML='<img src="'+e.target.result+'" style="width:80px;height:80px;border-radius:50%;object-fit:cover;"><input type="file" accept="image/*" onchange="handleAvatarUpload(event)" style="position:absolute;inset:0;opacity:0;cursor:pointer;"/>';zone._mediaData=e.target.result;zone.classList.add('has-media'); };
+  reader.readAsDataURL(file);
+}
+function saveIgProfileModal(){
+  var zone = document.getElementById('igp-av-zone');
+  IG_PROFILE.handle = document.getElementById('igp-handle').value;
+  IG_PROFILE.bio = document.getElementById('igp-bio').value;
+  IG_PROFILE.followers = document.getElementById('igp-followers').value;
+  if(zone&&zone._mediaData) IG_PROFILE.avatarData = zone._mediaData;
+  saveIgProfile(); closeModal(); renderHighlights();
+}
+
+// ─── PROD/EVENT CALENDAR ───
+var prodView = 'list';
+var prodCalY = 2026, prodCalM = 2;
+var EVENTS = [];
+var ecalEditId = null;
+
+async function loadEvents(){ EVENTS = await cloudLoad('events2', []); if(!EVENTS)EVENTS=[]; }
+function saveEvents(){ cloudSave('events2', EVENTS); }
+
+function setProdView(view, btn) {
+  prodView = view;
+  document.querySelectorAll('#pvt-prod-list,#pvt-prod-cal').forEach(function(b){b.classList.remove('active');});
+  if(btn) btn.classList.add('active');
+  document.getElementById('prod-list-view').style.display = view==='list'?'block':'none';
+  document.getElementById('prod-cal-view').style.display = view==='cal'?'block':'none';
+  if(view==='cal') renderProdCal();
+}
+function renderProdCal() {
+  loadEvents();
+  var el = document.getElementById('prod-cal-inner'); if(!el) return;
+  var MNAMES=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  var DNAMES=['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+  var y=prodCalY,m=prodCalM;
+  var firstDay=new Date(y,m,1).getDay(),daysInMonth=new Date(y,m+1,0).getDate(),offset=(firstDay+6)%7;
+  var today=new Date();
+  var html='<div class="ecal-toolbar"><div class="ecal-nav"><button class="ecal-nav-btn" onclick="prodCalMove(-1)">‹</button><div class="ecal-month">'+MNAMES[m]+' '+y+'</div><button class="ecal-nav-btn" onclick="prodCalMove(1)">›</button></div><button class="ecal-add-btn" onclick="openEcalModal(null,null)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Nouvel événement</button></div>';
+  html+='<div class="ecal-grid">';
+  DNAMES.forEach(function(d){html+='<div class="ecal-dname">'+d+'</div>';});
+  var evByDay={};
+  EVENTS.forEach(function(ev){if(ev.mo===m&&ev.yr===y){for(var d=ev.day;d<=(ev.dayEnd||ev.day);d++){if(!evByDay[d])evByDay[d]=[];evByDay[d].push(ev);}}});
+  var totalCells=Math.ceil((offset+daysInMonth)/7)*7;
+  for(var i=0;i<totalCells;i++){
+    var day=i-offset+1,isCurrentMonth=day>=1&&day<=daysInMonth;
+    var isToday=isCurrentMonth&&day===today.getDate()&&m===today.getMonth()&&y===today.getFullYear();
+    var cellClass='ecal-cell'+(isToday?' today':'')+(!isCurrentMonth?' other-month':'');
+    var dayNumHtml=isToday?'<span class="ecal-day-num">'+day+'</span>':(isCurrentMonth?day:'');
+    html+='<div class="'+cellClass+'" onclick="handleEcalCellClick('+day+','+m+','+y+')">';
+    if(isCurrentMonth){
+      html+='<div class="ecal-day">'+dayNumHtml+'</div>';
+      (evByDay[day]||[]).slice(0,3).forEach(function(ev){html+='<div class="ecal-event type-'+(ev.type||'other')+'" onclick="event.stopPropagation();openEcalModal(\''+ev.id+'\',null)">'+(ev.em?ev.em+' ':'')+ev.title.slice(0,14)+'</div>';});
+      if((evByDay[day]||[]).length>3) html+='<div class="ecal-more">+'+(evByDay[day].length-3)+' autres</div>';
+    }
+    html+='</div>';
+  }
+  html+='</div>';
+  el.innerHTML=html;
+}
+function handleEcalCellClick(day,mo,yr){ openEcalModal(null,{day:day,mo:mo,yr:yr}); }
+function prodCalMove(dir){ prodCalM+=dir;if(prodCalM>11){prodCalM=0;prodCalY++;}if(prodCalM<0){prodCalM=11;prodCalY--;}renderProdCal(); }
+
+function openEcalModal(id, prefill) {
+  loadEvents();
+  var modal=document.getElementById('ecal-modal'),body=document.getElementById('ecal-modal-body'),titleEl=document.getElementById('ecal-modal-title');
+  if(!modal||!body) return;
+  var isEdit=id!==null&&id!==undefined;
+  var ev=isEdit?JSON.parse(JSON.stringify(EVENTS.find(function(e){return e.id===id;})||{})):{id:'ev'+Date.now(),type:'prod',em:'📅',title:'',day:prefill?prefill.day:1,dayEnd:null,mo:prefill?prefill.mo:prodCalM,yr:prefill?prefill.yr:prodCalY,note:''};
+  titleEl.textContent=isEdit?'Modifier l\'événement':'Nouvel événement';
+  var types=['prod','shoot','event','collab','other'];
+  var typeLabels={prod:'Production',shoot:'Shooting',event:'Événement',collab:'Collab',other:'Autre'};
+  // Build date string for date input
+  var dateStr2Start='', dateStr2End='';
+  if(ev.yr&&ev.mo!==undefined&&ev.day){
+    dateStr2Start=ev.yr+'-'+String(ev.mo+1).padStart(2,'0')+'-'+String(ev.day).padStart(2,'0');
+  }
+  if(ev.yr&&ev.mo!==undefined&&(ev.dayEnd||ev.day)){
+    dateStr2End=ev.yr+'-'+String(ev.mo+1).padStart(2,'0')+'-'+String(ev.dayEnd||ev.day).padStart(2,'0');
+  }
+  var typeHtml='<div class="em-type-row">'+types.map(function(t){return '<button class="em-type-btn type-'+t+(ev.type===t?' active':'')+'" onclick="ecalSetType(\''+t+'\',this)">'+typeLabels[t]+'</button>';}).join('')+'</div>';
+  body.innerHTML=typeHtml
+    +'<div style="display:grid;grid-template-columns:48px 1fr;gap:10px;margin-bottom:10px;">'
+    +'<div class="fr"><label>Emoji</label><input id="em-em" value="'+(ev.em||'📅')+'" style="text-align:center;font-size:20px;"></div>'
+    +'<div class="fr"><label>Titre</label><input id="em-title" value="'+(ev.title||'')+'"></div>'
+    +'</div>'
+    +'<div class="em-date-row">'
+    +'<div class="fr"><label>📅 Date début</label><input id="em-datestart" type="date" value="'+dateStr2Start+'"></div>'
+    +'<div class="fr"><label>📅 Date fin</label><input id="em-dateend" type="date" value="'+dateStr2End+'"></div>'
+    +'</div>'
+    +'<div class="em-time-row">'
+    +'<div class="fr"><label>⏰ Heure début</label><input id="em-timestart" type="time" value="'+(ev.timeStart||'')+'"></div>'
+    +'<div class="fr"><label>⏰ Heure fin</label><input id="em-timeend" type="time" value="'+(ev.timeEnd||'')+'"></div>'
+    +'</div>'
+    +'<div class="fr"><label>📝 Note</label><textarea id="em-note">'+(ev.note||'')+'</textarea></div>'
+    +'<div class="modal-acts">'+(isEdit?'<button class="btn-d" onclick="deleteEcalEvent(\''+ev.id+'\')">🗑 Supprimer</button>':'')
+    +'<button class="btn-s" onclick="closeEcalModal()">Annuler</button>'
+    +'<button class="btn-p" onclick="saveEcalEvent(\''+ev.id+'\','+isEdit+')">Enregistrer ✓</button></div>';
+  ecalEditId = ev.id;
+  modal.style.display='flex';
+  document.body.style.overflow='hidden';
+}
+function closeEcalModal(){ document.getElementById('ecal-modal').style.display='none';document.body.style.overflow=''; }
+function ecalSetType(t,btn){
+  document.querySelectorAll('.em-type-btn').forEach(function(b){b.className=b.className.replace(' active','');});
+  btn.classList.add('active');
+  ecalEditId = ecalEditId; // keep track
+  // store selected type in a temp var
+  window._ecalType = t;
+}
+function saveEcalEvent(id, isEdit){
+  loadEvents();
+  var _activeBtn=document.querySelector('.em-type-btn.active');
+  var type=window._ecalType||(_activeBtn?((_activeBtn.className.match(/type-(\w+)/)||[])[1]||'other'):'other');
+  var dsVal=document.getElementById('em-datestart').value;
+  var deVal=document.getElementById('em-dateend').value;
+  var dsDate=dsVal?new Date(dsVal):null;
+  var deDate=deVal?new Date(deVal):null;
+  var day=dsDate?dsDate.getUTCDate():1;
+  var mo=dsDate?dsDate.getUTCMonth():prodCalM;
+  var yr=dsDate?dsDate.getUTCFullYear():prodCalY;
+  var dayEnd=deDate?deDate.getUTCDate():null;
+  var ev={id:id,type:type,em:document.getElementById('em-em').value,title:document.getElementById('em-title').value,
+    day:day,dayEnd:dayEnd,mo:mo,yr:yr,
+    timeStart:document.getElementById('em-timestart').value,
+    timeEnd:document.getElementById('em-timeend').value,
+    note:document.getElementById('em-note').value};
+  if(isEdit){var idx=EVENTS.findIndex(function(e){return e.id===id;});if(idx>=0)EVENTS[idx]=ev;}else{EVENTS.push(ev);}
+  saveEvents();closeEcalModal();renderProdCal();window._ecalType=null;
+}
+function deleteEcalEvent(id){ askConfirm('Supprimer cet événement ?',function(){EVENTS=EVENTS.filter(function(e){return e.id!==id;});saveEvents();closeEcalModal();renderProdCal();}); }
+
+// ─── PLANNING CALENDAR ───
+var calY=2026,calM=2;
+function renderCalendar(){
+  var el=document.getElementById('plan-cal-inner');if(!el)return;
+  var DNAMES=['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+  var MNAMES=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  var y=calY,m=calM;
+  var firstDay=new Date(y,m,1).getDay(),daysInMonth=new Date(y,m+1,0).getDate(),offset=(firstDay+6)%7;
+  var today=new Date();
+  var pubsByDay={};
+  (PUBS||[]).forEach(function(p){var key=p.day+'-'+p.mo+'-'+p.yr;if(!pubsByDay[key])pubsByDay[key]=[];pubsByDay[key].push(p);});
+  var html='<div class="pcal-nav"><button class="pcal-nav-btn" onclick="calMove(-1)">‹</button><div class="pcal-month">'+MNAMES[m]+' '+y+'</div><button class="pcal-nav-btn" onclick="calMove(1)">›</button></div>';
+  html+='<div class="pcal-grid">';
+  DNAMES.forEach(function(d){html+='<div class="pcal-dname">'+d+'</div>';});
+  var totalCells=Math.ceil((offset+daysInMonth)/7)*7;
+  for(var i=0;i<totalCells;i++){
+    var day=i-offset+1,isCurrentMonth=day>=1&&day<=daysInMonth;
+    var isToday=isCurrentMonth&&day===today.getDate()&&m===today.getMonth()&&y===today.getFullYear();
+    var cls='pcal-cell'+(isToday?' today':'')+(!isCurrentMonth?' other-month':'');
+    html+='<div class="'+cls+'" onclick="handleCalCellClick('+day+','+m+','+y+')">';
+    if(isCurrentMonth){
+      html+='<div class="pcal-day">'+(isToday?'<span class="today-badge">'+day+'</span>':day)+'</div>';
+      var key=day+'-'+m+'-'+y;
+      (pubsByDay[key]||[]).slice(0,3).forEach(function(p){
+        var platCls={tiktok:'tt',insta:'ig',stories:'st'}[p.plat]||'ig';
+        var short=p.title.length>16?p.title.slice(0,15)+'…':p.title;
+        html+='<div class="pcal-pip '+platCls+(p.done?' done':'')+'" onclick="event.stopPropagation();openPubById(\''+p.id+'\')" title="'+p.title+'">'+short+'</div>';
+      });
+      if((pubsByDay[key]||[]).length>3) html+='<div style="font-size:8px;color:var(--muted)">+'+(pubsByDay[key].length-3)+' autres</div>';
+    }
+    html+='</div>';
+  }
+  html+='</div>';
+  el.innerHTML=html;
+}
+function calMove(dir){ calM+=dir;if(calM>11){calM=0;calY++;}if(calM<0){calM=11;calY--;}renderCalendar(); }
+function handleCalCellClick(day,mo,yr){
+  var key=day+'-'+mo+'-'+yr;
+  var dayPubs=(PUBS||[]).filter(function(p){return p.day===day&&p.mo===mo&&p.yr===yr;});
+  if(dayPubs.length===1){ openPubById(dayPubs[0].id); }
+  else if(dayPubs.length>1){
+    var html='<button class="modal-x" onclick="closeModal()">✕</button><h2>'+day+'/'+(mo+1)+'/'+yr+'</h2>';
+    dayPubs.forEach(function(p){html+='<div onclick="closeModal();openPubById(\''+p.id+'\')" style="padding:10px 12px;border:1.5px solid var(--bord);border-radius:10px;cursor:pointer;margin-bottom:7px;font-size:13px;font-weight:600;">'+p.title+'<div style="font-size:10px;color:var(--muted);margin-top:2px;">'+p.plat+' · '+p.heure+'</div></div>';});
+    html+='<div class="modal-acts"><button class="btn-s" onclick="closeModal()">Fermer</button><button class="btn-p" onclick="closeModal();openPubModal(-1)">＋ Ajouter</button></div>';
+    openModal(html);
+  } else {
+    openNewPubForDay(day,mo,yr);
+  }
+}
+function openNewPubForDay(day,mo,yr){
+  openPubModal(-1);
+  setTimeout(function(){
+    var d=document.getElementById('ppe-day'),m2=document.getElementById('ppe-mo');
+    if(d)d.value=day;if(m2)m2.value=mo;
+    var de=document.getElementById('ppe-date');
+    if(de)de.value=String(day).padStart(2,'0')+'/'+String(mo+1).padStart(2,'0');
+  },50);
+}
+
+// ─── AUTH ───
+// ─── SUPABASE CONFIG ───
+// ⚠️ REMPLACE CES VALEURS PAR TES VRAIES CLÉS SUPABASE
+const SUPA_URL = 'https://uqyprtitkuqkdrrzckbc.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxeXBydGl0a3Vxa2Rycnpja2JjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNzUwNzUsImV4cCI6MjA4ODk1MTA3NX0.6SWZcRcctqMecI6VIsO3gwdGopiadcMP-W5HD66fo0c';
+let sb = null;
+function initSupabase() {
+  if (typeof supabase !== 'undefined' && SUPA_URL !== 'REMPLACE_PAR_TON_URL_SUPABASE') {
+    sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+    return true;
+  }
+  return false;
+}
+
+// ─── SYNC INDICATOR ───
+function showSync(msg, color) {
+  var el = document.getElementById('sync-indicator');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.background = color || 'rgba(5,150,105,.12)';
+  el.style.color = color ? '#fff' : '#059669';
+  el.style.opacity = '1';
+  clearTimeout(el._t);
+  el._t = setTimeout(function(){ el.style.opacity = '0'; }, 2500);
+}
+
+// ─── CLOUD SAVE / LOAD ───
+async function cloudSave(key, data) {
+  // Always save to localStorage as backup
+  try { localStorage.setItem(key, JSON.stringify(data)); } catch(e) {}
+  // If Supabase configured, sync to cloud
+  if (!sb) return;
+  try {
+    await sb.from('studio_data').upsert({ key: key, data: data, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+    showSync('✓ Sauvegardé', null);
+  } catch(e) {
+    showSync('⚠ Local seulement', 'rgba(245,158,11,.8)');
+  }
+}
+async function cloudLoad(key, fallback) {
+  // Try Supabase first
+  if (sb) {
+    try {
+      var res = await sb.from('studio_data').select('data').eq('key', key).single();
+      if (res.data && res.data.data !== undefined) {
+        // Also update localStorage
+        try { localStorage.setItem(key, JSON.stringify(res.data.data)); } catch(e) {}
+        return res.data.data;
+      }
+    } catch(e) {}
+  }
+  // Fallback to localStorage
+  try {
+    var r = localStorage.getItem(key);
+    if (r) return JSON.parse(r);
+  } catch(e) {}
+  return fallback;
+}
+
+// ─── AUTH ───
+const CREDS={user:'Meryne',pass:'28122000'};
+function doLogin(){
+  const u=document.getElementById('lu').value.trim(),p=document.getElementById('lp').value;
+  if(u===CREDS.user&&p===CREDS.pass){localStorage.setItem('auth','ok');document.getElementById('login-page').style.display='none';document.getElementById('app').style.display='block';initApp();}
+  else{const e=document.getElementById('lerr');e.classList.add('show');setTimeout(()=>e.classList.remove('show'),3000);}
+}
+function doLogout(){localStorage.removeItem('auth');location.reload();}
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login-page').style.display!=='none')doLogin();});
+
+// ─── META ───
+const SEM={S1:{l:'Semaine 1',d:'8–9 Mars',c:'#FF2D7A',desc:'Lancement'},S2:{l:'Semaine 2',d:'10–16 Mars',c:'#7C3AED',desc:'Stock prod.'},S3:{l:'Semaine 3',d:'17–23 Mars',c:'#0891B2',desc:'Nouveau contenu'},S4:{l:'Semaine 4',d:'24–29 Mars',c:'#059669',desc:'Éducatif'},S5:{l:'Semaine 5',d:'30–31 Mars',c:'#DC2626',desc:'Bilan'}};
+const PM={tiktok:{l:'TikTok',cls:'b-tt'},insta:{l:'Instagram',cls:'b-ig'},stories:{l:'Stories',cls:'b-st'}};
+const MONTHS=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+
+// ─── DEFAULT DATA ───
+const D_PROD=[
+  {id:'p1',date:'Mer 5 Mars',em:'🎷',title:'Concert de Jazz',desc:'Photos + vidéos ambiance + outfit soirée',plat:'TikTok + Insta',fmt:'GRWM / Reel',posts:'2',note:'Demander photos full body avant départ',done:false,launch:false,script:{title:'Concert de Jazz — Plan de tournage',shots:[{n:1,d:'📸 AVANT départ : full body outfit devant miroir. 3-4 angles : face, ¾, de dos. Demande à ton copain.'},{n:2,d:'🎬 GRWM accéléré : maquillage + coiffure avec musique jazz en fond. Montre la transformation.'},{n:3,d:'🎵 ARRIVÉE : plan extérieur du lieu (enseigne, ambiance nuit parisienne). 5-10s.'},{n:4,d:'🥂 INSIDE : détails verre, lumières, scène. 3-4 clips de 3-5s pour montage rapide.'},{n:5,d:"👗 OUTFIT CHECK : full body dans la salle — cherche une belle lumière ou miroir."},{n:6,d:"🎶 MOMENTS LIVE : artiste sur scène (si autorisé), ambiance, tes réactions. Authentique !"},{n:7,d:"🌙 SORTIE : dernière photo/vidéo dehors avec lumières de rue."}]}},
+  {id:'p2',date:'Jeu 6 Mars',em:'👢',title:'Unboxing Bottes ASOS',desc:'Ouverture colis + essayage 2 paires',plat:'TikTok',fmt:'Unboxing',posts:'1',note:"Film l'ouverture + walking shot des 2 paires",done:false,launch:false,script:{title:'Unboxing Bottes ASOS — Script TikTok',shots:[{n:1,d:"🎬 HOOK (1-3s) : pose le colis, regarde caméra. Texte : 'ASOS m'a encore eu 👢'"},{n:2,d:"📦 OUVERTURE (5-8s) : ouvre en temps réel. Papier de soie, boîte. Son ASMR si possible."},{n:3,d:"👁 RÉVÉLATION paire 1 : sors les bottes lentement. Gros plan détails, texture, couleur."},{n:4,d:"👢 ESSAYAGE paire 1 : enfile. Plan pied → jambe → full body. Marche vers la caméra."},{n:5,d:"✅ VERDICT paire 1 (2-3s) : pouce haut ou bas. Pourquoi tu gardes / renvoies."},{n:6,d:"🔁 PAIRE 2 : même structure. Compare avec la 1ère."},{n:7,d:"📏 ANGLE GRANDE TAILLE : longueur tige sur jambe de 1m82 — c'est TON angle unique !"},{n:8,d:"🎬 FINAL : les 2 paires côte à côte au sol. Verdict final en texte à l'écran."}]}},
+  {id:'p3',date:'Ven 7 Mars',em:'🛍',title:'Haul Zara',desc:'Gardé vs renvoyé — angle grande taille 1m82',plat:'TikTok + Insta',fmt:'Haul',posts:'2',note:"Hook fort : 'quand tu fais 1m82 chez Zara'",done:false,launch:false,script:{title:'Haul Zara Grande Taille — Script',shots:[{n:1,d:"🎬 HOOK FORT : 'Haul Zara quand tu fais 1m82 — ce que j'ai gardé, renvoyé et POURQUOI 😭'"},{n:2,d:"📦 PRÉSENTE chaque pièce : tiens-la face caméra, nomme-la + taille achetée."},{n:3,d:"👗 ESSAYAGE : face, ¾, de dos. Montre longueur sur jambes/bras = clé du contenu grande taille."},{n:4,d:"✅ GARDÉ : montre pourquoi ça marche (longueur ok, taille ok). Sois enthousiaste !"},{n:5,d:"❌ RENVOYÉ : explique franchement. Les filles 1m80+ adorent cette honnêteté."},{n:6,d:"📏 ASTUCE : donne 1 conseil par pièce renvoyée ('À la place, je prendrai...')"},{n:7,d:"🎬 FINAL : pièces gardées ensemble. CTA : 'Abonne-toi si tu fais plus d'1m75 !'"}]}},
+  {id:'p4',date:'Sam 8 Mars 9h',em:'💄',title:'Collab Maquillage MUA',desc:'Transformation avant/après avec copine maquilleuse',plat:'TikTok + Insta',fmt:'Transformation',posts:'2',note:'Tagger copine partout. Film processus + réaction miroir',done:false,launch:false,script:{title:'Collab MUA — Plan de tournage',shots:[{n:1,d:"📸 AVANT : filme-toi sans maquillage, cheveux naturels. Plan face caméra. Authentique !"},{n:2,d:"🎬 PROCESSUS accéléré : étapes clés (base, yeux, lèvres). Mains de ta copine qui travaillent."},{n:3,d:"✨ DÉTAILS : gros plans yeux finis, lèvres, contouring. 3-4 clips de 2s."},{n:4,d:"😱 RÉACTION MIROIR : découverte face au miroir — réaction authentique, pas jouée !"},{n:5,d:"💃 RÉVÉLATION FINALE : tourne-toi vers caméra lentement. Full body avec l'outfit du shooting."},{n:6,d:"👯 DUO avec ta copine MUA : photo ensemble + elle explique sa technique en 10s."},{n:7,d:"📱 CTA : tague-la dans tous les posts et stories sans exception."}]}},
+  {id:'p5',date:'Sam 8 Mars',em:'🛍',title:'Shopping post-maquillage',desc:'Essayages cabine + coups de cœur',plat:'TikTok',fmt:'Haul shopping',posts:'1-2',note:'Courts clips 3-4s par pièce. Toujours mentionner les tailles.',done:false,launch:false,script:{title:'Shopping Day — Script Cabine',shots:[{n:1,d:"🎬 HOOK : 'Shopping avec mon nouveau makeup 💄🛍' — filme-toi devant la boutique."},{n:2,d:"👗 CABINE : pour chaque essayage — entre avec l'article, ressors avec, montre le rendu. 5-7s max."},{n:3,d:"📏 TAILLE OBLIGATOIRE : 'J'ai pris du 38 mais j'aurais dû prendre 40 sur les hanches.'"},{n:4,d:"💚 COUP DE CŒUR : montre ton visage quand tu adores. Réaction = engagement."},{n:5,d:"❌ FAIL : les essayages ratés font le plus de vues. Sois honnête et drôle !"},{n:6,d:"🎬 TRANSITION : claquement de doigts ou transition miroir entre tenues."},{n:7,d:"📦 PANIER FINAL : tout ce que tu prends sur le lit de la cabine avant de payer."}]}},
+  {id:'p6',date:'Dim 8 Mars',em:'☕',title:'Shooting Tenue 1 — Hôtel',desc:'Miroir full body · Walking shot · Détail café · Pose assise',plat:'Instagram',fmt:'Carousel 7 slides',posts:'1 carousel',note:'Ambiance soft/dorée. Lumière fenêtre. 10-15 photos minimum.',done:false,launch:false,script:{title:'Carousel Hôtel/Café — 7 slides Instagram',shots:[{n:1,d:"COVER : miroir full body dans lobby/couloir."},{n:2,d:"WALKING : marche vers caméra dans couloir."},{n:3,d:"DÉTAIL ACCESSOIRE : gros plan sac, chaussures ou bijou."},{n:4,d:"ASSISE CAFÉ : installée à table avec café/croissant."},{n:5,d:"DE DOS : vers une fenêtre lumineuse."},{n:6,d:"SPONTANÉ : rires avec Aminata, moment 'distrait'."},{n:7,d:"SLIDE CTA : photo + texte 'Tenue 1 — détails en commentaire ❤️'"}]}},
+  {id:'p7',date:'Dim 8 Mars',em:'🎨',title:'Shooting Tenue 2 — Musée',desc:'De dos devant œuvre · Walking couloir · Pose sculptée',plat:'Instagram',fmt:'Carousel 7 slides',posts:'1 carousel',note:'Contraste toi/art. Chercher les couloirs longs.',done:false,launch:false,script:{title:'Carousel Musée — 7 slides',shots:[{n:1,d:"COVER : de dos face à une grande œuvre colorée."},{n:2,d:"COULOIR WALKING : Aminata se place loin et filme en perspective."},{n:3,d:"FACE À L'ŒUVRE : tu te retournes vers caméra avec l'art en fond."},{n:4,d:"DÉTAIL AU SOL : chaussures sur le parquet ciré du musée."},{n:5,d:"POSE SCULPTÉE : imite une pose de sculpture proche de toi."},{n:6,d:"ESCALIER/ARCHITECTURE : escalier en colimaçon, balustrade, arche."},{n:7,d:"SLIDE CTA : 'Tenue 2 — laquelle tu préfères : 1, 2 ou 3 ? Vote en commentaire 👇'"}]}},
+  {id:'p8',date:'Dim 8 Mars',em:'🗼',title:'Shooting Tenue 3 — Tour Eiffel',desc:'Walking vers Tour · Vidéos drôles · Photos golden hour',plat:'Instagram + TikTok',fmt:'Carousel + TikToks',posts:'1 carousel + 2 TikToks',note:'Golden hour 17-18h = lumière magique',done:false,launch:false,script:{title:'Carousel + TikToks Tour Eiffel — 10 plans',shots:[{n:1,d:"COVER : tu marches vers caméra, Tour Eiffel centrée derrière toi."},{n:2,d:"POSE PROFIL : Tour de côté, toi de profil. Ligne épurée, regard au loin."},{n:3,d:"FACE SOURIANTE : tu souris franchement, regard caméra."},{n:4,d:"RUE HAUSSMANNIENNE : walking dans rue typique."},{n:5,d:"DÉTAIL CHAUSSURE : jambe en avant, gros plan chaussure sur les pavés parisiens."},{n:6,d:"MOMENT FUN avec Aminata : photo duo ou toi drôle/spontanée."},{n:7,d:"GOLDEN HOUR PORTRAIT : portrait rapproché, bokeh doux. 17-18h = magie."},{n:8,d:"SLIDE CTA : 'Laquelle préférée ? 1️⃣2️⃣3️⃣'"},{n:9,d:"🎵 TIKTOK 1 : 'POV : ton shooting journée des femmes' — montage rapide 3 lieux en 30s."},{n:10,d:"🎵 TIKTOK 2 : tu essaies une pose Pinterest qui rate, Aminata rit. Authentique = viral."}]}},
+  {id:'p9',date:'Dim 8 Mars 18h',em:'🌸',title:'Vidéo Lancement — 1ER POST OFFICIEL',desc:'3 tenues · 3 lieux · Journée des Femmes',plat:'TikTok + Insta',fmt:'Reel + TikTok',posts:'2',note:'🚀 Publication officielle à 18h00',done:false,launch:true,script:{title:'Vidéo Lancement — Script',shots:[{n:1,d:"🎬 HOOK (2s) : plan rapide Tour Eiffel + texte 'Journée des Femmes à Paris 🌸'"},{n:2,d:"⚡ MONTAGE RAPIDE : best-of 3 tenues en transitions."},{n:3,d:"Tenue 1 Hôtel : 2 clips (walking + café)"},{n:4,d:"Tenue 2 Musée : 2 clips (couloir + face à l'œuvre)"},{n:5,d:"Tenue 3 Tour Eiffel : 3 clips (walking, golden hour, duo Aminata)"},{n:6,d:"🎯 FINAL (3s) : meilleur plan face caméra, sourire, texte : 'Bon 8 mars à toutes 🌸'"},{n:7,d:"📝 CAPTION : '3 tenues · 3 lieux · 1 journée magique à Paris 🗼'"}]}},
+  {id:'p10',date:'Déjà filmé',em:'🍜',title:'Restaurant Coréen',desc:'Photos + vidéos ambiance + outfits avec amies',plat:'TikTok + Insta',fmt:'TikTok + Reel',posts:'2',note:'Son girl dinner trending',done:false,launch:false,script:{title:'Restaurant Coréen — Montage',shots:[{n:1,d:"🎬 HOOK : 'Girl dinner level coréen 🍜'"},{n:2,d:"🍽 FOOD : clips appétissants des plats, BBQ qui grille, sauces."},{n:3,d:"👗 OUTFITS : clip rapide de chaque fille avec son look."},{n:4,d:"😂 MOMENTS DRÔLES : réactions face à la nourriture, fous rires."},{n:5,d:"🥂 TOAST : plan serré sur verres qui trinquent."},{n:6,d:"📸 INSTAGRAM : photo flat lay du plateau ou photo de groupe."}]}},
+  {id:'p11',date:'Déjà filmé',em:'🎳',title:'Bowling + Anniversaire copain',desc:'Photos bowling + restaurant italien',plat:'TikTok + Insta',fmt:'TikTok humour',posts:'2',note:'Angle : look chic VS bowling 😂',done:false,launch:false,script:{title:'Bowling Anniversaire — Script Humour',shots:[{n:1,d:"🎬 HOOK : 'Mon copain voulait bowling pour son anniversaire... en mode chic 😂'"},{n:2,d:"🎳 BOWLING : clips de toi qui joues (les ratés c'est drôle)."},{n:3,d:"😂 CONTRASTE COMIQUE : gros plan outfit chic, puis plan large bowling."},{n:4,d:"🍝 RESTAURANT APRÈS : ambiance italienne, plats, photo de couple."},{n:5,d:"🎂 GÂTEAU ANNIVERSAIRE : moment touchant et authentique."}]}}
+];
+
+const D_PUBS=[
+  {id:'pub1',sem:'S1',date:'08/03',day:8,mo:2,yr:2026,plat:'tiktok',fmt:'TikTok',title:'🌸 LANCEMENT — 3 tenues · 3 lieux · Journée des Femmes à Paris',son:'Son trending #8mars',heure:'18h00',tags:'#journeedesfemmes #shooting #paris',src:'Shooting 8 mars',done:false,launch:true,stats:{v:0,l:0,c:0,s:0,sh:0},script:{title:'Post lancement TikTok',shots:[{n:1,d:"Utilise le montage de la vidéo lancement (voir script tâche p9)"},{n:2,d:"Caption : '3 tenues · 3 lieux · 1 journée magique 🗼🌸 Bonne journée des femmes ! #8mars'"},{n:3,d:"Publie à 18h00 précises. Reste dispo 30min pour répondre aux premiers commentaires !"}]}},
+  {id:'pub2',sem:'S1',date:'08/03',day:8,mo:2,yr:2026,plat:'insta',fmt:'Reel',title:'🌸 Meilleur shot du shooting — Journée des Femmes',son:'Son inspirant',heure:'20h00',tags:'#journeedesfemmes #parisienne #ootd',src:'Shooting 8 mars',done:false,launch:true,stats:{v:0,l:0,c:0,s:0,sh:0},script:{title:'Reel Instagram lancement',shots:[{n:1,d:"Prends ton meilleur plan du shooting (probablement Tour Eiffel golden hour)"},{n:2,d:"Son inspirant, texte minimal. Laisse l'image parler."},{n:3,d:"Caption : '8 mars 🌸 Bonne journée des femmes ✨'"}]}},
+  {id:'pub3',sem:'S1',date:'08/03',day:8,mo:2,yr:2026,plat:'stories',fmt:'Stories',title:'Coulisses shooting live — hôtel · musée · Tour Eiffel',son:'—',heure:'Toute la journée',tags:'Stories live',src:'Shooting 8 mars',done:false,launch:true,stats:{v:0,l:0,c:0,s:0,sh:0},script:{title:'Stories live shooting',shots:[{n:1,d:"10h : Story arrivée hôtel avec localisation"},{n:2,d:"11h : En train de poser — sondage 'Laquelle tu préfères ?'"},{n:3,d:"13h : Story musée — 'Vous devinez quel musée ? 🎨'"},{n:4,d:"17h30 : Stories golden hour Tour Eiffel"},{n:5,d:"18h05 : 'Mon premier post est EN LIGNE ! Allez voir ! 👆'"}]}},
+  {id:'pub4',sem:'S1',date:'09/03',day:9,mo:2,yr:2026,plat:'insta',fmt:'Carousel',title:'📷 Carousel Tenue 1 — Look Hôtel / Café (avec Aminata)',son:'—',heure:'12h00',tags:'#carousel #lookdujour #hotelvibes',src:'Shooting 8 mars · Tenue 1',done:false,launch:false,stats:{v:0,l:0,c:0,s:0,sh:0},script:{title:'Carousel Tenue 1',shots:[{n:1,d:"Slide 1 COVER : miroir full body lobby"},{n:2,d:"Slide 2 : walking shot couloir"},{n:3,d:"Slide 3 : détail accessoire/chaussure"},{n:4,d:"Slide 4 : assise café, lumière fenêtre"},{n:5,d:"Slide 5 : de dos vers fenêtre"},{n:6,d:"Slide 6 : moment spontané/rire"},{n:7,d:"Slide 7 : CTA 'Swipe → slide préférée ? 👇'"}]}},
+  {id:'pub5',sem:'S1',date:'09/03',day:9,mo:2,yr:2026,plat:'tiktok',fmt:'TikTok',title:'🍜 Soirée Restaurant Coréen — ambiance + looks',son:'Son girl dinner trending',heure:'18h00',tags:'#kbbq #girlsnight #koreanfood',src:'Contenu prêt ✅',done:false,launch:false,stats:{v:0,l:0,c:0,s:0,sh:0},script:{title:'TikTok Restaurant Coréen',shots:[{n:1,d:"Utilise le script tâche p10"},{n:2,d:"Son : trending KBBQ ou girl dinner"},{n:3,d:"Durée : 15-30s, rythme rapide"}]}},
+  {id:'pub6',sem:'S2',date:'10/03',day:10,mo:2,yr:2026,plat:'insta',fmt:'Carousel',title:'📷 Carousel Tenue 2 — Look Musée (avec Aminata)',son:'—',heure:'12h00',tags:'#carousel #museestyle #artvibes',src:'Shooting 8 mars · Tenue 2',done:false,launch:false,stats:{v:0,l:0,c:0,s:0,sh:0},script:{title:'Carousel Tenue 2 Musée',shots:[{n:1,d:"Slide 1 COVER : de dos face grande œuvre"},{n:2,d:"Slide 2 : walking couloir perspective"},{n:3,d:"Slide 3 : face caméra art en fond"},{n:4,d:"Slide 4 : détail chaussure sur parquet"},{n:5,d:"Slide 5 : pose sculptée"},{n:6,d:"Slide 6 : escalier ou architecture"},{n:7,d:"Slide 7 : vote 1️⃣2️⃣3️⃣"}]}},
+  {id:'pub7',sem:'S2',date:'10/03',day:10,mo:2,yr:2026,plat:'tiktok',fmt:'TikTok',title:'🎷 GRWM Concert Jazz — outfit soirée + ambiance',son:'Son jazz lounge nuit parisienne',heure:'18h00',tags:'#grwm #concert #jazz #soiree',src:'Concert Jazz ✅',done:false,launch:false,stats:{v:0,l:0,c:0,s:0,sh:0},script:{title:'TikTok GRWM Jazz',shots:[{n:1,d:"Utilise le script tâche p1"},{n:2,d:"Montage accéléré GRWM + clips concert"},{n:3,d:"Son jazz tendance en fond"}]}},
+  {id:'pub8',sem:'S2',date:'11/03',day:11,mo:2,yr:2026,plat:'insta',fmt:'Reel',title:'🍜 Restaurant Coréen — Reel lifestyle ambiance + outfit',son:'Son fun coréen trending',heure:'12h00',tags:'#koreanfood #girlsnight #lifestyle',src:'Contenu prêt ✅',done:false,launch:false,stats:{v:0,l:0,c:0,s:0,sh:0},script:{title:'Reel Resto Coréen',shots:[{n:1,d:"Meilleurs clips restaurant"},{n:2,d:"Format : 20-30s, rythme sur musique"},{n:3,d:"Focus : ambiance + food + outfits"}]}},
+  {id:'pub9',sem:'S2',date:'11/03',day:11,mo:2,yr:2026,plat:'tiktok',fmt:'TikTok',title:'🎳 Bowling + Anniversaire copain — look chic VS bowling 😂',son:'Son humour trending',heure:'18h00',tags:'#birthday #bowling #datenight',src:'Bowling anniversaire ✅',done:false,launch:false,stats:{v:0,l:0,c:0,s:0,sh:0},script:{title:'TikTok Bowling Humour',shots:[{n:1,d:"Utilise le script tâche p11"},{n:2,d:"Joue sur le contraste chic/bowling"},{n:3,d:"Son humour du moment"}]}},
+  {id:'pub10',sem:'S2',date:'12/03',day:12,mo:2,yr:2026,plat:'insta',fmt:'Carousel',title:'📷 Carousel Tenue 3 — Tour Eiffel / Rues de Paris',son:'—',heure:'12h00',tags:'#carousel #toureiffel #paris',src:'Shooting 8 mars · Tenue 3',done:false,launch:false,stats:{v:0,l:0,c:0,s:0,sh:0},script:{title:'Carousel Tenue 3 Tour Eiffel',shots:[{n:1,d:"Slide 1 COVER : walking Tour centrée"},{n:2,d:"Slide 2 : profil éditorial"},{n:3,d:"Slide 3 : face souriante naturelle"},{n:4,d:"Slide 4 : rue haussmannienne"},{n:5,d:"Slide 5 : détail chaussure pavés"},{n:6,d:"Slide 6 : moment fun/spontané"},{n:7,d:"Slide 7 : golden hour portrait"},{n:8,d:"Slide 8 : vote + @aminata"}]}},
+  {id:'pub11',sem:'S2',date:'12/03',day:12,mo:2,yr:2026,plat:'tiktok',fmt:'TikTok',title:'💄 Collab maquillage copine MUA — transformation',son:'Son transformation trending',heure:'18h00',tags:'#makeupartist #transformation #mua',src:'Collab MUA ✅',done:false,launch:false,stats:{v:0,l:0,c:0,s:0,sh:0},script:{title:'TikTok Transformation MUA',shots:[{n:1,d:"Utilise le script tâche p4"},{n:2,d:"Format avant/après avec transition miroir"},{n:3,d:"Tag obligatoire @copine_mua"}]}}
+];
+
+const FW_WEEKS=[
+  {id:'w01',l:'S1 Mars',dt:'08/03'},{id:'w02',l:'S2 Mars',dt:'15/03'},{id:'w03',l:'S3 Mars',dt:'22/03'},{id:'w04',l:'S4 Mars',dt:'29/03'},
+  {id:'w05',l:'S1 Avril',dt:'05/04'},{id:'w06',l:'S2 Avril',dt:'12/04'},{id:'w07',l:'S3 Avril',dt:'19/04'},{id:'w08',l:'S4 Avril',dt:'26/04'},
+  {id:'w09',l:'S1 Mai',dt:'03/05'},{id:'w10',l:'S2 Mai',dt:'10/05'},{id:'w11',l:'S3 Mai',dt:'17/05'},{id:'w12',l:'S4 Mai',dt:'24/05'},
+  {id:'w13',l:'S1 Juin',dt:'01/06'},{id:'w14',l:'S2 Juin',dt:'08/06'},{id:'w15',l:'S3 Juin',dt:'15/06'},{id:'w16',l:'S4 Juin',dt:'22/06'},
+  {id:'w17',l:'S1 Juil.',dt:'06/07'},{id:'w18',l:'S2 Juil.',dt:'13/07'},{id:'w19',l:'S3 Juil.',dt:'20/07'},{id:'w20',l:'S4 Juil.',dt:'27/07'},
+  {id:'w21',l:'S1 Août',dt:'03/08'},{id:'w22',l:'S2 Août',dt:'10/08'},{id:'w23',l:'S3 Août',dt:'17/08'},{id:'w24',l:'S4 Août',dt:'24/08'},
+  {id:'w25',l:'S1 Sept.',dt:'07/09'},{id:'w26',l:'S2 Sept.',dt:'14/09'},{id:'w27',l:'S3 Sept.',dt:'21/09'},{id:'w28',l:'S4 Sept.',dt:'28/09'},
+  {id:'w29',l:'S1 Oct.',dt:'05/10'},{id:'w30',l:'S2 Oct.',dt:'12/10'},{id:'w31',l:'S3 Oct.',dt:'19/10'},{id:'w32',l:'S4 Oct.',dt:'26/10'},
+  {id:'w33',l:'S1 Nov.',dt:'02/11'},{id:'w34',l:'S2 Nov.',dt:'09/11'},{id:'w35',l:'S3 Nov.',dt:'16/11'},{id:'w36',l:'S4 Nov.',dt:'23/11'},
+  {id:'w37',l:'S1 Déc.',dt:'07/12'},{id:'w38',l:'S2 Déc.',dt:'14/12'},{id:'w39',l:'S3 Déc.',dt:'21/12'}
+];
+const D_FW=FW_WEEKS.map(w=>({id:w.id,l:w.l,dt:w.dt,ig:0,tt:0}));
+
+// ─── STATE + STORAGE ───
+let PROD,PUBS,FW;
+let fSem='all',fPlat='all';
+
+function save(){
+  cloudSave('prod2', PROD);
+  cloudSave('pubs2', PUBS);
+  cloudSave('fw2', FW);
+}
+async function load(){
+  PROD = await cloudLoad('prod2', null);
+  PUBS = await cloudLoad('pubs2', null);
+  FW   = await cloudLoad('fw2',   null);
+  if(!PROD)PROD=JSON.parse(JSON.stringify(D_PROD));
+  if(!PUBS)PUBS=JSON.parse(JSON.stringify(D_PUBS));
+  if(!FW)FW=JSON.parse(JSON.stringify(D_FW));
+}
+
+async function initApp(){
+  initSupabase();
+  await load();
+  await loadIgProfile();
+  await loadFeedData();
+  await loadEvents();
+  renderAll();
+}
+function renderAll(){renderKPIs();renderProd();buildFilters();renderPlanning();renderCalendar();renderFeed();renderHighlights();}
+if(localStorage.getItem('auth')==='ok'){document.getElementById('login-page').style.display='none';document.getElementById('app').style.display='block';initApp();}
+
+// Show setup banner if Supabase not configured
+(function(){
+  if(SUPA_URL === 'REMPLACE_PAR_TON_URL_SUPABASE') {
+    setTimeout(function(){
+      var b = document.createElement('div');
+      b.className = 'supa-setup-banner';
+      b.innerHTML = '☁️ <strong>Sauvegarde cloud désactivée</strong><br>Tes données sont sauvegardées localement.<br>Pour une sauvegarde permanente sur Netlify,<br>configure Supabase en haut du fichier JS.';
+      document.body.appendChild(b);
+      setTimeout(function(){ b.style.transition='opacity .5s'; b.style.opacity='0'; setTimeout(function(){b.remove();},500); }, 6000);
+    }, 1500);
+  }
+})();
+
+function setTab(id,btn){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.bnt').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+  if(id==='analytics')renderAnalytics();
+  if(id==='planning')renderCalendar();
+  if(id==='followers')renderFollowers();
+}
+
+// ─── KPIs ───
+function eng(p){if(!p.stats||!p.stats.v||p.stats.v===0)return 0;return((p.stats.l+p.stats.c*2+p.stats.s*3+p.stats.sh)/p.stats.v*100).toFixed(1);}
+function renderKPIs(){
+  const posted=PUBS.filter(p=>p.done).length;
+  const ws=PUBS.filter(p=>p.done&&p.stats.v>0);
+  const tv=ws.reduce((s,p)=>s+p.stats.v,0);
+  const avgE=ws.length?(ws.reduce((s,p)=>s+parseFloat(eng(p)),0)/ws.length).toFixed(1):null;
+  const igLast=FW.filter(f=>f.ig>0);const ttLast=FW.filter(f=>f.tt>0);
+  const igC=igLast.length?igLast[igLast.length-1].ig:0;const ttC=ttLast.length?ttLast[ttLast.length-1].tt:0;
+  const pd=PROD.filter(p=>p.done).length;
+  document.getElementById('kpi-row').innerHTML=[
+    {l:'Productions',v:`${pd}/${PROD.length}`,c:'#F59E0B'},
+    {l:'Posts publiés',v:`${posted}/${PUBS.length}`,c:'#FF2D7A'},
+    {l:'Vues totales',v:tv>0?tv.toLocaleString('fr-FR'):'—',c:'#06B6D4'},
+    {l:'Engagement moy.',v:avgE?avgE+'%':'—',c:'#7C3AED'},
+    {l:'Instagram',v:igC>0?igC.toLocaleString('fr-FR'):'—',c:'#C13584'},
+    {l:'TikTok',v:ttC>0?ttC.toLocaleString('fr-FR'):'—',c:'#FF004F'}
+  ].map(k=>`<div class="kpi"><div class="kl">${k.l}</div><div class="kv" style="color:${k.c}">${k.v}</div></div>`).join('');
+}
+
+// ─── PRODUCTION ───
+function renderProd(){
+  const done=PROD.filter(p=>p.done).length,total=PROD.length,pct=total?Math.round(done/total*100):0;
+  document.getElementById('prod-lbl').textContent=`${done} / ${total} tâches complétées`;
+  document.getElementById('prod-pct').textContent=pct+'%';
+  document.getElementById('prod-prog').style.width=pct+'%';
+  const el=document.getElementById('prod-list');if(!el)return;
+  el.innerHTML=PROD.map((p,i)=>{
+    const cls='prod-card'+(p.done?' done':'')+(p.launch?' lt':'');
+    const tags=[p.plat,p.fmt,p.posts?`💬 ${p.posts}`:null].filter(Boolean).map(t=>`<span class="tag tg-amber">${t}</span>`).join('');
+    const scriptHtml=p.script&&p.script.shots&&p.script.shots.length?
+      `<div class="prod-script-panel" id="psp-${p.id}">
+        <div class="psp-inner">
+          <div class="psp-hdr"><div class="psp-dots"><div class="psp-dot" style="background:#FF5F57"></div><div class="psp-dot" style="background:#FFBD2E"></div><div class="psp-dot" style="background:#28CA41"></div></div><div class="psp-label">${p.script.title||'Script de tournage'}</div></div>
+          <div class="psp-head">${p.script.title||''}</div>
+          ${p.script.shots.map(s=>`<div class="psp-shot"><div class="psp-n">Plan ${s.n}</div><div class="psp-d">${s.d}</div></div>`).join('')}
+        </div>
+      </div>`:'';
+    return `<div class="${cls}">
+      <div class="pc-main">
+        <div class="pc-chk${p.done?' on':''}" onclick="toggleProd('${p.id}')">${p.done?'✓':''}</div>
+        <div class="pc-body">
+          <div class="pc-meta"><span class="pc-date">${p.date}</span>${p.launch?'<span class="tag tg-rose">🚀 LANCEMENT</span>':''}${tags}</div>
+          <div class="pc-title${p.done?' done':''}">${p.em||''} ${p.title}</div>
+          <div class="pc-desc">${p.desc}</div>
+          ${p.note?`<div style="font-size:10px;color:var(--amber);font-style:italic">⚡ ${p.note}</div>`:''}
+          <div class="pc-actions" style="margin-top:6px;">
+            ${scriptHtml?`<button class="sb sb-script" onclick="toggleProdScript('${p.id}')">🎬 Script de tournage</button>`:''}
+            <button class="sb sb-edit" onclick="openProdModal(${i})">✏️ Modifier</button>
+          </div>
+        </div>
+      </div>
+      ${scriptHtml}
+    </div>`;
+  }).join('');
+}
+function toggleProd(id){const p=PROD.find(x=>x.id===id);if(p){p.done=!p.done;save();renderProd();renderKPIs();}}
+function toggleProdScript(id){const el=document.getElementById('psp-'+id);if(el)el.classList.toggle('open');}
+
+// ─── PLANNING ───
+function buildFilters(){
+  const el=document.getElementById('filter-bar');if(!el)return;
+  const sems=Object.keys(SEM);
+  let h='<span class="fb-label">Semaine :</span><button class="fb-btn'+(fSem==='all'?' a-sem':'')+'" onclick="setFSem(\'all\',this)">Toutes</button>';
+  sems.forEach(s=>h+=`<button class="fb-btn${fSem===s?' a-sem':''}" onclick="setFSem('${s}',this)">${SEM[s].l.replace('Semaine ','Sem ')}</button>`);
+  h+='<span class="fb-sep"></span><span class="fb-label">Plateforme :</span>';
+  ['all','tiktok','insta','stories'].forEach(p=>h+=`<button class="fb-btn${fPlat===p?' a-plat':''}" onclick="setFPlat('${p}',this)">${p==='all'?'Toutes':{tiktok:'TikTok',insta:'Instagram',stories:'Stories'}[p]}</button>`);
+  el.innerHTML=h;
+}
+function setFSem(s,btn){fSem=s;buildFilters();renderPlanning();}
+function setFPlat(p,btn){fPlat=p;buildFilters();renderPlanning();}
+
+function renderPlanning(){
+  const el=document.getElementById('pubs-container');if(!el)return;
+  let pubs=PUBS;
+  if(fSem!=='all')pubs=pubs.filter(p=>p.sem===fSem);
+  if(fPlat!=='all')pubs=pubs.filter(p=>p.plat===fPlat);
+  const bySem={};
+  pubs.forEach(p=>{if(!bySem[p.sem])bySem[p.sem]=[];bySem[p.sem].push(p);});
+  let html='';
+  Object.keys(SEM).forEach(s=>{
+    const items=bySem[s];if(!items||!items.length)return;
+    const done=items.filter(x=>x.done).length;
+    html+=`<div class="week-hdr" style="border-left-color:${SEM[s].c}"><div><span class="wn" style="color:${SEM[s].c}">${SEM[s].l}</span><span class="wd">${SEM[s].d} — ${SEM[s].desc}</span></div><div class="wcnt">${done}/${items.length}</div></div>`;
+    items.forEach((p,idx)=>{
+      const realIdx=PUBS.findIndex(x=>x.id===p.id);
+      const platCls={tiktok:'b-tt',insta:'b-ig',stories:'b-st'}[p.plat]||'b-ig';
+      const platLbl={tiktok:'TIKTOK',insta:'INSTAGRAM',stories:'STORIES'}[p.plat]||p.plat.toUpperCase();
+      const doneCls=p.done?'done':'';
+      const lcCls=p.launch?'lc':'';
+      const scriptHtml=p.script&&p.script.shots&&p.script.shots.length?
+        `<div class="pub-script-panel" id="pubsp-${p.id}">
+          <div class="psp-pub-head">${p.script.title||'Script'}</div>
+          ${p.script.shots.map(s=>`<div class="psp-pub-shot"><div class="psp-pub-n">Plan ${s.n}</div><div class="psp-pub-d">${s.d}</div></div>`).join('')}
+          <div class="psp-pub-foot">${p.src||''}</div>
+        </div>`:'';
+      const statsHtml=`<div class="stats-panel" id="sp-${p.id}">
+        <div class="sp-inner">
+          <div class="sp-title">📊 Statistiques</div>
+          <div class="stats-grid">
+            ${[['Vues','v','👁'],['Likes','l','❤️'],['Comments','c','💬'],['Saves','s','🔖'],['Shares','sh','🔁']].map(([lbl,key,ico])=>`<div class="sf"><label style="color:var(--muted)">${ico} ${lbl}</label><input type="number" value="${p.stats[key]||0}" oninput="updStat('${p.id}','${key}',this.value)" /></div>`).join('')}
+          </div>
+          <div class="eng-row"><span style="font-size:10px;color:var(--muted)">Taux d'engagement</span><span class="eng-v" style="color:var(--violet)">${eng(p)}%</span></div>
+        </div>
+      </div>`;
+      html+=`<div class="pub-card ${doneCls} ${lcCls}">
+        <div class="pub-top">
+          <div class="pub-chk${p.done?' on':''}" onclick="togglePub('${p.id}')">${p.done?'✓':''}</div>
+          <div class="pub-body">
+            <div class="pub-meta">
+              <span class="badge ${platCls}">${platLbl}</span>
+              <span class="fmt-t">${p.fmt}</span>
+              <span class="time-t">⏰ ${p.heure}</span>
+              ${p.launch?'<span class="badge b-launch">🚀 LANCEMENT</span>':''}
+            </div>
+            <div class="pub-title-main"><span class="pub-date-inline">${p.date} · </span>${p.title}</div>
+            ${p.son&&p.son!=='—'?`<div class="pub-son">🎵 ${p.son}</div>`:''}
+            ${p.src?`<div class="src-t">📁 ${p.src}</div>`:''}
+            ${p.done&&p.link?`<a href="${p.link}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;margin-top:4px;font-size:11px;font-weight:700;color:#059669;text-decoration:none;background:rgba(5,150,105,.08);border:1px solid rgba(5,150,105,.2);border-radius:6px;padding:3px 8px;">🔗 Voir le post publié ↗</a>`:''}
+            <div class="pub-actions" style="margin-top:8px;">
+              <div class="pub-btns">
+                ${scriptHtml?`<button class="sb sb-script" onclick="togglePubScript('${p.id}')">📝 Script</button>`:''}
+                <button class="sb sb-edit" onclick="openPubModal(${realIdx})">✏️ Modifier</button>
+                <button class="sb sb-stats" onclick="toggleStats('${p.id}')">📊 Stats</button>
+                <button class="sb sb-del" onclick="deletePubDirect('${p.id}')">🗑</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        ${scriptHtml}
+        ${statsHtml}
+      </div>`;
+    });
+  });
+  el.innerHTML=html;
+}
+
+function togglePub(id){const p=PUBS.find(x=>x.id===id);if(p){p.done=!p.done;save();buildFilters();renderPlanning();renderKPIs();}}
+function togglePubScript(id){const el=document.getElementById('pubsp-'+id);if(el)el.classList.toggle('open');}
+function toggleStats(id){const el=document.getElementById('sp-'+id);if(el)el.classList.toggle('open');}
+function updStat(id,key,val){const p=PUBS.find(x=>x.id===id);if(p){p.stats[key]=parseInt(val)||0;save();renderKPIs();const engEl=document.querySelector(`#sp-${id} .eng-v`);if(engEl)engEl.textContent=eng(p)+'%';}}
+function deletePubDirect(id){askConfirm('Supprimer ce post ?',function(){PUBS=PUBS.filter(p=>p.id!==id);save();buildFilters();renderPlanning();renderCalendar();renderKPIs();});}
+function setPlanView(view,btn){
+  document.querySelectorAll('#pvt-list,#pvt-cal').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  document.getElementById('plan-list-view').style.display=view==='list'?'block':'none';
+  document.getElementById('plan-cal-view').style.display=view==='cal'?'block':'none';
+  if(view==='cal')renderCalendar();
+}
+
+// ─── PROD MODAL (FIXED) ───
+let _pe=null;
+function openProdModal(idx){
+  const isNew=idx===-1;
+  _pe=isNew?{id:'p'+Date.now(),date:'',em:'🎬',title:'',desc:'',plat:'',fmt:'',posts:'',note:'',done:false,launch:false,script:{title:'',shots:[]}}:JSON.parse(JSON.stringify(PROD[idx]));
+  if(!_pe.script)_pe.script={title:'',shots:[]};
+  openModal(`<button class="modal-x" onclick="closeModal()">✕</button>
+    <h2>${isNew?'Nouvelle tâche':'Modifier la tâche'}</h2>
+    <div class="fg"><div class="fr"><label>Date</label><input id="pe-date" value="${_pe.date}"></div><div class="fr"><label>Emoji</label><input id="pe-em" value="${_pe.em}" style="width:70px"></div></div>
+    <div class="fr"><label>Titre</label><input id="pe-title" value="${_pe.title}"></div>
+    <div class="fr"><label>Description</label><textarea id="pe-desc">${_pe.desc}</textarea></div>
+    <div class="fg"><div class="fr"><label>Plateforme</label><input id="pe-plat" value="${_pe.plat}"></div><div class="fr"><label>Format</label><input id="pe-fmt" value="${_pe.fmt}"></div></div>
+    <div class="fg"><div class="fr"><label>Nb posts</label><input id="pe-posts" value="${_pe.posts}"></div><div class="fr"><label>Note</label><input id="pe-note" value="${_pe.note}"></div></div>
+    <hr class="sep"><div class="fr"><label>🎬 Titre du script</label><input id="pe-stitle" value="${_pe.script.title}"></div>
+    <div id="pe-shots">${_pe.script.shots.map((s,i)=>shotEditHtml(i,s.d)).join('')}</div>
+    <button class="add-btn" onclick="addShot()">＋ Ajouter un plan</button>
+    <div class="modal-acts">
+      ${!isNew?`<button class="btn-d" onclick="delProd('${_pe.id}')">🗑 Supprimer</button>`:''}
+      <button class="btn-s" onclick="closeModal()">Annuler</button>
+      <button class="btn-p" onclick="saveProd('${_pe.id}',${isNew},${idx})">Enregistrer ✓</button>
+    </div>`);
+}
+function shotEditHtml(i,d){return `<div class="shot-edit" id="se-${i}"><div class="shot-edit-n">Plan ${i+1}</div><textarea oninput="updShot(${i},this.value)">${d||''}</textarea><button class="shot-edit-del" onclick="removeShot(${i})">✕</button></div>`;}
+function addShot(){if(!_pe)return;_pe.script.shots.push({n:_pe.script.shots.length+1,d:''});const c=document.getElementById('pe-shots');const i=_pe.script.shots.length-1;c.insertAdjacentHTML('beforeend',shotEditHtml(i,''));}
+function removeShot(i){if(!_pe)return;_pe.script.shots.splice(i,1);_pe.script.shots.forEach((s,j)=>s.n=j+1);document.getElementById('pe-shots').innerHTML=_pe.script.shots.map((s,j)=>shotEditHtml(j,s.d)).join('');}
+function updShot(i,v){if(_pe&&_pe.script.shots[i])_pe.script.shots[i].d=v;}
+function saveProd(id,isNew,idx){
+  if(!_pe)return;
+  _pe.id=id;_pe.date=document.getElementById('pe-date').value;_pe.em=document.getElementById('pe-em').value;_pe.title=document.getElementById('pe-title').value;_pe.desc=document.getElementById('pe-desc').value;_pe.plat=document.getElementById('pe-plat').value;_pe.fmt=document.getElementById('pe-fmt').value;_pe.posts=document.getElementById('pe-posts').value;_pe.note=document.getElementById('pe-note').value;_pe.script.title=document.getElementById('pe-stitle').value;
+  document.querySelectorAll('#pe-shots textarea').forEach((ta,i)=>{if(_pe.script.shots[i])_pe.script.shots[i].d=ta.value;});
+  if(isNew)PROD.push(_pe);else PROD[idx]=_pe;
+  save();closeModal();renderProd();renderKPIs();
+}
+function delProd(id){askConfirm('Supprimer cette tâche ?',function(){PROD=PROD.filter(p=>p.id!==id);save();closeModal();renderProd();renderKPIs();});}
+
+// ─── PUB MODAL (FIXED) ───
+let _pubbe=null;
+function openPubModal(idx){
+  const isNew=idx===-1;
+  _pubbe=isNew?{id:'pub'+Date.now(),sem:'S1',date:'',day:1,mo:2,yr:2026,plat:'tiktok',fmt:'TikTok',title:'',son:'',heure:'18h00',tags:'',src:'À filmer 🎬',done:false,launch:false,stats:{v:0,l:0,c:0,s:0,sh:0},script:{title:'',shots:[]}}:JSON.parse(JSON.stringify(PUBS[idx]));
+  if(!_pubbe.script)_pubbe.script={title:'',shots:[]};
+  openModal(`<button class="modal-x" onclick="closeModal()">✕</button>
+    <h2>${isNew?'Nouveau post':'Modifier le post'}</h2>
+    <div class="fg"><div class="fr"><label>Date (JJ/MM)</label><input id="ppe-date" value="${_pubbe.date}"></div>
+    <div class="fr"><label>Semaine</label><select id="ppe-sem">${Object.keys(SEM).map(s=>`<option value="${s}"${_pubbe.sem===s?' selected':''}>${SEM[s].l}</option>`).join('')}</select></div></div>
+    <div class="fg"><div class="fr"><label>Jour du mois</label><input id="ppe-day" type="number" min="1" max="31" value="${_pubbe.day}"></div>
+    <div class="fr"><label>Mois (0=Jan)</label><input id="ppe-mo" type="number" min="0" max="11" value="${_pubbe.mo}"></div></div>
+    <div class="fr"><label>Titre</label><input id="ppe-title" value="${_pubbe.title}"></div>
+    <div class="fg"><div class="fr"><label>Plateforme</label><select id="ppe-plat">${Object.keys(PM).map(p=>`<option value="${p}"${_pubbe.plat===p?' selected':''}>${PM[p].l}</option>`).join('')}</select></div>
+    <div class="fr"><label>Format</label><input id="ppe-fmt" value="${_pubbe.fmt}"></div></div>
+    <div class="fg"><div class="fr"><label>Heure</label><input id="ppe-heure" value="${_pubbe.heure}"></div>
+    <div class="fr"><label>Son/Trend</label><input id="ppe-son" value="${_pubbe.son}"></div></div>
+    <div class="fr"><label>Source</label><input id="ppe-src" value="${_pubbe.src}"></div>
+    <div class="fr"><label>Hashtags</label><input id="ppe-tags" value="${_pubbe.tags}"></div>
+    ${_pubbe.done ? `<div class="fr" style="background:linear-gradient(135deg,rgba(5,150,105,.06),rgba(52,211,153,.04));border:1.5px solid rgba(5,150,105,.2);border-radius:10px;padding:10px 12px;"><label style="color:#059669;">🔗 Lien du post publié</label><input id="ppe-link" placeholder="https://www.tiktok.com/@meryne.eis/..." value="${_pubbe.link||''}"></div>` : ''}
+    <hr class="sep"><div class="fr"><label>🎬 Titre du script</label><input id="ppe-stitle" value="${_pubbe.script.title}"></div>
+    <div id="ppe-shots">${_pubbe.script.shots.map((s,i)=>pubShotHtml(i,s.d)).join('')}</div>
+    <button class="add-btn" onclick="addPubShot()">＋ Ajouter un plan</button>
+    <div class="modal-acts">
+      ${!isNew?`<button class="btn-d" onclick="delPubM('${_pubbe.id}')">🗑 Supprimer</button>`:''}
+      <button class="btn-s" onclick="closeModal()">Annuler</button>
+      <button class="btn-p" onclick="savePub('${_pubbe.id}',${isNew},${idx})">Enregistrer ✓</button>
+    </div>`);
+}
+function pubShotHtml(i,d){return `<div class="shot-edit" id="pse-${i}"><div class="shot-edit-n">Plan ${i+1}</div><textarea oninput="updPubShot(${i},this.value)">${d||''}</textarea><button class="shot-edit-del" onclick="removePubShot(${i})">✕</button></div>`;}
+function addPubShot(){if(!_pubbe)return;_pubbe.script.shots.push({n:_pubbe.script.shots.length+1,d:''});const c=document.getElementById('ppe-shots');const i=_pubbe.script.shots.length-1;c.insertAdjacentHTML('beforeend',pubShotHtml(i,''));}
+function removePubShot(i){if(!_pubbe)return;_pubbe.script.shots.splice(i,1);_pubbe.script.shots.forEach((s,j)=>s.n=j+1);document.getElementById('ppe-shots').innerHTML=_pubbe.script.shots.map((s,j)=>pubShotHtml(j,s.d)).join('');}
+function updPubShot(i,v){if(_pubbe&&_pubbe.script.shots[i])_pubbe.script.shots[i].d=v;}
+function savePub(id,isNew,idx){
+  if(!_pubbe)return;
+  _pubbe.id=id;_pubbe.date=document.getElementById('ppe-date').value;_pubbe.sem=document.getElementById('ppe-sem').value;_pubbe.day=parseInt(document.getElementById('ppe-day').value)||1;_pubbe.mo=parseInt(document.getElementById('ppe-mo').value)||2;_pubbe.yr=2026;_pubbe.title=document.getElementById('ppe-title').value;_pubbe.plat=document.getElementById('ppe-plat').value;_pubbe.fmt=document.getElementById('ppe-fmt').value;_pubbe.heure=document.getElementById('ppe-heure').value;_pubbe.son=document.getElementById('ppe-son').value;_pubbe.src=document.getElementById('ppe-src').value;_pubbe.tags=document.getElementById('ppe-tags').value;_pubbe.script.title=document.getElementById('ppe-stitle').value;var linkEl=document.getElementById('ppe-link');if(linkEl)_pubbe.link=linkEl.value;
+  document.querySelectorAll('#ppe-shots textarea').forEach((ta,i)=>{if(_pubbe.script.shots[i])_pubbe.script.shots[i].d=ta.value;});
+  if(isNew)PUBS.push(_pubbe);else PUBS[idx]=_pubbe;
+  save();closeModal();buildFilters();renderPlanning();renderCalendar();renderKPIs();
+}
+function delPubM(id){askConfirm('Supprimer ce post ?',function(){PUBS=PUBS.filter(p=>p.id!==id);save();closeModal();renderPlanning();renderCalendar();renderKPIs();});}
+function openPubById(id){const idx=PUBS.findIndex(p=>p.id===id);if(idx!==-1)openPubModal(idx);}
+
+// ─── FOLLOWERS ───
+function renderFollowers(){
+  const el=document.getElementById('fw-grid');if(!el)return;
+  el.innerHTML=FW.map((w,i)=>{
+    const prev=i>0?FW[i-1]:null;
+    const dIg=prev&&prev.ig&&w.ig?w.ig-prev.ig:null;
+    const dTt=prev&&prev.tt&&w.tt?w.tt-prev.tt:null;
+    const igColor=dIg===null?'var(--muted)':dIg>=0?'var(--green)':'var(--red)';
+    const ttColor=dTt===null?'var(--muted)':dTt>=0?'var(--green)':'var(--red)';
+    return `<div class="fw-week">
+      <div class="fw-wl">${w.l}</div>
+      <div class="fw-wdt">${w.dt}</div>
+      <div class="fw-inputs">
+        <div class="fw-inp-wrap"><span class="fw-inp-lbl" style="color:var(--ig)">Instagram</span><input class="fw-inp" type="number" value="${w.ig||''}" placeholder="0" oninput="updFw('${w.id}','ig',this.value)" /></div>
+        <div class="fw-inp-wrap"><span class="fw-inp-lbl" style="color:var(--tt)">TikTok</span><input class="fw-inp" type="number" value="${w.tt||''}" placeholder="0" oninput="updFw('${w.id}','tt',this.value)" /></div>
+      </div>
+      <div class="fw-delta">
+        <span class="fw-d-val" style="color:${igColor}">IG: ${dIg!==null?(dIg>=0?'+':'')+dIg:'—'}</span>
+        <span class="fw-d-val" style="color:${ttColor}">TT: ${dTt!==null?(dTt>=0?'+':'')+dTt:'—'}</span>
+      </div>
+    </div>`;
+  }).join('');
+  // Progress
+  const igLast=FW.filter(f=>f.ig>0);const ttLast=FW.filter(f=>f.tt>0);
+  const igC=igLast.length?igLast[igLast.length-1].ig:0;const ttC=ttLast.length?ttLast[ttLast.length-1].tt:0;
+  const igPct=Math.min(100,Math.round(igC/30000*100));const ttPct=Math.min(100,Math.round(ttC/100000*100));
+  document.getElementById('fw-prog').innerHTML=`
+    <div class="fw-prog-item">
+      <div class="fw-prog-label">📸 Instagram — Objectif 30K</div>
+      <div class="fw-prog-bar"><div class="fw-prog-fill" style="width:${igPct}%;background:var(--ig)"></div></div>
+      <div class="fw-prog-text"><strong>${igC.toLocaleString('fr-FR')}</strong> / 30 000 abonnés (${igPct}%)</div>
+    </div>
+    <div class="fw-prog-item">
+      <div class="fw-prog-label">🎵 TikTok — Objectif 100K</div>
+      <div class="fw-prog-bar"><div class="fw-prog-fill" style="width:${ttPct}%;background:var(--tt)"></div></div>
+      <div class="fw-prog-text"><strong>${ttC.toLocaleString('fr-FR')}</strong> / 100 000 abonnés (${ttPct}%)</div>
+    </div>`;
+}
+function updFw(id,key,val){const w=FW.find(x=>x.id===id);if(w){w[key]=parseInt(val)||0;save();renderKPIs();}}
+
+// ─── ANALYTICS ───
+function drawChart(canvasId, labels, datasets, type) {
+  var existing = document.getElementById(canvasId);
+  if (!existing) {
+    var canvas = document.createElement('canvas');
+    canvas.id = canvasId; canvas.height = 180;
+    var parent = document.getElementById(canvasId.replace('-canvas',''));
+    if (parent) parent.appendChild(canvas);
+    else return;
+    existing = canvas;
+  }
+  var ctx = existing.getContext('2d');
+  var W = existing.offsetWidth || 400, H = 180;
+  existing.width = W;
+  ctx.clearRect(0, 0, W, H);
+  var p = { t: 24, r: 16, b: 36, l: 44 };
+  var maxVal = 0;
+  datasets.forEach(function(d) { d.data.forEach(function(v) { if (v > maxVal) maxVal = v; }); });
+  if (maxVal === 0) maxVal = 10;
+  var xStep = (W - p.l - p.r) / Math.max(labels.length - 1, 1);
+  var yScale = (H - p.t - p.b) / maxVal;
+  // Grid
+  ctx.strokeStyle = '#F0F0F3'; ctx.lineWidth = 1;
+  [0, 0.25, 0.5, 0.75, 1].forEach(function(v) {
+    var y = H - p.b - v * (H - p.t - p.b);
+    ctx.beginPath(); ctx.moveTo(p.l, y); ctx.lineTo(W - p.r, y); ctx.stroke();
+    ctx.fillStyle = '#9CA3AF'; ctx.font = '9px DM Sans,sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText(Math.round(v * maxVal), p.l - 4, y + 3);
+  });
+  // Lines
+  datasets.forEach(function(ds) {
+    ctx.beginPath();
+    ctx.strokeStyle = ds.color; ctx.lineWidth = 2.5; ctx.lineJoin = 'round';
+    ds.data.forEach(function(val, i) {
+      var x = p.l + i * xStep, y = H - p.b - val * yScale;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    // Dots
+    ctx.fillStyle = ds.color;
+    ds.data.forEach(function(val, i) {
+      var x = p.l + i * xStep, y = H - p.b - val * yScale;
+      ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
+    });
+  });
+  // X labels
+  ctx.fillStyle = '#9CA3AF'; ctx.font = '9px DM Sans,sans-serif'; ctx.textAlign = 'center';
+  labels.forEach(function(lbl, i) {
+    if (i % Math.ceil(labels.length / 8) === 0)
+      ctx.fillText(lbl, p.l + i * xStep, H - p.b + 14);
+  });
+}
+
+function renderAnalytics() {
+  const posted = PUBS.filter(p=>p.done), withStats = posted.filter(p=>p.stats.v>0);
+  const tv = withStats.reduce((s,p)=>s+p.stats.v,0);
+  const tl = withStats.reduce((s,p)=>s+p.stats.l,0);
+  const ts = withStats.reduce((s,p)=>s+p.stats.s,0);
+  const avgE = withStats.length ? (withStats.reduce((s,p)=>s+parseFloat(eng(p)),0)/withStats.length).toFixed(1) : 0;
+  document.getElementById('ana-kpis').innerHTML = [
+    {l:'Posts publiés',v:posted.length,s:'sur '+PUBS.length+' planifiés',c:'var(--rose)'},
+    {l:'Vues totales',v:tv>0?tv.toLocaleString('fr-FR'):'0',s:'tous posts confondus',c:'var(--cyan)'},
+    {l:'Likes totaux',v:tl>0?tl.toLocaleString('fr-FR'):'0',s:'interactions',c:'var(--rose)'},
+    {l:'Saves totaux',v:ts>0?ts.toLocaleString('fr-FR'):'0',s:'enregistrements',c:'var(--violet)'},
+    {l:'Engagement moy.',v:avgE+'%',s:'par post avec stats',c:'var(--green)'}
+  ].map(k=>`<div class="ana-kpi"><div class="ak-l">${k.l}</div><div class="ak-v" style="color:${k.c}">${k.v}</div><div class="ak-sub">${k.s}</div></div>`).join('');
+
+  // Platform split
+  const igPosts = withStats.filter(p=>p.plat==='insta');
+  const ttPosts = withStats.filter(p=>p.plat==='tiktok');
+  const igV = igPosts.reduce((s,p)=>s+p.stats.v,0);
+  const ttV = ttPosts.reduce((s,p)=>s+p.stats.v,0);
+  const igE = igPosts.length ? (igPosts.reduce((s,p)=>s+parseFloat(eng(p)),0)/igPosts.length).toFixed(1) : 0;
+  const ttE = ttPosts.length ? (ttPosts.reduce((s,p)=>s+parseFloat(eng(p)),0)/ttPosts.length).toFixed(1) : 0;
+  document.getElementById('plat-split').innerHTML = `
+    <div class="ps-card"><div class="ps-head" style="color:var(--ig)">📸 Instagram</div>
+      <div class="ps-stat"><span>${igPosts.length} posts publiés</span></div>
+      <div class="ps-stat"><span>Vues</span><span class="ps-val">${igV.toLocaleString('fr-FR')}</span></div>
+      <div class="ps-stat"><span>Engagement</span><span class="ps-val" style="color:var(--violet)">${igE}%</span></div>
+    </div>
+    <div class="ps-card"><div class="ps-head" style="color:var(--tt)">🎵 TikTok</div>
+      <div class="ps-stat"><span>${ttPosts.length} posts publiés</span></div>
+      <div class="ps-stat"><span>Vues</span><span class="ps-val">${ttV.toLocaleString('fr-FR')}</span></div>
+      <div class="ps-stat"><span>Engagement</span><span class="ps-val" style="color:var(--violet)">${ttE}%</span></div>
+    </div>`;
+
+  // Top 5
+  const sorted = [...withStats].sort((a,b)=>b.stats.v-a.stats.v).slice(0,5);
+  document.getElementById('best-block').innerHTML = `<div class="best-block"><div class="chart-title">🏆 Top 5 posts par vues</div>`
+    + sorted.map((p,i)=>`<div class="best-item"><span class="best-rank">#${i+1}</span><span class="best-title">${p.title.slice(0,50)}</span><span class="best-val" style="color:var(--cyan)">${p.stats.v.toLocaleString('fr-FR')}</span></div>`).join('')
+    + '</div>';
+
+  // Sem progress
+  const semEl = document.getElementById('sem-progs');
+  if (semEl) {
+    semEl.innerHTML = Object.keys(SEM).map(s=>{
+      const sp = PUBS.filter(p=>p.sem===s);
+      const done = sp.filter(p=>p.done).length;
+      const pct = sp.length ? Math.round(done/sp.length*100) : 0;
+      return `<div class="sem-prog-row"><div class="sem-prog-lbl">${SEM[s].l}</div><div class="sem-prog-bar"><div class="sem-prog-fill" style="width:${pct}%;background:${SEM[s].c}"></div></div><div class="sem-prog-val">${done}/${sp.length}</div></div>`;
+    }).join('');
+  }
+
+  // Charts
+  const wLabels = Object.keys(SEM).map(s=>SEM[s].l.replace('Semaine ','S'));
+  const vByWeek = Object.keys(SEM).map(s=>PUBS.filter(p=>p.sem===s&&p.done&&p.stats.v>0).reduce((a,p)=>a+p.stats.v,0));
+  const lByWeek = Object.keys(SEM).map(s=>PUBS.filter(p=>p.sem===s&&p.done).reduce((a,p)=>a+p.stats.l,0));
+  const ssByWeek = Object.keys(SEM).map(s=>PUBS.filter(p=>p.sem===s&&p.done).reduce((a,p)=>a+p.stats.s,0));
+
+  // Views chart
+  const vEl = document.getElementById('ch-views');
+  if (vEl) { let c = document.getElementById('ch-views-canvas'); if(!c){c=document.createElement('canvas');c.id='ch-views-canvas';c.height=180;vEl.appendChild(c);} setTimeout(()=>drawChart('ch-views-canvas',wLabels,[{data:vByWeek,color:'var(--cyan)'}]),50); }
+
+  // Metrics chart
+  const mEl = document.getElementById('ch-metrics');
+  if (mEl) { let c = document.getElementById('ch-metrics-canvas'); if(!c){c=document.createElement('canvas');c.id='ch-metrics-canvas';c.height=180;mEl.appendChild(c);} setTimeout(()=>drawChart('ch-metrics-canvas',wLabels,[{data:lByWeek,color:'var(--rose)'},{data:ssByWeek,color:'var(--violet)'}]),50); }
+
+  // Followers chart
+  const fwWithData = FW.filter(f=>f.ig>0||f.tt>0);
+  if (fwWithData.length) {
+    const fwLabels = fwWithData.map(f=>f.l);
+    const igVals = fwWithData.map(f=>f.ig);
+    const ttVals = fwWithData.map(f=>f.tt);
+    const fEl = document.getElementById('ch-followers');
+    if (fEl) { let c = document.getElementById('ch-fw-canvas'); if(!c){c=document.createElement('canvas');c.id='ch-fw-canvas';c.height=180;fEl.appendChild(c);} setTimeout(()=>drawChart('ch-fw-canvas',fwLabels,[{data:igVals,color:'var(--ig)'},{data:ttVals,color:'var(--tt)'}]),50); }
+  }
+
+  // FW KPIs
+  const fwKpis = document.getElementById('fw-ana-kpis');
+  if (fwKpis) {
+    const igLast=FW.filter(f=>f.ig>0);const ttLast=FW.filter(f=>f.tt>0);
+    const igC=igLast.length?igLast[igLast.length-1].ig:0;const ttC=ttLast.length?ttLast[ttLast.length-1].tt:0;
+    fwKpis.innerHTML=`<div class="ana-kpi"><div class="ak-l">📸 Instagram actuels</div><div class="ak-v" style="color:var(--ig)">${igC>0?igC.toLocaleString('fr-FR'):'—'}</div><div class="ak-sub">Objectif 30K</div></div><div class="ana-kpi"><div class="ak-l">🎵 TikTok actuels</div><div class="ak-v" style="color:var(--tt)">${ttC>0?ttC.toLocaleString('fr-FR'):'—'}</div><div class="ak-sub">Objectif 100K</div></div>`;
+  }
+
+  // Table
+  const tbl = document.getElementById('ana-tbl');
+  if (tbl) {
+    tbl.innerHTML = `<table><thead><tr><th>Post</th><th>Plat.</th><th>Date</th><th>Vues</th><th>Likes</th><th>Saves</th><th>Eng.</th></tr></thead><tbody>`
+      + posted.map(p=>`<tr><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.title}</td><td>${p.plat}</td><td>${p.date}</td><td>${p.stats.v.toLocaleString('fr-FR')}</td><td>${p.stats.l}</td><td>${p.stats.s}</td><td>${eng(p)}%</td></tr>`).join('')
+      + '</tbody></table>';
+  }
+}
+
+</script>
+</body>
+</html>
