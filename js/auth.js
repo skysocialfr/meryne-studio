@@ -23,11 +23,6 @@ var DEV_MODE = true;
 function devBypass() {
   document.getElementById('login-page').style.display = 'none';
   document.getElementById('app').style.display = 'block';
-  var badge = document.getElementById('user-badge');
-  if (badge) {
-    badge.innerHTML = '<span class="user-dot"></span>DEV MODE';
-    badge.style.display = 'flex';
-  }
   initApp();
 }
 

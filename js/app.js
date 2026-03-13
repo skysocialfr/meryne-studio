@@ -61,8 +61,17 @@ var FW_WEEKS = [
 ];
 var D_FW = FW_WEEKS.map(function(w) { return {id:w.id, l:w.l, dt:w.dt, ig:0, tt:0}; });
 
+// ─── DEFAULT HASHTAG GROUPS ───
+var D_HASHTAG_GROUPS = [
+  {id:'dhg1',name:'Mode',color:'#FF2D7A',tags:'#mode #fashion #ootd #lookdujour #outfitoftheday #styleinspo #fashionstyle'},
+  {id:'dhg2',name:'Grande Taille',color:'#7C3AED',tags:'#grandetaille #tallgirl #tallstyle #1m82 #tallfashion #tallwomen #hautestyle'},
+  {id:'dhg3',name:'Paris',color:'#0891B2',tags:'#paris #parismode #parisienne #parislife #parisian #visitparis #parisianstyle'},
+  {id:'dhg4',name:'TikTok',color:'#FF004F',tags:'#fyp #foryou #pourtoi #viral #tendance #tiktokfashion #tiktokmode'},
+  {id:'dhg5',name:'Instagram',color:'#C13584',tags:'#reels #instafashion #blogger #influencer #fashionblogger #contentcreator #instastyle'}
+];
+
 // ─── STATE ───
-var PROD, PUBS, FW;
+var PROD, PUBS, FW, GOALS, TAGS, NOTES, HASHTAG_GROUPS;
 var fSem = 'all', fPlat = 'all';
 
 // ─── SAVE / LOAD ───
@@ -70,15 +79,27 @@ function save() {
   cloudSave('prod2', PROD);
   cloudSave('pubs2', PUBS);
   cloudSave('fw2', FW);
+  cloudSave('goals', GOALS);
+  cloudSave('tags2', TAGS);
+  cloudSave('notes', NOTES);
+  cloudSave('hashtag_groups', HASHTAG_GROUPS);
 }
 
 async function load() {
-  PROD = await cloudLoad('prod2', null);
-  PUBS = await cloudLoad('pubs2', null);
-  FW   = await cloudLoad('fw2', null);
-  if (!PROD) PROD = JSON.parse(JSON.stringify(D_PROD));
-  if (!PUBS) PUBS = JSON.parse(JSON.stringify(D_PUBS));
-  if (!FW) FW = JSON.parse(JSON.stringify(D_FW));
+  PROD           = await cloudLoad('prod2', null);
+  PUBS           = await cloudLoad('pubs2', null);
+  FW             = await cloudLoad('fw2', null);
+  GOALS          = await cloudLoad('goals', null);
+  TAGS           = await cloudLoad('tags2', null);
+  NOTES          = await cloudLoad('notes', null);
+  HASHTAG_GROUPS = await cloudLoad('hashtag_groups', null);
+  if (!PROD)           PROD           = JSON.parse(JSON.stringify(D_PROD));
+  if (!PUBS)           PUBS           = JSON.parse(JSON.stringify(D_PUBS));
+  if (!FW)             FW             = JSON.parse(JSON.stringify(D_FW));
+  if (!GOALS)          GOALS          = {ig: 30000, tt: 100000};
+  if (!TAGS)           TAGS           = [];
+  if (!NOTES)          NOTES          = [];
+  if (!HASHTAG_GROUPS) HASHTAG_GROUPS = JSON.parse(JSON.stringify(D_HASHTAG_GROUPS));
 }
 
 // ─── INIT ───
@@ -92,6 +113,18 @@ async function initApp() {
 }
 
 function renderAll() {
+  // Restore dark mode + theme color
+  if (localStorage.getItem('darkMode') === '1') {
+    document.body.classList.add('dark');
+    var dtBtn = document.getElementById('dark-toggle');
+    if (dtBtn) dtBtn.textContent = '\u2600\uFE0F';
+  }
+  var savedColor = localStorage.getItem('themeColor');
+  if (savedColor) {
+    document.documentElement.style.setProperty('--rose', savedColor);
+    var picker = document.getElementById('theme-color');
+    if (picker) picker.value = savedColor;
+  }
   renderKPIs();
   renderProd();
   buildFilters();
@@ -99,6 +132,8 @@ function renderAll() {
   renderCalendar();
   renderFeed();
   renderHighlights();
+  if (typeof renderTags === 'function') renderTags();
+  if (typeof renderNotes === 'function' && _notesOpen) renderNotes();
 }
 
 // ─── TABS ───
@@ -110,6 +145,7 @@ function setTab(id, btn) {
   if (id === 'analytics') renderAnalytics();
   if (id === 'planning') renderCalendar();
   if (id === 'followers') renderFollowers();
+  if (id === 'tags') renderTags();
 }
 
 // ─── KPIs ───
@@ -123,6 +159,7 @@ function renderKPIs() {
   var igC = igLast.length ? igLast[igLast.length - 1].ig : 0;
   var ttC = ttLast.length ? ttLast[ttLast.length - 1].tt : 0;
   var pd = PROD.filter(function(p) { return p.done; }).length;
+  if (typeof checkMilestones === 'function') checkMilestones();
 
   document.getElementById('kpi-row').innerHTML = [
     {l:'Productions', v:pd + '/' + PROD.length, c:'#F59E0B'},
@@ -134,6 +171,19 @@ function renderKPIs() {
   ].map(function(k) {
     return '<div class="kpi"><div class="kl">' + k.l + '</div><div class="kv" style="color:' + k.c + '">' + k.v + '</div></div>';
   }).join('');
+}
+
+// ─── Dark Mode ───
+function toggleDark() {
+  var d = document.body.classList.toggle('dark');
+  localStorage.setItem('darkMode', d ? '1' : '0');
+  document.getElementById('dark-toggle').textContent = d ? '\u2600\uFE0F' : '\uD83C\uDF19';
+}
+
+// ─── Theme Color ───
+function setThemeColor(hex) {
+  document.documentElement.style.setProperty('--rose', hex);
+  localStorage.setItem('themeColor', hex);
 }
 
 // ─── Auto-login on page load ───

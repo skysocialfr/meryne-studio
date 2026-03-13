@@ -95,12 +95,15 @@ function renderPlanning() {
       statsFields.forEach(function(sf) {
         var lbl = sf[0], key = sf[1], ico = sf[2];
         statsHtml += '<div class="sf"><label style="color:var(--muted)">' + ico + ' ' + escapeHtml(lbl) + '</label>'
-          + '<input type="number" value="' + (p.stats[key] || 0)
-          + '" oninput="updStat(\'' + p.id + '\',\'' + key + '\',this.value)" /></div>';
+          + '<input type="number" min="0" value="' + (p.stats[key] || 0)
+          + '" data-stat-id="' + p.id + '" data-stat-key="' + key + '"'
+          + ' oninput="updStat(\'' + p.id + '\',\'' + key + '\',this.value,this)" /></div>';
       });
+      var totalInter = (p.stats.l || 0) + (p.stats.c || 0) + (p.stats.s || 0) + (p.stats.sh || 0);
       statsHtml += '</div>'
         + '<div class="eng-row"><span style="font-size:10px;color:var(--muted)">Taux d\'engagement</span>'
         + '<span class="eng-v" style="color:var(--violet)">' + eng(p) + '%</span></div>'
+        + '<div style="font-size:10px;color:var(--muted);text-align:right;margin-top:4px;" class="stats-total-' + p.id + '">Total interactions : ' + totalInter.toLocaleString('fr-FR') + '</div>'
         + '</div></div>';
 
       // Published link
@@ -133,6 +136,8 @@ function renderPlanning() {
         + (scriptHtml ? '<button class="sb sb-script" onclick="togglePubScript(\'' + p.id + '\')">\uD83D\uDCDD Script</button>' : '')
         + '<button class="sb sb-edit" onclick="openPubModal(' + realIdx + ')">\u270F\uFE0F Modifier</button>'
         + '<button class="sb sb-stats" onclick="toggleStats(\'' + p.id + '\')">\uD83D\uDCCA Stats</button>'
+        + '<button class="sb sb-copy" onclick="copyCaption(\'' + p.id + '\')">\uD83D\uDCCB Copier</button>'
+        + '<button class="sb sb-dup" onclick="dupPub(\'' + p.id + '\')">\uD83D\uDCDD Dupliquer</button>'
         + '<button class="sb sb-del" onclick="deletePubDirect(\'' + p.id + '\')">\uD83D\uDDD1</button>'
         + '</div>'
         + '</div>'
@@ -171,14 +176,25 @@ function toggleStats(id) {
 }
 
 // ─── Update Stat Value ───
-function updStat(id, key, val) {
+function updStat(id, key, val, el) {
   var p = PUBS.find(function(x) { return x.id === id; });
   if (p) {
-    p.stats[key] = parseInt(val) || 0;
+    var n = parseInt(val);
+    if (isNaN(n) || n < 0) {
+      if (el) { el.classList.add('stat-invalid'); setTimeout(function() { el.classList.remove('stat-invalid'); }, 1500); }
+      p.stats[key] = 0;
+    } else {
+      p.stats[key] = n;
+    }
     save();
     renderKPIs();
     var engEl = document.querySelector('#sp-' + id + ' .eng-v');
     if (engEl) engEl.textContent = eng(p) + '%';
+    var totEl = document.querySelector('.stats-total-' + id);
+    if (totEl) {
+      var tot = (p.stats.l || 0) + (p.stats.c || 0) + (p.stats.s || 0) + (p.stats.sh || 0);
+      totEl.textContent = 'Total interactions : ' + tot.toLocaleString('fr-FR');
+    }
   }
 }
 
@@ -280,7 +296,13 @@ function openPubModal(idx) {
     + '<div class="fr"><label>Son/Trend</label><input id="ppe-son" value="' + escapeHtml(_pubbe.son) + '"></div>'
     + '</div>'
     + '<div class="fr"><label>Source</label><input id="ppe-src" value="' + escapeHtml(_pubbe.src) + '"></div>'
-    + '<div class="fr"><label>Hashtags</label><input id="ppe-tags" value="' + escapeHtml(_pubbe.tags) + '"></div>'
+    + '<div class="fr"><label>Hashtags</label>'
+    + '<div id="hash-modal-row" class="hash-modal-row"></div>'
+    + '<input id="ppe-tags" value="' + escapeHtml(_pubbe.tags) + '"></div>'
+    + '<div class="ai-caption-row">'
+    + '<button id="ai-caption-btn" class="btn-ai-sm" onclick="generateCaption(\'' + _pubbe.id + '\')">\u2728 Caption IA</button>'
+    + '</div>'
+    + '<div id="ai-caption-result"></div>'
     + linkField
     + '<hr class="sep">'
     + '<div class="fr"><label>\uD83C\uDFAC Titre du script</label><input id="ppe-stitle" value="' + escapeHtml(_pubbe.script.title) + '"></div>'
@@ -293,6 +315,7 @@ function openPubModal(idx) {
     + '</div>';
 
   openModal(modalHtml);
+  if (typeof renderHashModalRow === 'function') renderHashModalRow();
 }
 
 // ─── Shot Editor Helpers ───
@@ -366,6 +389,40 @@ function delPubM(id) {
     renderCalendar();
     renderKPIs();
   });
+}
+
+// ─── Dupliquer une Publication ───
+function dupPub(id) {
+  var orig = PUBS.find(function(x) { return x.id === id; });
+  if (!orig) return;
+  var copy = JSON.parse(JSON.stringify(orig));
+  copy.id = 'pub' + Date.now();
+  copy.title = orig.title + ' (copie)';
+  copy.done = false;
+  copy.stats = {v:0, l:0, c:0, s:0, sh:0};
+  PUBS.push(copy);
+  save();
+  buildFilters();
+  renderPlanning();
+  renderKPIs();
+}
+
+// ─── Copy Caption ───
+function copyCaption(id) {
+  var p = PUBS.find(function(x) { return x.id === id; });
+  if (!p) return;
+  var text = p.title + (p.tags ? '\n\n' + p.tags : '');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function() { showSync('\uD83D\uDCCB Caption copié !', 'rgba(5,150,105,.8)'); });
+  } else {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+    showSync('\uD83D\uDCCB Caption copié !', 'rgba(5,150,105,.8)');
+  }
 }
 
 // ─── Open Publication by ID ───

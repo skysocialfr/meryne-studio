@@ -107,6 +107,7 @@ function renderProd() {
       html += '<button class="sb sb-script" onclick="toggleProdScript(\'' + id + '\')">Script</button>';
     }
 
+    html += '<button class="sb sb-ai" id="ai-prod-btn-' + id + '" onclick="generateProdScript(\'' + id + '\')">\u2728 IA</button>';
     html += '<button class="sb sb-edit" onclick="openProdModal(' + j + ')">Modifier</button>';
     html += '</div>';
 

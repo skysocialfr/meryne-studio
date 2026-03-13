@@ -54,3 +54,21 @@ function showSync(msg, color) {
   clearTimeout(el._t);
   el._t = setTimeout(function(){ el.style.opacity = '0'; }, 2500);
 }
+
+// ─── Escape key closes modals ───
+document.addEventListener('keydown', function(e) {
+  if (e.key !== 'Escape') return;
+  closeModal();
+  var feedModal = document.getElementById('feed-modal');
+  if (feedModal && feedModal.classList.contains('open')) {
+    feedModal.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  var ecalModal = document.getElementById('ecal-modal');
+  if (ecalModal && ecalModal.style.display !== 'none') {
+    ecalModal.style.display = 'none';
+    document.body.style.overflow = '';
+  }
+  var cfrm = document.getElementById('cfrm-overlay');
+  if (cfrm) cfrm.remove();
+});

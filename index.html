@@ -50,6 +50,8 @@
               <div><div class="hg-label">TikTok</div><div class="hg-val">100K</div></div>
             </div>
           </div>
+<button class="dark-toggle" id="dark-toggle" onclick="toggleDark()" title="Mode sombre">🌙</button>
+<button class="dark-toggle" onclick="showAiKeyModal()" title="Clé API Claude" style="font-size:13px;">🤖</button>
           <div class="hdr-user-badge" id="user-badge" style="display:none;"></div>
           <button class="logout-btn" onclick="doLogout()" title="D&eacute;connexion">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -213,8 +215,17 @@
       <div id="fw-prog" class="fw-ps"></div>
     </div>
 
-    <!-- TAB ANALYTICS -->
+<!-- TAB ANALYTICS -->
     <div id="tab-analytics" class="tab-panel">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:13px;font-weight:800;color:var(--ink);">Activit&eacute; de publication</div>
+        <button class="ana-export-btn" onclick="exportCSV()">&#x2B07;&#xFE0F; Export CSV</button>
+      </div>
+      <div style="background:#fff;border:1.5px solid var(--bord);border-radius:12px;padding:14px;margin-bottom:12px;">
+        <div style="font-size:12px;font-weight:700;color:var(--ink);margin-bottom:8px;">Heatmap des publications</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Mars &rarr; D&eacute;cembre 2026 &middot; Plus la case est fonc&eacute;e, plus tu as publi&eacute; ce jour-l&agrave;</div>
+        <div id="heatmap-grid"></div>
+      </div>
       <div class="ana-tip">
         <strong style="font-size:9px;font-weight:700;color:var(--rose);letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px;">Comment saisir tes stats</strong>
         <strong>1.</strong> Onglet <strong style="color:var(--rose)">Planning</strong> &rarr; coche un post &check; &rarr; clique <strong style="color:var(--violet)">Stats</strong><br>
@@ -265,17 +276,51 @@
   </div>
 </div>
 
+<!-- HASHTAG FAB + PANEL -->
+<button id="hash-fab" onclick="toggleHashPanel()" title="Bibliothèque hashtags">#</button>
+<div id="hash-panel">
+  <div class="hash-hdr">
+    <span class="hash-title"># Hashtags</span>
+    <div style="display:flex;gap:6px;align-items:center;">
+      <button class="hash-add-btn" onclick="addHashGroup()">&#xFF0B;</button>
+      <button class="hash-close-btn" onclick="toggleHashPanel()">&#10005;</button>
+    </div>
+  </div>
+  <div id="hash-list" class="hash-list"></div>
+</div>
+
+<!-- NOTES FAB + PANEL -->
+<button id="notes-fab" onclick="toggleNotesPanel()" title="Notes rapides">&#x1F4DD;</button>
+<div id="notes-panel">
+  <div class="notes-hdr">
+    <span class="notes-title">Notes rapides</span>
+    <div style="display:flex;gap:6px;align-items:center;">
+      <button class="notes-add-btn" onclick="addNote()">&#xFF0B;</button>
+      <button class="notes-close-btn" onclick="toggleNotesPanel()">&#10005;</button>
+    </div>
+  </div>
+  <div id="notes-list" class="notes-list"></div>
+</div>
+
+<!-- MILESTONE POPUP -->
+<div id="milestone-popup" style="display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center;background:rgba(0,0,0,.5);"></div>
+
 <!-- JS Modules (order matters: utils > storage > auth > modules > app) -->
-<script src="js/utils.js"></script>
-<script src="js/storage.js"></script>
-<script src="js/auth.js"></script>
-<script src="js/feed.js"></script>
-<script src="js/production.js"></script>
-<script src="js/planning.js"></script>
-<script src="js/calendar.js"></script>
-<script src="js/followers.js"></script>
-<script src="js/analytics.js"></script>
-<script src="js/app.js"></script>
+<script src="js/utils.js?v=2"></script>
+<script src="js/storage.js?v=2"></script>
+<script src="js/auth.js?v=2"></script>
+<script src="js/feed.js?v=2"></script>
+<script src="js/production.js?v=2"></script>
+<script src="js/planning.js?v=2"></script>
+<script src="js/calendar.js?v=2"></script>
+<script src="js/followers.js?v=2"></script>
+<script src="js/analytics.js?v=2"></script>
+<script src="js/tags.js?v=2"></script>
+<script src="js/notes.js?v=2"></script>
+<script src="js/hashtags.js?v=1"></script>
+<script src="js/ai.js?v=1"></script>
+<script src="js/milestones.js?v=2"></script>
+<script src="js/app.js?v=2"></script>
 
 </body>
 </html>
