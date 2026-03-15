@@ -18,7 +18,7 @@
 window._currentSession = null;
 
 // ─── TEMPORARY DEV MODE — remove before production deploy ───
-var DEV_MODE = true;
+var DEV_MODE = false;
 
 function devBypass() {
   document.getElementById('login-page').style.display = 'none';
