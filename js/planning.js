@@ -135,10 +135,15 @@ function renderPlanning() {
         + '<div class="pub-btns">'
         + (scriptHtml ? '<button class="sb sb-script" onclick="togglePubScript(\'' + p.id + '\')">\uD83D\uDCDD Script</button>' : '')
         + '<button class="sb sb-edit" onclick="openPubModal(' + realIdx + ')">\u270F\uFE0F Modifier</button>'
-        + '<button class="sb sb-stats" onclick="toggleStats(\'' + p.id + '\')">\uD83D\uDCCA Stats</button>'
-        + '<button class="sb sb-copy" onclick="copyCaption(\'' + p.id + '\')">\uD83D\uDCCB Copier</button>'
-        + '<button class="sb sb-dup" onclick="dupPub(\'' + p.id + '\')">\uD83D\uDCDD Dupliquer</button>'
-        + '<button class="sb sb-del" onclick="deletePubDirect(\'' + p.id + '\')">\uD83D\uDDD1</button>'
+        + (p.done ? '<button class="sb sb-stats" onclick="toggleStats(\'' + p.id + '\')">\uD83D\uDCCA Stats</button>' : '')
+        + '<div class="pub-more-wrap">'
+        + '<button class="sb sb-more" onclick="togglePubMore(\'' + p.id + '\',event)">\u2022\u2022\u2022</button>'
+        + '<div class="pub-more-menu" id="pub-more-' + p.id + '">'
+        + '<button onclick="copyCaption(\'' + p.id + '\');closePubMore()">\uD83D\uDCCB Copier caption</button>'
+        + '<button onclick="dupPub(\'' + p.id + '\');closePubMore()">\uD83D\uDCDD Dupliquer</button>'
+        + '<button class="pmm-del" onclick="deletePubDirect(\'' + p.id + '\');closePubMore()">\uD83D\uDDD1\uFE0F Supprimer</button>'
+        + '</div>'
+        + '</div>'
         + '</div>'
         + '</div>'
         + '</div>'
@@ -424,6 +429,32 @@ function copyCaption(id) {
     showSync('\uD83D\uDCCB Caption copié !', 'rgba(5,150,105,.8)');
   }
 }
+
+// ─── More Menu ───
+function togglePubMore(id, e) {
+  if (e) e.stopPropagation();
+  var menu = document.getElementById('pub-more-' + id);
+  if (!menu) return;
+  var isOpen = menu.classList.contains('open');
+  closePubMore();
+  if (!isOpen) {
+    var btn = e && e.currentTarget ? e.currentTarget : document.querySelector('[onclick*="togglePubMore(\'' + id + '\'"]');
+    if (btn) {
+      var r = btn.getBoundingClientRect();
+      menu.style.top = (r.bottom + window.scrollY + 4) + 'px';
+      menu.style.left = r.left + 'px';
+      menu.style.position = 'fixed';
+      menu.style.top = (r.bottom + 4) + 'px';
+    }
+    menu.classList.add('open');
+  }
+}
+
+function closePubMore() {
+  document.querySelectorAll('.pub-more-menu.open').forEach(function(m) { m.classList.remove('open'); });
+}
+
+document.addEventListener('click', function() { closePubMore(); });
 
 // ─── Open Publication by ID ───
 function openPubById(id) {

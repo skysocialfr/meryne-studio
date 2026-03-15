@@ -275,6 +275,7 @@ function openProdModal(idx) {
     // Script section
     + '<div style="margin-bottom:6px;font-size:11px;font-weight:700;color:var(--violet);text-transform:uppercase;letter-spacing:.5px;">Script</div>'
     + '<div class="fr"><label>Titre du script</label><input type="text" id="pe-script-title" value="' + escapeHtml(_pe.script.title) + '" placeholder="Titre du script..."></div>'
+    + '<button class="btn-ai-sm" id="ai-prod-modal-btn" onclick="generateProdModalScript()" style="margin-bottom:10px;">\u2728 Générer le script avec IA</button>'
 
     // Shot list
     + '<div id="pe-shots">' + shotsHtml + '</div>'

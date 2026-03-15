@@ -590,6 +590,23 @@ body.dark .hash-group{background:#13131F;border-color:#2A2A3A;}
 body.dark .ai-result-box{background:rgba(124,58,237,.08);border-color:rgba(124,58,237,.3);}
 body.dark .ai-result-text{color:#F0F0F0;}
 
+/* ─── More Menu (Planning) ─── */
+.pub-more-wrap{position:relative;display:inline-block;}
+.sb-more{background:rgba(156,163,175,.1);color:var(--muted);border-color:rgba(156,163,175,.25);letter-spacing:2px;font-size:10px;padding:4px 8px;}
+.sb-more:hover{background:rgba(156,163,175,.2);}
+.pub-more-menu{display:none;position:absolute;left:0;top:calc(100% + 4px);background:#fff;border:1.5px solid var(--bord);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);min-width:160px;z-index:9999;overflow:hidden;}
+.pub-more-menu.open{display:block;}
+.pub-more-menu button{display:block;width:100%;text-align:left;background:none;border:none;border-bottom:1px solid var(--bord);padding:10px 16px;font-size:12px;font-weight:500;color:var(--ink);cursor:pointer;font-family:'DM Sans',sans-serif;transition:background .1s;}
+.pub-more-menu button:last-child{border-bottom:none;}
+.pub-more-menu button:hover{background:rgba(124,58,237,.06);}
+.pub-more-menu .pmm-del{color:#DC2626;}
+.pub-more-menu .pmm-del:hover{background:rgba(220,38,38,.06);}
+body.dark .pub-more-menu{background:#1A1A2E;border-color:#2A2A3A;}
+body.dark .pub-more-menu button{color:#F0F0F0;border-bottom-color:#2A2A3A;}
+/* ─── Calendar Add Button ─── */
+.pcal-nav{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.pcal-add-btn{display:inline-flex;align-items:center;gap:5px;background:var(--rose);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;margin-right:auto;transition:opacity .15s;}
+.pcal-add-btn:hover{opacity:.85;}
 /* ═══ RESPONSIVE ═══ */
 @media(max-width:640px){
   .hdr-left{display:none;}

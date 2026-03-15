@@ -24,6 +24,9 @@ function renderCalendar() {
   });
 
   var html = '<div class="pcal-nav">'
+    + '<button class="pcal-add-btn" onclick="openPubModal(-1)">'
+    + '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'
+    + ' Ajouter</button>'
     + '<button class="pcal-nav-btn" onclick="calMove(-1)">\u2039</button>'
     + '<div class="pcal-month">' + MNAMES[m] + ' ' + y + '</div>'
     + '<button class="pcal-nav-btn" onclick="calMove(1)">\u203A</button>'

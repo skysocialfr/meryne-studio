@@ -99,6 +99,60 @@ async function generateProdScript(prodId) {
   }
 }
 
+// ─── Generate Script inside Production Modal ───
+async function generateProdModalScript() {
+  if (!getAiKey()) { showAiKeyModal(function() { generateProdModalScript(); }); return; }
+
+  var titleEl = document.getElementById('pe-title');
+  var titleVal = (titleEl && titleEl.value.trim()) ? titleEl.value.trim() : '';
+  if (!titleVal) { showSync('\u26A0\uFE0F Entre un titre d\'abord', 'rgba(245,158,11,.8)'); return; }
+
+  var descEl  = document.getElementById('pe-desc');
+  var descVal = (descEl && descEl.value.trim()) ? descEl.value.trim() : '';
+  var platEl  = document.getElementById('pe-plat');
+  var platVal = (platEl && platEl.value) ? platEl.value : '';
+  var fmtEl   = document.getElementById('pe-fmt');
+  var fmtVal  = (fmtEl && fmtEl.value) ? fmtEl.value : '';
+
+  var btn = document.getElementById('ai-prod-modal-btn');
+  if (btn) { btn.textContent = '\u23F3'; btn.disabled = true; }
+
+  var prompt = 'Tu es un assistant pour Meryne.eis, créatrice de contenu mode sur TikTok et Instagram.\n'
+    + 'Profil : Parisienne, 1m82, style grande taille, lifestyle luxe accessible, authentique.\n\n'
+    + 'Génère un plan de tournage pour :\n'
+    + 'Titre : ' + titleVal + '\n'
+    + (descVal ? 'Description : ' + descVal + '\n' : '')
+    + (platVal ? 'Plateforme : ' + platVal + '\n' : '')
+    + (fmtVal  ? 'Format : '     + fmtVal  + '\n' : '')
+    + '\nRéponds UNIQUEMENT avec ce JSON (sans bloc markdown) :\n'
+    + '{"script_title":"titre court du script","shots":[{"d":"description concrète et courte"}]}\n'
+    + 'Règles : 5 à 8 plans. Plan 1 = HOOK fort. Dernier plan = CTA. Langage direct et actionnable.';
+
+  var result = await callClaude(prompt);
+  if (btn) { btn.textContent = '\u2728 Générer script IA'; btn.disabled = false; }
+  if (!result) return;
+
+  try {
+    var clean = result.replace(/```(?:json)?\n?|\n?```/g, '').trim();
+    var data = JSON.parse(clean);
+    if (data.script_title) {
+      var stitleEl = document.getElementById('pe-script-title');
+      if (stitleEl) stitleEl.value = data.script_title;
+      if (typeof _pe !== 'undefined' && _pe) _pe.script.title = data.script_title;
+    }
+    if (data.shots && Array.isArray(data.shots) && typeof _pe !== 'undefined' && _pe) {
+      _pe.script.shots = data.shots.map(function(s) { return { d: s.d || '' }; });
+      var container = document.getElementById('pe-shots');
+      if (container && typeof shotEditHtml === 'function') {
+        container.innerHTML = _pe.script.shots.map(function(s, i) { return shotEditHtml(i, s.d); }).join('');
+      }
+    }
+    showSync('\u2728 Script généré !', 'rgba(124,58,237,.8)');
+  } catch(e) {
+    showSync('\u274C Format invalide \u2014 réessaie', 'rgba(220,38,38,.8)');
+  }
+}
+
 // ─── Generate Caption + Hashtags for Planning Post ───
 async function generateCaption(pubId) {
   if (!getAiKey()) { showAiKeyModal(function() { generateCaption(pubId); }); return; }
