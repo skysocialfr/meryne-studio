@@ -67,6 +67,7 @@ function renderPlanning() {
       var platLbl = platInfo.l.toUpperCase();
       var doneCls = p.done ? 'done' : '';
       var lcCls = p.launch ? 'lc' : '';
+      var platCls2 = p.plat === 'tiktok' ? 'plat-tt' : p.plat === 'insta' ? 'plat-ig' : 'plat-st';
 
       // Script panel
       var scriptHtml = '';
@@ -117,7 +118,7 @@ function renderPlanning() {
       }
 
       // Card
-      html += '<div class="pub-card ' + doneCls + ' ' + lcCls + '">'
+      html += '<div class="pub-card ' + doneCls + ' ' + (lcCls || platCls2) + '">'
         + '<div class="pub-top">'
         + '<div class="pub-chk' + (p.done ? ' on' : '') + '" onclick="togglePub(\'' + p.id + '\')">' + (p.done ? '\u2713' : '') + '</div>'
         + '<div class="pub-body">'
@@ -125,7 +126,6 @@ function renderPlanning() {
         + '<span class="badge ' + platCls + '">' + escapeHtml(platLbl) + '</span>'
         + '<span class="fmt-t">' + escapeHtml(p.fmt) + '</span>'
         + '<span class="time-t">\u23F0 ' + escapeHtml(p.heure) + '</span>'
-        + (p.launch ? '<span class="badge b-launch">\uD83D\uDE80 LANCEMENT</span>' : '')
         + '</div>'
         + '<div class="pub-title-main"><span class="pub-date-inline">' + escapeHtml(p.date) + ' \u00B7 </span>' + escapeHtml(p.title) + '</div>'
         + (p.son && p.son !== '\u2014' ? '<div class="pub-son">\uD83C\uDFB5 ' + escapeHtml(p.son) + '</div>' : '')

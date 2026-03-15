@@ -46,6 +46,10 @@ function renderProd() {
     var cardClass = 'prod-card';
     if (t.done) cardClass += ' done';
     if (t.launch) cardClass += ' lt';
+    var platLow = (t.plat || '').toLowerCase();
+    if (platLow.indexOf('tiktok') !== -1 && platLow.indexOf('insta') !== -1) cardClass += ' plat-mix';
+    else if (platLow.indexOf('tiktok') !== -1) cardClass += ' plat-tt';
+    else if (platLow.indexOf('insta') !== -1) cardClass += ' plat-ig';
 
     html += '<div class="' + cardClass + '" id="prod-card-' + id + '">';
 
@@ -94,9 +98,9 @@ function renderProd() {
       html += '<div style="font-size:10px;color:#9CA3AF;font-style:italic;margin-bottom:4px;">' + escapeHtml(t.note) + '</div>';
     }
 
-    // Launch badge
+    // Priority badge
     if (t.launch) {
-      html += '<span class="badge b-launch" style="margin-bottom:5px;">LANCEMENT</span>';
+      html += '<span class="badge b-launch" style="margin-bottom:5px;">⭐ Priorité</span>';
     }
 
     // Actions
@@ -267,7 +271,7 @@ function openProdModal(idx) {
     // Launch toggle
     + '<div style="margin-bottom:14px;display:flex;align-items:center;gap:8px;">'
     + '<input type="checkbox" id="pe-launch"' + (_pe.launch ? ' checked' : '') + ' style="width:16px;height:16px;accent-color:var(--rose);">'
-    + '<label for="pe-launch" style="font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;">Lancement</label>'
+    + '<label for="pe-launch" style="font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;">⭐ Priorité</label>'
     + '</div>'
 
     + '<hr class="sep">'
