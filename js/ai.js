@@ -110,14 +110,28 @@ async function generateCaption(pubId) {
   var btn = document.getElementById('ai-caption-btn');
   if (btn) { btn.textContent = '\u23F3'; btn.disabled = true; }
 
-  var platLabel = p.plat === 'tiktok' ? 'TikTok' : p.plat === 'insta' ? 'Instagram' : 'Stories';
+  // Lire le titre saisi dans le modal (même si le post n'est pas encore sauvegardé)
+  var titleEl = document.getElementById('ppe-title');
+  var titleVal = (titleEl && titleEl.value.trim()) ? titleEl.value.trim() : (p.title || '');
+  var platEl = document.getElementById('ppe-plat');
+  var platVal = (platEl && platEl.value) ? platEl.value : (p.plat || 'tiktok');
+  var fmtEl = document.getElementById('ppe-fmt');
+  var fmtVal = (fmtEl && fmtEl.value) ? fmtEl.value : (p.fmt || '');
+  var platLabel = platVal === 'tiktok' ? 'TikTok' : platVal === 'insta' ? 'Instagram' : 'Stories';
+
   var prompt = 'Tu es un assistant pour Meryne.eis, créatrice de contenu mode. Parisienne, 1m82, grande taille, lifestyle luxe accessible.\n\n'
-    + 'Génère une caption + hashtags pour :\n'
-    + 'Titre du post : ' + p.title + '\n'
+    + 'Génère une caption, des hashtags ET un script de tournage complet pour :\n'
+    + 'Titre du post : ' + titleVal + '\n'
     + 'Plateforme : ' + platLabel + '\n'
-    + 'Format : ' + p.fmt + '\n\n'
+    + 'Format : ' + fmtVal + '\n\n'
     + 'Réponds UNIQUEMENT avec ce JSON (sans bloc markdown) :\n'
-    + '{"caption":"2-3 phrases max, ton naturel et authentique, 1-2 emojis","tags":"#tag1 #tag2 ... (15-20 hashtags pertinents)"}\n'
+    + '{\n'
+    + '  "caption": "2-3 phrases max, ton naturel et authentique, 1-2 emojis",\n'
+    + '  "tags": "#tag1 #tag2 ... (15-20 hashtags pertinents)",\n'
+    + '  "script_title": "titre court du script",\n'
+    + '  "shots": [{"n":1,"d":"description concrète et courte du plan"},...]\n'
+    + '}\n'
+    + 'Règles script : 5 à 8 plans. Plan 1 = HOOK fort (1-3s). Dernier plan = CTA. Langage direct et actionnable.\n'
     + 'La caption doit sonner comme si c\'était Meryne qui écrit, pas un robot.';
 
   var result = await callClaude(prompt);
@@ -128,16 +142,18 @@ async function generateCaption(pubId) {
     var clean = result.replace(/```(?:json)?\n?|\n?```/g, '').trim();
     var data = JSON.parse(clean);
 
+    // ─ Caption
     var captionDiv = document.getElementById('ai-caption-result');
     if (captionDiv && data.caption) {
       window._aiCaption = data.caption;
       captionDiv.innerHTML = '<div class="ai-result-box">'
-        + '<div class="ai-result-label">Caption générée</div>'
+        + '<div class="ai-result-label">\u2728 Caption générée</div>'
         + '<div class="ai-result-text">' + escapeHtml(data.caption) + '</div>'
         + '<button class="ai-copy-btn" onclick="(function(){if(navigator.clipboard)navigator.clipboard.writeText(window._aiCaption).then(function(){showSync(\'📋 Copié !\',\'rgba(5,150,105,.8)\')});})()">📋 Copier</button>'
         + '</div>';
     }
 
+    // ─ Hashtags
     if (data.tags) {
       var tagsEl = document.getElementById('ppe-tags');
       if (tagsEl) {
@@ -146,7 +162,25 @@ async function generateCaption(pubId) {
       }
     }
 
-    showSync('\u2728 Caption générée !', 'rgba(124,58,237,.8)');
+    // ─ Script
+    if (data.shots && Array.isArray(data.shots) && data.shots.length > 0) {
+      var stitleEl = document.getElementById('ppe-stitle');
+      if (stitleEl && data.script_title) {
+        stitleEl.value = data.script_title;
+        if (typeof _pubbe !== 'undefined' && _pubbe) _pubbe.script.title = data.script_title;
+      }
+      if (typeof _pubbe !== 'undefined' && _pubbe) {
+        _pubbe.script.shots = data.shots.map(function(s, i) { return { n: i + 1, d: s.d || '' }; });
+        var shotsContainer = document.getElementById('ppe-shots');
+        if (shotsContainer && typeof pubShotHtml === 'function') {
+          shotsContainer.innerHTML = _pubbe.script.shots.map(function(s, i) {
+            return pubShotHtml(i, s.d);
+          }).join('');
+        }
+      }
+    }
+
+    showSync('\u2728 Script + Caption générés !', 'rgba(124,58,237,.8)');
   } catch(e) {
     showSync('\u274C Format invalide — réessaie', 'rgba(220,38,38,.8)');
   }
