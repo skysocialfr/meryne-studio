@@ -104,6 +104,7 @@ async function generateCaption(pubId) {
   if (!getAiKey()) { showAiKeyModal(function() { generateCaption(pubId); }); return; }
 
   var p = PUBS.find(function(x) { return x.id === pubId; });
+  if (!p && typeof _pubbe !== 'undefined' && _pubbe && _pubbe.id === pubId) p = _pubbe;
   if (!p) return;
 
   var btn = document.getElementById('ai-caption-btn');
