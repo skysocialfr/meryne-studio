@@ -50,12 +50,12 @@ async function cloudSave(key, data) {
   }
 }
 
-// ─── Cloud Load (with user isolation) ───
+// ─── Cloud Load (with user isolation + legacy migration) ───
 async function cloudLoad(key, fallback) {
   var userId = getCurrentUserId();
   var storageKey = userId !== 'default' ? userId + ':' + key : key;
 
-  // Try Supabase first
+  // Try Supabase first (with user prefix)
   if (sb) {
     try {
       var res = await sb.from('studio_data').select('data').eq('key', storageKey).single();
@@ -64,6 +64,17 @@ async function cloudLoad(key, fallback) {
         return res.data.data;
       }
     } catch(e) {}
+
+    // Try Supabase with legacy key (no user prefix) — migration path
+    if (userId !== 'default') {
+      try {
+        var legacyRes = await sb.from('studio_data').select('data').eq('key', key).single();
+        if (legacyRes.data && legacyRes.data.data !== undefined) {
+          try { localStorage.setItem(storageKey, JSON.stringify(legacyRes.data.data)); } catch(e) {}
+          return legacyRes.data.data;
+        }
+      } catch(e) {}
+    }
   }
 
   // Fallback to localStorage (try new key format first, then legacy)
