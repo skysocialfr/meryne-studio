@@ -306,6 +306,8 @@ hr.sep{border:none;border-top:1.5px solid var(--bord);margin:14px 0;}
 /* PROD CALENDAR */
 .ecal-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;flex-wrap:wrap;}
 .ecal-add-btn{display:flex;align-items:center;gap:5px;padding:7px 14px;border-radius:9px;border:none;background:var(--rose);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.ecal-export-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:9px;border:1.5px solid #0078D4;background:rgba(0,120,212,.08);color:#0078D4;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:background .15s;}
+.ecal-export-btn:hover{background:rgba(0,120,212,.16);}
 .ecal-nav{display:flex;align-items:center;gap:8px;}
 .ecal-month{font-size:15px;font-weight:800;color:var(--ink);}
 .ecal-nav-btn{background:#fff;border:1.5px solid var(--bord);border-radius:8px;padding:5px 10px;cursor:pointer;font-size:14px;transition:all .15s;}

@@ -489,6 +489,10 @@ function renderProdCal() {
     + '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14m-7-7h14"/></svg>'
     + 'Ajouter'
     + '</button>'
+    + '<button class="ecal-export-btn" onclick="exportICS()" title="Exporter vers Outlook / Apple Calendar">'
+    + '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>'
+    + ' Export Outlook'
+    + '</button>'
     + '<div class="ecal-nav">'
     + '<button class="ecal-nav-btn" onclick="prodCalMove(-1)">&lsaquo;</button>'
     + '<span class="ecal-month">' + monthNames[m] + ' ' + y + '</span>'
@@ -763,6 +767,88 @@ function saveEcalEvent(id, isEdit) {
 }
 
 // ─── Delete Event ───
+
+// ─── Export ICS (Outlook / Apple Calendar) ───
+function exportICS() {
+  if (!EVENTS || EVENTS.length === 0) {
+    showSync('\u26A0\uFE0F Aucun événement à exporter', 'rgba(245,158,11,.8)');
+    return;
+  }
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  function toICSDate(dateStr, timeStr) {
+    if (!dateStr) return null;
+    var d = dateStr.replace(/-/g, '');
+    if (timeStr) {
+      var parts = timeStr.split(':');
+      var h = pad(parseInt(parts[0]) || 0);
+      var mn = pad(parseInt(parts[1]) || 0);
+      return d + 'T' + h + mn + '00';
+    }
+    return d;
+  }
+
+  function escICS(str) {
+    return (str || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+  }
+
+  var lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Meryne Studio//FR',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'X-WR-CALNAME:Meryne Studio',
+    'X-WR-TIMEZONE:Europe/Paris'
+  ];
+
+  EVENTS.forEach(function(ev) {
+    if (!ev.dateStart) return;
+    var dtstart = toICSDate(ev.dateStart, ev.timeStart);
+    var dtend   = toICSDate(ev.dateEnd || ev.dateStart, ev.timeEnd || ev.timeStart);
+    var allDay  = !ev.timeStart;
+
+    // If no end time, add 1 day for all-day, or 1 hour for timed
+    if (!dtend || dtend === dtstart) {
+      if (allDay) {
+        var d = new Date(ev.dateStart);
+        d.setDate(d.getDate() + 1);
+        dtend = d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate());
+      } else {
+        dtend = dtstart.slice(0,8) + 'T' + pad((parseInt(dtstart.slice(9,11))+1) % 24) + dtstart.slice(11);
+      }
+    }
+
+    lines.push('BEGIN:VEVENT');
+    lines.push('UID:' + ev.id + '@mey-studio.netlify.app');
+    if (allDay) {
+      lines.push('DTSTART;VALUE=DATE:' + dtstart);
+      lines.push('DTEND;VALUE=DATE:' + dtend);
+    } else {
+      lines.push('DTSTART;TZID=Europe/Paris:' + dtstart);
+      lines.push('DTEND;TZID=Europe/Paris:' + dtend);
+    }
+    lines.push('SUMMARY:' + escICS((ev.emoji ? ev.emoji + ' ' : '') + (ev.title || '')));
+    if (ev.note) lines.push('DESCRIPTION:' + escICS(ev.note));
+    lines.push('CATEGORIES:' + escICS((ev.type || 'other').toUpperCase()));
+    lines.push('END:VEVENT');
+  });
+
+  lines.push('END:VCALENDAR');
+
+  var ics = lines.join('\r\n');
+  var blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'meryne-studio-events.ics';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showSync('\uD83D\uDCC5 Export Outlook téléchargé !', 'rgba(5,150,105,.8)');
+}
 
 function deleteEcalEvent(id) {
   askConfirm('Supprimer cet evenement ?', function() {
