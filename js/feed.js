@@ -473,134 +473,169 @@ function saveFeedPost() {
 }
 
 // ═══════════════════════════════════════════════
-//  Image Editor
+//  Image Editor — drag-to-crop
 // ═══════════════════════════════════════════════
 
-var _imgEditIdx = null;
-var _imgEditCrop = 'free';
+var _ie = {
+  idx: null, ratio: '1:1',
+  imgX: 0, imgY: 0, imgW: 0, imgH: 0,
+  vpW: 0, vpH: 0, scale: 1,
+  dragging: false,
+  startX: 0, startY: 0, startImgX: 0, startImgY: 0
+};
 
 function openImgEditor(photoIdx) {
   var photos = window._carouselPhotos || [];
   var src = photos[photoIdx];
-  if (!src || src.indexOf('data:video') === 0) return; // can't edit videos
-  _imgEditIdx = photoIdx;
-  _imgEditCrop = 'free';
+  if (!src || src.indexOf('data:video') === 0) return;
+  _ie.idx = photoIdx;
+  _ie.ratio = '1:1';
 
   var modal = document.getElementById('img-editor-modal');
-  var canvas = document.getElementById('img-editor-canvas');
-  if (!modal || !canvas) return;
+  if (!modal) return;
 
-  // Reset sliders
-  var bright = document.getElementById('ie-brightness');
-  var contrast = document.getElementById('ie-contrast');
-  var sat = document.getElementById('ie-saturation');
-  if (bright) bright.value = 100;
-  if (contrast) contrast.value = 100;
-  if (sat) sat.value = 100;
-  var bv = document.getElementById('ie-brightness-val');
-  var cv = document.getElementById('ie-contrast-val');
-  var sv = document.getElementById('ie-saturation-val');
-  if (bv) bv.textContent = '100%';
-  if (cv) cv.textContent = '100%';
-  if (sv) sv.textContent = '100%';
+  // Activate 1:1 button by default
+  document.querySelectorAll('.img-editor-crop-btn').forEach(function(b) {
+    b.classList.toggle('active', b.textContent.trim() === '1:1');
+  });
 
-  // Reset crop buttons
-  document.querySelectorAll('.img-editor-crop-btn').forEach(function(b) { b.classList.remove('active'); });
-  var freeBtn = document.querySelector('.img-editor-crop-btn');
-  if (freeBtn) freeBtn.classList.add('active');
-
-  // Load image into canvas
   var img = new Image();
   img.onload = function() {
-    var maxW = Math.min(img.width, 480);
-    var scale = maxW / img.width;
-    canvas.width = maxW;
-    canvas.height = Math.round(img.height * scale);
-    canvas._srcImg = img;
-    applyImgFilters();
+    window._ieImg = img;
+    _ieUpdateViewport();
     modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
   };
   img.src = src;
 }
 
+function _ieUpdateViewport() {
+  var img = window._ieImg;
+  if (!img) return;
+  var vp = document.getElementById('ie-viewport');
+  var ieEl = document.getElementById('ie-img');
+  if (!vp || !ieEl) return;
+
+  var maxVp = 280;
+  var vpW, vpH;
+  if (_ie.ratio === 'free') {
+    // Keep original ratio, fit in 280px box
+    if (img.width >= img.height) { vpW = maxVp; vpH = Math.round(maxVp * img.height / img.width); }
+    else { vpH = maxVp; vpW = Math.round(maxVp * img.width / img.height); }
+  } else {
+    var parts = _ie.ratio.split(':');
+    var rW = parseFloat(parts[0]), rH = parseFloat(parts[1]);
+    if (rW / rH >= 1) { vpW = maxVp; vpH = Math.round(maxVp * rH / rW); }
+    else { vpH = maxVp; vpW = Math.round(maxVp * rW / rH); }
+  }
+
+  vp.style.width = vpW + 'px';
+  vp.style.height = vpH + 'px';
+  _ie.vpW = vpW;
+  _ie.vpH = vpH;
+
+  // Scale image to cover viewport
+  var scale = Math.max(vpW / img.width, vpH / img.height);
+  _ie.scale = scale;
+  _ie.imgW = Math.round(img.width * scale);
+  _ie.imgH = Math.round(img.height * scale);
+
+  // Center
+  _ie.imgX = Math.round((vpW - _ie.imgW) / 2);
+  _ie.imgY = Math.round((vpH - _ie.imgH) / 2);
+
+  ieEl.src = img.src;
+  ieEl.style.width = _ie.imgW + 'px';
+  ieEl.style.height = _ie.imgH + 'px';
+  ieEl.style.left = _ie.imgX + 'px';
+  ieEl.style.top = _ie.imgY + 'px';
+}
+
 function applyImgFilters() {
-  var canvas = document.getElementById('img-editor-canvas');
-  if (!canvas || !canvas._srcImg) return;
+  var ieEl = document.getElementById('ie-img');
+  if (!ieEl) return;
+  var b = parseInt((document.getElementById('ie-brightness') || {}).value || 100);
+  var c = parseInt((document.getElementById('ie-contrast') || {}).value || 100);
+  var s = parseInt((document.getElementById('ie-saturation') || {}).value || 100);
+  ieEl.style.filter = 'brightness(' + b + '%) contrast(' + c + '%) saturate(' + s + '%)';
+}
+
+function setImgCrop(ratio, btn) {
+  _ie.ratio = ratio;
+  document.querySelectorAll('.img-editor-crop-btn').forEach(function(b) { b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  _ieUpdateViewport();
+}
+
+function _ieMouseDown(e) {
+  _ie.dragging = true;
+  _ie.startX = e.clientX; _ie.startY = e.clientY;
+  _ie.startImgX = _ie.imgX; _ie.startImgY = _ie.imgY;
+  e.preventDefault();
+}
+
+function _ieMouseMove(e) {
+  if (!_ie.dragging) return;
+  _ieDrag(e.clientX - _ie.startX, e.clientY - _ie.startY);
+}
+
+function _ieTouchStart(e) {
+  if (!e.touches[0]) return;
+  _ie.dragging = true;
+  _ie.startX = e.touches[0].clientX; _ie.startY = e.touches[0].clientY;
+  _ie.startImgX = _ie.imgX; _ie.startImgY = _ie.imgY;
+  e.preventDefault();
+}
+
+function _ieTouchMove(e) {
+  if (!_ie.dragging || !e.touches[0]) return;
+  _ieDrag(e.touches[0].clientX - _ie.startX, e.touches[0].clientY - _ie.startY);
+  e.preventDefault();
+}
+
+function _ieDrag(dx, dy) {
+  var newX = Math.min(0, Math.max(_ie.vpW - _ie.imgW, _ie.startImgX + dx));
+  var newY = Math.min(0, Math.max(_ie.vpH - _ie.imgH, _ie.startImgY + dy));
+  _ie.imgX = newX; _ie.imgY = newY;
+  var ieEl = document.getElementById('ie-img');
+  if (ieEl) { ieEl.style.left = newX + 'px'; ieEl.style.top = newY + 'px'; }
+}
+
+function _ieMouseUp() { _ie.dragging = false; }
+
+function saveImgEdit() {
+  if (_ie.idx === null || !window._ieImg) return;
+  var img = window._ieImg;
+  var canvas = document.createElement('canvas');
+
+  // Output at 1080px on long side
+  var rW, rH;
+  if (_ie.ratio === 'free') { rW = img.width; rH = img.height; }
+  else { var p = _ie.ratio.split(':'); rW = parseFloat(p[0]); rH = parseFloat(p[1]); }
+
+  var outMax = 1080;
+  var outW, outH;
+  if (rW >= rH) { outW = outMax; outH = Math.round(outMax * rH / rW); }
+  else { outH = outMax; outW = Math.round(outH * rW / rH); }
+
+  canvas.width = outW;
+  canvas.height = outH;
+  var ctx = canvas.getContext('2d');
+
+  // Crop coordinates in natural image pixels
+  var cropX = -_ie.imgX / _ie.scale;
+  var cropY = -_ie.imgY / _ie.scale;
+  var cropW = _ie.ratio === 'free' ? img.width : _ie.vpW / _ie.scale;
+  var cropH = _ie.ratio === 'free' ? img.height : _ie.vpH / _ie.scale;
 
   var b = parseInt((document.getElementById('ie-brightness') || {}).value || 100);
   var c = parseInt((document.getElementById('ie-contrast') || {}).value || 100);
   var s = parseInt((document.getElementById('ie-saturation') || {}).value || 100);
+  ctx.filter = 'brightness(' + b + '%) contrast(' + c + '%) saturate(' + s + '%)';
+  ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, outW, outH);
 
-  var bv = document.getElementById('ie-brightness-val');
-  var cv = document.getElementById('ie-contrast-val');
-  var sv = document.getElementById('ie-saturation-val');
-  if (bv) bv.textContent = b + '%';
-  if (cv) cv.textContent = c + '%';
-  if (sv) sv.textContent = s + '%';
-
-  var img = canvas._srcImg;
-  var ctx = canvas.getContext('2d');
-
-  // Apply crop sizing
-  if (_imgEditCrop !== 'free') {
-    var parts = _imgEditCrop.split(':');
-    var ratioW = parseInt(parts[0]);
-    var ratioH = parseInt(parts[1]);
-    var srcW = img.width;
-    var srcH = img.height;
-    var srcRatio = srcW / srcH;
-    var targetRatio = ratioW / ratioH;
-    var cropW, cropH, cropX, cropY;
-    if (srcRatio > targetRatio) {
-      cropH = srcH;
-      cropW = Math.round(srcH * targetRatio);
-      cropX = Math.round((srcW - cropW) / 2);
-      cropY = 0;
-    } else {
-      cropW = srcW;
-      cropH = Math.round(srcW / targetRatio);
-      cropX = 0;
-      cropY = Math.round((srcH - cropH) / 2);
-    }
-    var maxW = Math.min(cropW, 480);
-    var scale = maxW / cropW;
-    canvas.width = maxW;
-    canvas.height = Math.round(cropH * scale);
-    canvas._cropParams = { x: cropX, y: cropY, w: cropW, h: cropH };
-  } else {
-    var maxW2 = Math.min(img.width, 480);
-    var scale2 = maxW2 / img.width;
-    canvas.width = maxW2;
-    canvas.height = Math.round(img.height * scale2);
-    canvas._cropParams = null;
-  }
-
-  var ctx2 = canvas.getContext('2d');
-  ctx2.filter = 'brightness(' + b + '%) contrast(' + c + '%) saturate(' + s + '%)';
-  if (canvas._cropParams) {
-    var cp = canvas._cropParams;
-    ctx2.drawImage(img, cp.x, cp.y, cp.w, cp.h, 0, 0, canvas.width, canvas.height);
-  } else {
-    ctx2.drawImage(img, 0, 0, canvas.width, canvas.height);
-  }
-}
-
-function setImgCrop(ratio, btn) {
-  _imgEditCrop = ratio;
-  document.querySelectorAll('.img-editor-crop-btn').forEach(function(b) { b.classList.remove('active'); });
-  if (btn) btn.classList.add('active');
-  applyImgFilters();
-}
-
-function saveImgEdit() {
-  var canvas = document.getElementById('img-editor-canvas');
-  if (!canvas || _imgEditIdx === null) return;
-  var edited = canvas.toDataURL('image/jpeg', 0.85);
-  if (window._carouselPhotos && _imgEditIdx < window._carouselPhotos.length) {
-    window._carouselPhotos[_imgEditIdx] = edited;
-    renderCarouselStrip();
-  }
+  window._carouselPhotos[_ie.idx] = canvas.toDataURL('image/jpeg', 0.85);
+  renderCarouselStrip();
   closeImgEditor();
 }
 
@@ -608,7 +643,8 @@ function closeImgEditor() {
   var modal = document.getElementById('img-editor-modal');
   if (modal) modal.style.display = 'none';
   document.body.style.overflow = '';
-  _imgEditIdx = null;
+  _ie.idx = null;
+  _ie.dragging = false;
 }
 
 function deleteFeedPost() {

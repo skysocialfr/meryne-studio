@@ -293,16 +293,19 @@
       <div style="font-size:15px;font-weight:800;color:#111;">&#9998; Éditer la photo</div>
       <button onclick="closeImgEditor()" style="background:none;border:none;font-size:18px;cursor:pointer;color:#9CA3AF;">&#10005;</button>
     </div>
-    <canvas id="img-editor-canvas" class="img-editor-canvas"></canvas>
-    <div class="img-editor-sliders">
-      <div class="img-editor-slider-row"><label>Luminosité</label><input type="range" id="ie-brightness" min="0" max="200" value="100" oninput="applyImgFilters()"><span id="ie-brightness-val">100%</span></div>
-      <div class="img-editor-slider-row"><label>Contraste</label><input type="range" id="ie-contrast" min="0" max="200" value="100" oninput="applyImgFilters()"><span id="ie-contrast-val">100%</span></div>
-      <div class="img-editor-slider-row"><label>Saturation</label><input type="range" id="ie-saturation" min="0" max="200" value="100" oninput="applyImgFilters()"><span id="ie-saturation-val">100%</span></div>
+    <!-- Crop viewport: drag the image to position your crop -->
+    <div style="display:flex;justify-content:center;margin-bottom:14px;">
+      <div id="ie-viewport" style="overflow:hidden;position:relative;cursor:move;border-radius:6px;background:#111;user-select:none;-webkit-user-select:none;touch-action:none;"
+        onmousedown="_ieMouseDown(event)" onmousemove="_ieMouseMove(event)" onmouseup="_ieMouseUp()" onmouseleave="_ieMouseUp()"
+        ontouchstart="_ieTouchStart(event)" ontouchmove="_ieTouchMove(event)" ontouchend="_ieMouseUp()">
+        <img id="ie-img" style="position:absolute;max-width:none;pointer-events:none;" draggable="false">
+      </div>
     </div>
-    <div style="font-size:11px;font-weight:700;color:#6B7280;margin-bottom:6px;">RECADRAGE</div>
+    <div style="font-size:11px;color:#9CA3AF;text-align:center;margin:-8px 0 10px;">Glisse l'image pour recadrer</div>
+    <div style="font-size:11px;font-weight:700;color:#6B7280;margin-bottom:6px;">FORMAT</div>
     <div class="img-editor-crops">
-      <button class="img-editor-crop-btn active" onclick="setImgCrop('free',this)">Libre</button>
-      <button class="img-editor-crop-btn" onclick="setImgCrop('1:1',this)">1:1</button>
+      <button class="img-editor-crop-btn" onclick="setImgCrop('free',this)">Original</button>
+      <button class="img-editor-crop-btn active" onclick="setImgCrop('1:1',this)">1:1</button>
       <button class="img-editor-crop-btn" onclick="setImgCrop('4:5',this)">4:5</button>
       <button class="img-editor-crop-btn" onclick="setImgCrop('9:16',this)">9:16</button>
       <button class="img-editor-crop-btn" onclick="setImgCrop('16:9',this)">16:9</button>
@@ -347,7 +350,7 @@
 <script src="js/utils.js?v=2"></script>
 <script src="js/storage.js?v=2"></script>
 <script src="js/auth.js?v=2"></script>
-<script src="js/feed.js?v=3"></script>
+<script src="js/feed.js?v=4"></script>
 <script src="js/production.js?v=3"></script>
 <script src="js/planning.js?v=2"></script>
 <script src="js/calendar.js?v=2"></script>
