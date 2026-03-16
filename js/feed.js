@@ -13,6 +13,9 @@ var dragSrcPlat = null;
 // ─── IG Profile State ───
 var IG_PROFILE = { handle: 'meryne.eis', bio: '', avatar: null, followers: null };
 var IG_HIGHLIGHTS = [];
+var IG_STORIES = [];
+var _storyIdx = 0;
+var _storyTimer = null;
 
 // ═══════════════════════════════════════════════
 //  Data Persistence
@@ -111,7 +114,10 @@ function renderFeedGrid(plat) {
 
     var firstMedia = (p.photos && p.photos.length > 0) ? p.photos[0] : p.media;
     var photoCount = (p.photos && p.photos.length > 1) ? p.photos.length : 0;
-    if (firstMedia && firstMedia.indexOf('data:video') === 0) {
+    var isVideoFmt = p.format && ['Reel', 'TikTok', 'Short', 'IGTV'].indexOf(p.format) !== -1;
+    if (isVideoFmt && p.cover) {
+      mediaHtml = '<img src="' + p.cover + '" style="width:100%;height:100%;object-fit:cover;" alt="">';
+    } else if (firstMedia && firstMedia.indexOf('data:video') === 0) {
       mediaHtml = '<video src="' + firstMedia + '" style="width:100%;height:100%;object-fit:cover;" muted></video>';
     } else if (firstMedia && firstMedia.indexOf('data:') === 0) {
       mediaHtml = '<img src="' + firstMedia + '" style="width:100%;height:100%;object-fit:cover;" alt="">';
@@ -139,6 +145,8 @@ function renderFeedGrid(plat) {
       + '<div style="position:absolute;top:6px;right:6px;z-index:2;width:10px;height:10px;border-radius:50%;background:' + doneColor + ';border:1.5px solid #fff;"></div>'
       // Carousel indicator
       + (photoCount > 1 ? '<div style="position:absolute;top:6px;left:50%;transform:translateX(-50%);z-index:2;background:rgba(0,0,0,.55);color:#fff;font-size:9px;font-weight:700;border-radius:6px;padding:2px 6px;">📷 ' + photoCount + '</div>' : '')
+      // Play icon for video formats
+      + (isVideoFmt ? '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;pointer-events:none;"><svg width="10" height="13" viewBox="0 0 10 13" fill="#fff"><path d="M1 1l8 5.5-8 5.5z"/></svg></div>' : '')
       // Media
       + '<div style="width:100%;height:100%;">' + mediaHtml + '</div>'
       // Overlay
@@ -240,6 +248,8 @@ function openFeedModal(idx, plat) {
 
   // Init carousel photos state
   window._carouselPhotos = (post.photos && post.photos.length > 0) ? post.photos.slice() : (post.media ? [post.media] : []);
+  // Init cover state
+  window._carouselCover = post.cover || null;
 
   if (post.media && post.media.indexOf('data:video') === 0) {
     mediaPreview = '<video src="' + post.media + '" style="width:100%;max-height:200px;object-fit:contain;border-radius:8px;" controls muted></video>';
@@ -283,10 +293,27 @@ function openFeedModal(idx, plat) {
     // Format
     + '<div style="margin-bottom:14px;">'
     + '<label style="font-size:12px;font-weight:600;color:#6B7280;display:block;margin-bottom:6px;">Format</label>'
-    + '<select id="feed-format" style="width:100%;padding:8px 10px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;background:#fff;box-sizing:border-box;">'
+    + '<select id="feed-format" onchange="feedFormatChanged(this)" style="width:100%;padding:8px 10px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;background:#fff;box-sizing:border-box;">'
     + formatSelect
     + '</select>'
     + '</div>'
+
+    // Cover (Reel / TikTok / Short / IGTV)
+    + (function(){
+        var vf = ['Reel','TikTok','Short','IGTV','Story'];
+        var show = vf.indexOf(formatVal) !== -1;
+        var prev = window._carouselCover
+          ? '<div style="position:relative;display:inline-block;"><img src="' + window._carouselCover + '" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1.5px solid #E5E7EB;" alt=""><button onclick="window._carouselCover=null;renderCoverPreview()" style="position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;border:none;background:#EF4444;color:#fff;font-size:11px;cursor:pointer;line-height:1;padding:0;">×</button></div>'
+          : '<div style="color:#9CA3AF;font-size:12px;">Aucune miniature</div>';
+        return '<div id="feed-cover-section" style="' + (show ? '' : 'display:none;') + 'margin-bottom:14px;">'
+          + '<label style="font-size:12px;font-weight:600;color:#6B7280;display:block;margin-bottom:6px;">Miniature de couverture</label>'
+          + '<div id="feed-cover-preview" style="margin-bottom:8px;">' + prev + '</div>'
+          + '<label style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:8px;border:1.5px dashed #D1D5DB;background:#F9FAFB;font-size:12px;font-weight:600;color:#6B7280;cursor:pointer;">'
+          + '+ Choisir une miniature'
+          + '<input type="file" accept="image/*" onchange="handleCoverUpload(event)" style="display:none;">'
+          + '</label>'
+          + '</div>';
+      })()
 
     // Title
     + '<div style="margin-bottom:14px;">'
@@ -403,6 +430,48 @@ function removeCarouselPhoto(idx) {
   renderCarouselStrip();
 }
 
+function moveCarouselPhoto(idx, dir) {
+  var photos = window._carouselPhotos || [];
+  var newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= photos.length) return;
+  var tmp = photos[idx];
+  photos[idx] = photos[newIdx];
+  photos[newIdx] = tmp;
+  renderCarouselStrip();
+}
+
+function feedFormatChanged(sel) {
+  var vf = ['Reel', 'TikTok', 'Short', 'IGTV', 'Story'];
+  var section = document.getElementById('feed-cover-section');
+  if (section) section.style.display = vf.indexOf(sel.value) !== -1 ? '' : 'none';
+}
+
+function handleCoverUpload(event) {
+  var file = event.target.files && event.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    compressImage(e.target.result, function(compressed) {
+      window._carouselCover = compressed;
+      renderCoverPreview();
+    });
+  };
+  reader.readAsDataURL(file);
+}
+
+function renderCoverPreview() {
+  var el = document.getElementById('feed-cover-preview');
+  if (!el) return;
+  if (!window._carouselCover) {
+    el.innerHTML = '<div style="color:#9CA3AF;font-size:12px;">Aucune miniature</div>';
+    return;
+  }
+  el.innerHTML = '<div style="position:relative;display:inline-block;">'
+    + '<img src="' + window._carouselCover + '" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1.5px solid #E5E7EB;" alt="">'
+    + '<button onclick="window._carouselCover=null;renderCoverPreview()" style="position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;border:none;background:#EF4444;color:#fff;font-size:11px;cursor:pointer;line-height:1;padding:0;">×</button>'
+    + '</div>';
+}
+
 function renderCarouselStrip() {
   var strip = document.getElementById('feed-carousel-strip');
   if (!strip) return;
@@ -411,16 +480,25 @@ function renderCarouselStrip() {
   for (var i = 0; i < photos.length; i++) {
     var src = photos[i];
     var isVideo = src && src.indexOf('data:video') === 0;
-    html += '<div style="position:relative;width:72px;height:72px;border-radius:8px;overflow:hidden;border:1.5px solid #E5E7EB;flex-shrink:0;">';
+    // Wrapper column: thumbnail + reorder arrows
+    html += '<div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;">';
+    // Thumbnail
+    html += '<div style="position:relative;width:72px;height:72px;border-radius:8px;overflow:hidden;border:1.5px solid #E5E7EB;">';
     if (isVideo) {
       html += '<video src="' + src + '" style="width:100%;height:100%;object-fit:cover;" muted></video>';
     } else {
       html += '<img src="' + src + '" style="width:100%;height:100%;object-fit:cover;" alt="">';
     }
-    if (i === 0) html += '<div style="position:absolute;bottom:2px;left:2px;background:rgba(0,0,0,.6);color:#fff;font-size:8px;padding:1px 4px;border-radius:4px;">Cover</div>';
-    html += '<button onclick="removeCarouselPhoto(' + i + ')" style="position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;border:none;background:rgba(0,0,0,.6);color:#fff;font-size:11px;cursor:pointer;line-height:1;padding:0;">×</button>';
+    if (i === 0) html += '<div style="position:absolute;top:2px;left:2px;background:rgba(0,0,0,.6);color:#fff;font-size:8px;padding:1px 4px;border-radius:4px;">Cover</div>';
+    html += '<button onclick="removeCarouselPhoto(' + i + ')" style="position:absolute;top:2px;right:2px;width:16px;height:16px;border-radius:50%;border:none;background:rgba(0,0,0,.6);color:#fff;font-size:11px;cursor:pointer;line-height:1;padding:0;">×</button>';
     if (!isVideo) html += '<button onclick="openImgEditor(' + i + ')" style="position:absolute;bottom:2px;right:2px;width:18px;height:18px;border-radius:4px;border:none;background:rgba(139,92,246,.85);color:#fff;font-size:9px;cursor:pointer;line-height:1;padding:0;" title="Modifier">✏️</button>';
     html += '</div>';
+    // Reorder arrows
+    html += '<div style="display:flex;gap:2px;">';
+    html += '<button onclick="moveCarouselPhoto(' + i + ',-1)" style="width:32px;height:14px;border:none;background:#E5E7EB;border-radius:3px;font-size:8px;cursor:pointer;padding:0;line-height:1;color:#6B7280;' + (i === 0 ? 'opacity:.3;pointer-events:none;' : '') + '">◀</button>';
+    html += '<button onclick="moveCarouselPhoto(' + i + ',1)" style="width:32px;height:14px;border:none;background:#E5E7EB;border-radius:3px;font-size:8px;cursor:pointer;padding:0;line-height:1;color:#6B7280;' + (i === photos.length - 1 ? 'opacity:.3;pointer-events:none;' : '') + '">▶</button>';
+    html += '</div>';
+    html += '</div>'; // close column wrapper
   }
   if (photos.length === 0) {
     html = '<div style="color:#9CA3AF;font-size:12px;padding:4px 0;">Aucune photo ajoutée</div>';
@@ -452,7 +530,8 @@ function saveFeedPost() {
     hashtags: hashtags,
     done: done,
     media: media,
-    photos: photos
+    photos: photos,
+    cover: window._carouselCover || null
   };
 
   if (!FEED_DATA[feedPlat]) FEED_DATA[feedPlat] = [];
@@ -674,11 +753,16 @@ async function loadIgProfile() {
   var hl = await cloudLoad('ig_highlights', []);
   IG_HIGHLIGHTS = hl;
   if (!Array.isArray(IG_HIGHLIGHTS)) IG_HIGHLIGHTS = [];
+
+  var stories = await cloudLoad('ig_stories', []);
+  IG_STORIES = stories;
+  if (!Array.isArray(IG_STORIES)) IG_STORIES = [];
 }
 
 function saveIgProfile() {
   cloudSave('ig_profile', IG_PROFILE);
   cloudSave('ig_highlights', IG_HIGHLIGHTS);
+  cloudSave('ig_stories', IG_STORIES);
 }
 
 // ═══════════════════════════════════════════════
@@ -693,6 +777,15 @@ function renderHighlights() {
       avatarEl.innerHTML = '<img src="' + IG_PROFILE.avatar + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">';
     } else {
       avatarEl.innerHTML = '<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#667EEA,#764BA2);display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:700;">' + escapeHtml(IG_PROFILE.handle.charAt(0).toUpperCase()) + '</div>';
+    }
+  }
+  // Update avatar ring: gradient when stories exist, gray when empty
+  var ringEl = document.querySelector('.ig-avatar-ring');
+  if (ringEl) {
+    if (IG_STORIES.length > 0) {
+      ringEl.style.background = 'linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)';
+    } else {
+      ringEl.style.background = '#D1D5DB';
     }
   }
 
@@ -842,6 +935,102 @@ function deleteHighlight(idx) {
     closeModal();
     showSync('Story supprimee', null);
   });
+}
+
+// ═══════════════════════════════════════════════
+//  Stories
+// ═══════════════════════════════════════════════
+
+function openStoryArea() {
+  if (IG_STORIES.length === 0) {
+    // No stories yet — open picker to add one
+    var inp = document.createElement('input');
+    inp.type = 'file';
+    inp.accept = 'image/*,video/*';
+    inp.style.display = 'none';
+    inp.onchange = handleStoryAdd;
+    document.body.appendChild(inp);
+    inp.click();
+    setTimeout(function() { if (inp.parentNode) inp.parentNode.removeChild(inp); }, 60000);
+  } else {
+    viewStory(0);
+  }
+}
+
+function handleStoryAdd(event) {
+  var file = event.target.files && event.target.files[0];
+  if (!file) return;
+  var isVideo = file.type.indexOf('video') === 0;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var addStory = function(data) {
+      IG_STORIES.push({ media: data, type: isVideo ? 'video' : 'image', createdAt: Date.now() });
+      saveIgProfile();
+      renderHighlights();
+      viewStory(IG_STORIES.length - 1);
+    };
+    if (isVideo) { addStory(e.target.result); }
+    else { compressImage(e.target.result, addStory); }
+  };
+  reader.readAsDataURL(file);
+}
+
+function viewStory(idx) {
+  if (!IG_STORIES.length) return;
+  var viewer = document.getElementById('story-viewer');
+  if (!viewer) return;
+  viewer.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  _showStoryAt(idx);
+}
+
+function _showStoryAt(idx) {
+  if (idx < 0 || idx >= IG_STORIES.length) { closeStoryViewer(); return; }
+  _storyIdx = idx;
+  clearTimeout(_storyTimer);
+  var story = IG_STORIES[idx];
+  var content = document.getElementById('story-content');
+  if (content) {
+    if (story.type === 'video') {
+      content.innerHTML = '<video src="' + story.media + '" style="max-width:100%;max-height:100%;object-fit:contain;" autoplay muted playsinline></video>';
+    } else {
+      content.innerHTML = '<img src="' + story.media + '" style="max-width:100%;max-height:100%;object-fit:contain;" alt="">';
+    }
+  }
+  // Progress bars
+  var barsEl = document.getElementById('story-progress-bars');
+  if (barsEl) {
+    var ph = '';
+    for (var i = 0; i < IG_STORIES.length; i++) {
+      ph += '<div style="flex:1;height:2px;background:rgba(255,255,255,.35);border-radius:2px;overflow:hidden;">'
+        + '<div style="height:100%;background:#fff;width:' + (i < idx ? 100 : 0) + '%;'
+        + (i === idx ? 'animation:storyProgress 5s linear forwards;' : '') + '"></div>'
+        + '</div>';
+    }
+    barsEl.innerHTML = ph;
+  }
+  var counter = document.getElementById('story-counter');
+  if (counter) counter.textContent = (idx + 1) + ' / ' + IG_STORIES.length;
+  _storyTimer = setTimeout(function() { _showStoryAt(idx + 1); }, 5000);
+}
+
+function prevStory() { clearTimeout(_storyTimer); _showStoryAt(_storyIdx - 1); }
+function nextStory() { clearTimeout(_storyTimer); _showStoryAt(_storyIdx + 1); }
+
+function deleteCurrentStory() {
+  clearTimeout(_storyTimer);
+  IG_STORIES.splice(_storyIdx, 1);
+  saveIgProfile();
+  renderHighlights();
+  if (IG_STORIES.length === 0) { closeStoryViewer(); return; }
+  _showStoryAt(Math.min(_storyIdx, IG_STORIES.length - 1));
+}
+
+function closeStoryViewer() {
+  clearTimeout(_storyTimer);
+  var viewer = document.getElementById('story-viewer');
+  if (viewer) viewer.style.display = 'none';
+  document.body.style.overflow = '';
 }
 
 // ═══════════════════════════════════════════════
