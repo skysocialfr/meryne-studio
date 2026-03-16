@@ -56,10 +56,8 @@ async function doLogin() {
       return;
     }
 
-    var result = await sb.auth.signInWithPassword({
-      email: email,
-      password: pass
-    });
+    var loginTimeout = new Promise(function(_, rej) { setTimeout(function(){ rej(new Error('timeout')); }, 15000); });
+    var result = await Promise.race([sb.auth.signInWithPassword({ email: email, password: pass }), loginTimeout]);
 
     if (result.error) {
       showLoginError('Email ou mot de passe incorrect');
@@ -103,7 +101,8 @@ async function checkSession() {
   if (!sb) return false;
 
   try {
-    var result = await sb.auth.getSession();
+    var timeout = new Promise(function(_, rej) { setTimeout(function(){ rej(new Error('timeout')); }, 6000); });
+    var result = await Promise.race([sb.auth.getSession(), timeout]);
     if (result.data && result.data.session) {
       window._currentSession = result.data.session;
       return true;
