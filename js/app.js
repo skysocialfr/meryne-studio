@@ -129,6 +129,7 @@ function renderAll() {
   renderProd();
   buildFilters();
   renderPlanning();
+  if (typeof checkTodayReminders === 'function') checkTodayReminders();
   renderCalendar();
   renderFeed();
   renderHighlights();
@@ -143,7 +144,7 @@ function setTab(id, btn) {
   document.getElementById('tab-' + id).classList.add('active');
   btn.classList.add('active');
   if (id === 'analytics') renderAnalytics();
-  if (id === 'planning') renderCalendar();
+  if (id === 'planning') { renderCalendar(); if (typeof checkTodayReminders === 'function') checkTodayReminders(); }
   if (id === 'followers') renderFollowers();
   if (id === 'tags') renderTags();
 }

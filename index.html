@@ -184,6 +184,12 @@
     <div id="tab-planning" class="tab-panel">
       <div class="plan-toolbar">
         <div id="filter-bar"></div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button class="pvt" onclick="printPlanning()" title="Imprimer le planning" style="gap:4px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            Imprimer
+          </button>
+        </div>
         <div class="plan-view-toggle">
           <button class="pvt active" id="pvt-list" onclick="setPlanView('list',this)">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/></svg>
@@ -196,6 +202,10 @@
         </div>
       </div>
       <div id="plan-list-view">
+        <div id="today-reminder-banner" class="today-banner" style="display:none;"></div>
+        <div class="plan-search-wrap">
+          <input type="text" class="plan-search-input" id="plan-search" placeholder="Rechercher un post..." oninput="setSearch(this.value)">
+        </div>
         <div class="add-row"><button class="add-btn-main" onclick="openPubModal(-1)">&#xFF0B; Ajouter un post</button></div>
         <div id="pubs-container"></div>
       </div>
@@ -276,6 +286,34 @@
   </div>
 </div>
 
+<!-- IMAGE EDITOR MODAL -->
+<div id="img-editor-modal" class="img-editor-overlay" style="display:none;" onclick="if(event.target===this)closeImgEditor()">
+  <div class="img-editor-box">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <div style="font-size:15px;font-weight:800;color:#111;">&#9998; Éditer la photo</div>
+      <button onclick="closeImgEditor()" style="background:none;border:none;font-size:18px;cursor:pointer;color:#9CA3AF;">&#10005;</button>
+    </div>
+    <canvas id="img-editor-canvas" class="img-editor-canvas"></canvas>
+    <div class="img-editor-sliders">
+      <div class="img-editor-slider-row"><label>Luminosité</label><input type="range" id="ie-brightness" min="0" max="200" value="100" oninput="applyImgFilters()"><span id="ie-brightness-val">100%</span></div>
+      <div class="img-editor-slider-row"><label>Contraste</label><input type="range" id="ie-contrast" min="0" max="200" value="100" oninput="applyImgFilters()"><span id="ie-contrast-val">100%</span></div>
+      <div class="img-editor-slider-row"><label>Saturation</label><input type="range" id="ie-saturation" min="0" max="200" value="100" oninput="applyImgFilters()"><span id="ie-saturation-val">100%</span></div>
+    </div>
+    <div style="font-size:11px;font-weight:700;color:#6B7280;margin-bottom:6px;">RECADRAGE</div>
+    <div class="img-editor-crops">
+      <button class="img-editor-crop-btn active" onclick="setImgCrop('free',this)">Libre</button>
+      <button class="img-editor-crop-btn" onclick="setImgCrop('1:1',this)">1:1</button>
+      <button class="img-editor-crop-btn" onclick="setImgCrop('4:5',this)">4:5</button>
+      <button class="img-editor-crop-btn" onclick="setImgCrop('9:16',this)">9:16</button>
+      <button class="img-editor-crop-btn" onclick="setImgCrop('16:9',this)">16:9</button>
+    </div>
+    <div class="img-editor-actions">
+      <button onclick="closeImgEditor()" style="padding:8px 16px;border-radius:8px;border:1.5px solid #E5E7EB;background:#F9FAFB;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Annuler</button>
+      <button onclick="saveImgEdit()" style="padding:8px 16px;border-radius:8px;border:none;background:var(--violet);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Appliquer</button>
+    </div>
+  </div>
+</div>
+
 <!-- HASHTAG FAB + PANEL -->
 <button id="hash-fab" onclick="toggleHashPanel()" title="Bibliothèque hashtags">#</button>
 <div id="hash-panel">
@@ -309,7 +347,7 @@
 <script src="js/utils.js?v=2"></script>
 <script src="js/storage.js?v=2"></script>
 <script src="js/auth.js?v=2"></script>
-<script src="js/feed.js?v=2"></script>
+<script src="js/feed.js?v=3"></script>
 <script src="js/production.js?v=3"></script>
 <script src="js/planning.js?v=2"></script>
 <script src="js/calendar.js?v=2"></script>
@@ -320,7 +358,7 @@
 <script src="js/hashtags.js?v=1"></script>
 <script src="js/ai.js?v=1"></script>
 <script src="js/milestones.js?v=2"></script>
-<script src="js/app.js?v=2"></script>
+<script src="js/app.js?v=3"></script>
 
 </body>
 </html>
