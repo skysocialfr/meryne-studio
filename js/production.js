@@ -647,6 +647,7 @@ function openEcalModal(id, prefill) {
     { key: 'shoot', label: 'Shoot' },
     { key: 'event', label: 'Evenement' },
     { key: 'collab', label: 'Collab' },
+    { key: 'activite', label: 'Activité' },
     { key: 'other', label: 'Autre' }
   ];
 
