@@ -617,9 +617,14 @@ body.dark .pub-more-menu button{color:#F0F0F0;border-bottom-color:#2A2A3A;}
 .pcal-add-btn:hover{opacity:.85;}
 /* ═══ RESPONSIVE ═══ */
 @media(max-width:640px){
-  .hdr-left{display:none;}
+  .hdr-left{display:block;}
+  .hdr-eyebrow{display:none;}
+  .hdr-sub{display:none;}
+  .hdr-brand{font-size:16px;}
   .hdr-goals{display:none;}
+  .hdr-center{display:none;}
   .kpi{padding:6px 9px;}
   .kv{font-size:12px;}
   .cwrap{padding:14px 12px;}
+  .hdr-inner{padding:10px 14px;}
 }

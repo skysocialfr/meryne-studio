@@ -41,7 +41,6 @@ async function cloudSave(key, data) {
     await sb.from('studio_data').upsert({
       key: storageKey,
       data: data,
-      user_id: userId,
       updated_at: new Date().toISOString()
     }, { onConflict: 'key' });
     showSync('Saved', null);

@@ -109,10 +109,12 @@ function renderFeedGrid(plat) {
     var p = posts[i];
     var mediaHtml = '';
 
-    if (p.media && p.media.indexOf('data:video') === 0) {
-      mediaHtml = '<video src="' + p.media + '" style="width:100%;height:100%;object-fit:cover;" muted></video>';
-    } else if (p.media && p.media.indexOf('data:') === 0) {
-      mediaHtml = '<img src="' + p.media + '" style="width:100%;height:100%;object-fit:cover;" alt="">';
+    var firstMedia = (p.photos && p.photos.length > 0) ? p.photos[0] : p.media;
+    var photoCount = (p.photos && p.photos.length > 1) ? p.photos.length : 0;
+    if (firstMedia && firstMedia.indexOf('data:video') === 0) {
+      mediaHtml = '<video src="' + firstMedia + '" style="width:100%;height:100%;object-fit:cover;" muted></video>';
+    } else if (firstMedia && firstMedia.indexOf('data:') === 0) {
+      mediaHtml = '<img src="' + firstMedia + '" style="width:100%;height:100%;object-fit:cover;" alt="">';
     } else if (p.emoji) {
       mediaHtml = '<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:48px;background:#F3F4F6;">' + escapeHtml(p.emoji) + '</div>';
     } else {
@@ -135,6 +137,8 @@ function renderFeedGrid(plat) {
       + '<div style="position:absolute;top:6px;left:6px;z-index:2;background:rgba(0,0,0,.55);color:#fff;font-size:10px;font-weight:700;border-radius:6px;padding:2px 7px;line-height:1.4;">' + (i + 1) + '</div>'
       // Done status dot
       + '<div style="position:absolute;top:6px;right:6px;z-index:2;width:10px;height:10px;border-radius:50%;background:' + doneColor + ';border:1.5px solid #fff;"></div>'
+      // Carousel indicator
+      + (photoCount > 1 ? '<div style="position:absolute;top:6px;left:50%;transform:translateX(-50%);z-index:2;background:rgba(0,0,0,.55);color:#fff;font-size:9px;font-weight:700;border-radius:6px;padding:2px 6px;">📷 ' + photoCount + '</div>' : '')
       // Media
       + '<div style="width:100%;height:100%;">' + mediaHtml + '</div>'
       // Overlay
@@ -234,6 +238,9 @@ function openFeedModal(idx, plat) {
   var doneVal = post.done || false;
   var mediaPreview = '';
 
+  // Init carousel photos state
+  window._carouselPhotos = (post.photos && post.photos.length > 0) ? post.photos.slice() : (post.media ? [post.media] : []);
+
   if (post.media && post.media.indexOf('data:video') === 0) {
     mediaPreview = '<video src="' + post.media + '" style="width:100%;max-height:200px;object-fit:contain;border-radius:8px;" controls muted></video>';
   } else if (post.media && post.media.indexOf('data:') === 0) {
@@ -255,11 +262,16 @@ function openFeedModal(idx, plat) {
   if (titleEl) titleEl.textContent = isEdit ? 'Modifier le post' : 'Nouveau post';
 
   var html = ''
-    // Media upload
+    // Photos / Media upload
     + '<div style="margin-bottom:14px;">'
-    + '<label style="font-size:12px;font-weight:600;color:#6B7280;display:block;margin-bottom:6px;">Media</label>'
-    + '<div id="feed-media-preview" style="margin-bottom:8px;">' + mediaPreview + '</div>'
-    + '<input type="file" id="feed-media-input" accept="image/*,video/*" onchange="handleFeedMediaUpload(event)" style="font-size:12px;">'
+    + '<label style="font-size:12px;font-weight:600;color:#6B7280;display:block;margin-bottom:6px;">Photos <span style="font-weight:400;color:#9CA3AF;font-size:11px;">(max 9)</span></label>'
+    + '<div id="feed-carousel-strip" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>'
+    + '<div style="display:flex;gap:8px;align-items:center;">'
+    + '<label style="display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:8px;border:1.5px dashed #D1D5DB;background:#F9FAFB;font-size:12px;font-weight:600;color:#6B7280;cursor:pointer;">'
+    + '+ Ajouter une photo'
+    + '<input type="file" id="feed-media-input" accept="image/*,video/*" multiple onchange="handleCarouselAdd(event)" style="display:none;">'
+    + '</label>'
+    + '</div>'
     + '</div>'
 
     // Date
@@ -316,8 +328,11 @@ function openFeedModal(idx, plat) {
   if (modal) modal.style.display = 'flex';
   document.body.style.overflow = 'hidden';
 
-  // Render hash preview after modal opens
-  setTimeout(function() { updateHashPreview(); }, 50);
+  // Render hash preview + carousel strip after modal opens
+  setTimeout(function() {
+    updateHashPreview();
+    renderCarouselStrip();
+  }, 50);
 }
 
 function updateHashPreview() {
@@ -350,32 +365,66 @@ function closeFeedModal() {
 //  Feed Media Upload
 // ═══════════════════════════════════════════════
 
-function handleFeedMediaUpload(event) {
-  var file = event.target.files && event.target.files[0];
-  if (!file) return;
+function handleCarouselAdd(event) {
+  var files = event.target.files;
+  if (!files || !files.length) return;
+  if (!window._carouselPhotos) window._carouselPhotos = [];
 
-  var reader = new FileReader();
-  reader.onload = function(ev) {
-    var dataUrl = ev.target.result;
-    var preview = document.getElementById('feed-media-preview');
+  var toProcess = Math.min(files.length, 9 - window._carouselPhotos.length);
+  var processed = 0;
 
-    if (file.type.indexOf('video') === 0) {
-      // Store video data URL directly (no compression for video)
-      if (preview) {
-        preview.innerHTML = '<video src="' + dataUrl + '" style="width:100%;max-height:200px;object-fit:contain;border-radius:8px;" controls muted></video>';
-      }
-      preview.setAttribute('data-media', dataUrl);
-    } else {
-      // Compress image
-      compressImage(dataUrl, function(compressed) {
-        if (preview) {
-          preview.innerHTML = '<img src="' + compressed + '" style="width:100%;max-height:200px;object-fit:contain;border-radius:8px;" alt="">';
-          preview.setAttribute('data-media', compressed);
+  for (var i = 0; i < toProcess; i++) {
+    (function(file) {
+      var reader = new FileReader();
+      reader.onload = function(ev) {
+        var dataUrl = ev.target.result;
+        if (file.type.indexOf('video') === 0) {
+          window._carouselPhotos.push(dataUrl);
+          processed++;
+          if (processed === toProcess) renderCarouselStrip();
+        } else {
+          compressImage(dataUrl, function(compressed) {
+            window._carouselPhotos.push(compressed);
+            processed++;
+            if (processed === toProcess) renderCarouselStrip();
+          });
         }
-      });
+      };
+      reader.readAsDataURL(file);
+    })(files[i]);
+  }
+  // Reset input so same file can be re-added
+  event.target.value = '';
+}
+
+function removeCarouselPhoto(idx) {
+  if (!window._carouselPhotos) return;
+  window._carouselPhotos.splice(idx, 1);
+  renderCarouselStrip();
+}
+
+function renderCarouselStrip() {
+  var strip = document.getElementById('feed-carousel-strip');
+  if (!strip) return;
+  var photos = window._carouselPhotos || [];
+  var html = '';
+  for (var i = 0; i < photos.length; i++) {
+    var src = photos[i];
+    var isVideo = src && src.indexOf('data:video') === 0;
+    html += '<div style="position:relative;width:72px;height:72px;border-radius:8px;overflow:hidden;border:1.5px solid #E5E7EB;flex-shrink:0;">';
+    if (isVideo) {
+      html += '<video src="' + src + '" style="width:100%;height:100%;object-fit:cover;" muted></video>';
+    } else {
+      html += '<img src="' + src + '" style="width:100%;height:100%;object-fit:cover;" alt="">';
     }
-  };
-  reader.readAsDataURL(file);
+    if (i === 0) html += '<div style="position:absolute;bottom:2px;left:2px;background:rgba(0,0,0,.6);color:#fff;font-size:8px;padding:1px 4px;border-radius:4px;">Cover</div>';
+    html += '<button onclick="removeCarouselPhoto(' + i + ')" style="position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;border:none;background:rgba(0,0,0,.6);color:#fff;font-size:11px;cursor:pointer;line-height:1;padding:0;">×</button>';
+    html += '</div>';
+  }
+  if (photos.length === 0) {
+    html = '<div style="color:#9CA3AF;font-size:12px;padding:4px 0;">Aucune photo ajoutée</div>';
+  }
+  strip.innerHTML = html;
 }
 
 // ═══════════════════════════════════════════════
@@ -390,14 +439,9 @@ function saveFeedPost() {
   var hashtags = (document.getElementById('feed-hashtags') || {}).value || '';
   var done = (document.getElementById('feed-done') || {}).checked || false;
 
-  // Get media from preview data attribute or from existing post
-  var mediaPreview = document.getElementById('feed-media-preview');
-  var media = null;
-  if (mediaPreview && mediaPreview.getAttribute('data-media')) {
-    media = mediaPreview.getAttribute('data-media');
-  } else if (feedEditIdx !== null && FEED_DATA[feedPlat] && FEED_DATA[feedPlat][feedEditIdx]) {
-    media = FEED_DATA[feedPlat][feedEditIdx].media || null;
-  }
+  // Get photos from carousel state
+  var photos = window._carouselPhotos || [];
+  var media = photos.length > 0 ? photos[0] : null;
 
   var post = {
     title: title,
@@ -406,7 +450,8 @@ function saveFeedPost() {
     description: desc,
     hashtags: hashtags,
     done: done,
-    media: media
+    media: media,
+    photos: photos
   };
 
   if (!FEED_DATA[feedPlat]) FEED_DATA[feedPlat] = [];
