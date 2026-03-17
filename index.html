@@ -52,6 +52,7 @@
           </div>
 <button class="dark-toggle" id="dark-toggle" onclick="toggleDark()" title="Mode sombre">🌙</button>
 <button class="dark-toggle" onclick="showAiKeyModal()" title="Clé API Claude" style="font-size:13px;">🤖</button>
+<button class="dark-toggle" onclick="syncFromCloud()" title="Synchroniser avec le cloud" style="font-size:15px;">🔄</button>
           <div class="hdr-user-badge" id="user-badge" style="display:none;"></div>
           <button class="logout-btn" onclick="doLogout()" title="D&eacute;connexion">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -348,9 +349,9 @@
 
 <!-- JS Modules (order matters: utils > storage > auth > modules > app) -->
 <script src="js/utils.js?v=3"></script>
-<script src="js/storage.js?v=3"></script>
+<script src="js/storage.js?v=6"></script>
 <script src="js/auth.js?v=5"></script>
-<script src="js/feed.js?v=8"></script>
+<script src="js/feed.js?v=9"></script>
 <script src="js/production.js?v=4"></script>
 <script src="js/planning.js?v=3"></script>
 <script src="js/calendar.js?v=3"></script>
@@ -388,7 +389,7 @@
 <script src="js/hashtags.js?v=2"></script>
 <script src="js/ai.js?v=2"></script>
 <script src="js/milestones.js?v=3"></script>
-<script src="js/app.js?v=4"></script>
+<script src="js/app.js?v=6"></script>
 
 </body>
 </html>

@@ -187,5 +187,21 @@ function setThemeColor(hex) {
   localStorage.setItem('themeColor', hex);
 }
 
+// ─── Sync depuis le cloud (multi-appareils) ───
+async function syncFromCloud() {
+  // Ne pas synchroniser si un modal est ouvert
+  var anyModal = document.querySelector('.modal[style*="flex"], #feed-modal[style*="flex"], #story-viewer[style*="flex"]');
+  if (anyModal) return;
+  await load();
+  await loadIgProfile();
+  await loadFeedData();
+  await loadEvents();
+  renderAll();
+  showSync('Sync ☁️', null);
+}
+
+// Auto-sync toutes les 60 secondes
+setInterval(syncFromCloud, 60000);
+
 // ─── Auto-login on page load ───
 autoLogin();
