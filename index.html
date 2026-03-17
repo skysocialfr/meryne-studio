@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Meryne Studio</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Supabase désactivé (projet unhealthy) — données en localStorage -->
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 </head>
@@ -347,16 +347,16 @@
 <div id="milestone-popup" style="display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center;background:rgba(0,0,0,.5);"></div>
 
 <!-- JS Modules (order matters: utils > storage > auth > modules > app) -->
-<script src="js/utils.js?v=2"></script>
-<script src="js/storage.js?v=2"></script>
-<script src="js/auth.js?v=4"></script>
-<script src="js/feed.js?v=5"></script>
-<script src="js/production.js?v=3"></script>
-<script src="js/planning.js?v=2"></script>
-<script src="js/calendar.js?v=2"></script>
-<script src="js/followers.js?v=2"></script>
-<script src="js/analytics.js?v=2"></script>
-<script src="js/tags.js?v=2"></script>
+<script src="js/utils.js?v=3"></script>
+<script src="js/storage.js?v=3"></script>
+<script src="js/auth.js?v=5"></script>
+<script src="js/feed.js?v=6"></script>
+<script src="js/production.js?v=4"></script>
+<script src="js/planning.js?v=3"></script>
+<script src="js/calendar.js?v=3"></script>
+<script src="js/followers.js?v=3"></script>
+<script src="js/analytics.js?v=3"></script>
+<script src="js/tags.js?v=3"></script>
 <!-- STORY VIEWER -->
 <div id="story-viewer" style="position:fixed;inset:0;z-index:2000;background:#000;display:none;flex-direction:column;align-items:center;justify-content:center;">
   <div style="position:relative;width:100%;max-width:420px;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;">
@@ -385,10 +385,10 @@
 </div>
 
 <script src="js/notes.js?v=2"></script>
-<script src="js/hashtags.js?v=1"></script>
-<script src="js/ai.js?v=1"></script>
-<script src="js/milestones.js?v=2"></script>
-<script src="js/app.js?v=3"></script>
+<script src="js/hashtags.js?v=2"></script>
+<script src="js/ai.js?v=2"></script>
+<script src="js/milestones.js?v=3"></script>
+<script src="js/app.js?v=4"></script>
 
 </body>
 </html>
