@@ -9,6 +9,7 @@ var feedPlat = 'insta';
 var feedEditIdx = null;
 var dragSrcIdx = null;
 var dragSrcPlat = null;
+var _feedDragging = false;
 
 // ─── IG Profile State ───
 var IG_PROFILE = { handle: 'meryne.eis', bio: '', avatar: null, followers: null };
@@ -184,6 +185,7 @@ function renderFeedGrid(plat) {
 // ═══════════════════════════════════════════════
 
 function feedDragStart(e, idx, plat) {
+  _feedDragging = true;
   dragSrcIdx = idx;
   dragSrcPlat = plat;
   e.dataTransfer.effectAllowed = 'move';
@@ -222,6 +224,7 @@ function feedDragEnd(e) {
   if (e.target && e.target.style) {
     e.target.style.opacity = '1';
   }
+  setTimeout(function() { _feedDragging = false; }, 100);
 }
 
 // ═══════════════════════════════════════════════
@@ -234,6 +237,7 @@ function addFeedPost() {
 }
 
 function openFeedModal(idx, plat) {
+  if (_feedDragging) return;
   feedEditIdx = idx;
   var isEdit = idx !== null && idx !== undefined;
   var post = isEdit ? (FEED_DATA[plat] || [])[idx] || {} : {};
@@ -331,8 +335,8 @@ function openFeedModal(idx, plat) {
     // Hashtags
     + '<div style="margin-bottom:14px;">'
     + '<label style="font-size:12px;font-weight:600;color:#6B7280;display:block;margin-bottom:6px;">Hashtags</label>'
-    + '<input type="text" id="feed-hashtags" value="' + escapeHtml(hashVal) + '" placeholder="#mode #lifestyle #inspiration" oninput="updateHashPreview()" onfocus="showHashSuggestions()" style="width:100%;padding:8px 10px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box;">'
-    + '<div id="feed-hash-suggestions" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;"></div>'
+    + '<input type="text" id="feed-hashtags" value="' + escapeHtml(hashVal) + '" placeholder="#mode #lifestyle #inspiration" oninput="updateHashPreview()" style="width:100%;padding:8px 10px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box;">'
+    + '<div id="feed-hash-bank-row" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;"></div>'
     + '<div id="feed-hash-preview" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:2px;"></div>'
     + '</div>'
 
@@ -356,56 +360,20 @@ function openFeedModal(idx, plat) {
   if (modal) modal.style.display = 'flex';
   document.body.style.overflow = 'hidden';
 
-  // Render hash preview + carousel strip after modal opens
+  // Render hash preview + carousel strip + hash bank after modal opens
   setTimeout(function() {
     updateHashPreview();
     renderCarouselStrip();
+    renderFeedHashBank();
   }, 50);
-}
-
-// ─── Hashtag suggestions bank ───
-var HASH_SUGGESTIONS = [
-  // Mode / Style
-  '#mode','#fashion','#style','#ootd','#tenue','#outfit','#look','#stylefrance',
-  '#frenchstyle','#parisianstyle','#fashionista','#instafashion','#fashionblogger',
-  // Grande taille
-  '#grandetaille','#plussize','#plussizefashion','#plussizestyle','#curvy',
-  '#curvyfashion','#curvystyle','#bodypositive','#bodypositivity','#plussizeootd',
-  '#grandetaillemode','#modegrandetaille','#curvygirl','#plussizemodel',
-  // Paris / France
-  '#paris','#parisienne','#france','#frenchgirl','#parisfashion','#modefrancaise',
-  '#parislife','#frenchfashion',
-  // Lifestyle
-  '#lifestyle','#beauty','#inspiration','#inspo','#motivation','#selflove',
-  '#confidence','#empowerment','#womanpower','#girlboss',
-  // Réseaux
-  '#instadaily','#instagram','#photooftheday','#picoftheday','#reels','#trending',
-  '#viral','#explore','#fyp','#tiktok',
-  // Beauté
-  '#makeup','#skincare','#beaute','#glam','#naturalbeauty','#maquillage',
-  // Taille / Corps
-  '#1m82','#tall','#tallgirl','#tallfashion','#tallstyle','#longlegs',
-];
-
-function showHashSuggestions() {
-  updateHashSuggestions('');
 }
 
 function updateHashPreview() {
   var input = document.getElementById('feed-hashtags');
   var preview = document.getElementById('feed-hash-preview');
   if (!input || !preview) return;
-
   var val = input.value.trim();
-  // Update suggestions based on last word typed
-  var words = val.split(/\s+/);
-  var lastWord = words[words.length - 1] || '';
-  updateHashSuggestions(lastWord);
-
-  if (!val) {
-    preview.innerHTML = '';
-    return;
-  }
+  if (!val) { preview.innerHTML = ''; return; }
   var tags = val.split(/[\s,]+/).filter(function(t) { return t; });
   var html = '';
   for (var i = 0; i < tags.length; i++) {
@@ -415,36 +383,26 @@ function updateHashPreview() {
   preview.innerHTML = html;
 }
 
-function updateHashSuggestions(filter) {
-  var box = document.getElementById('feed-hash-suggestions');
-  if (!box) return;
-  var input = document.getElementById('feed-hashtags');
-  var already = input ? input.value.toLowerCase() : '';
-
-  var f = (filter || '').toLowerCase().replace(/^#/, '');
-  var shown = HASH_SUGGESTIONS.filter(function(h) {
-    var inAlready = already.indexOf(h) !== -1;
-    if (inAlready) return false;
-    if (!f) return true;
-    return h.indexOf(f) !== -1;
-  }).slice(0, 20);
-
-  if (!shown.length) { box.innerHTML = ''; return; }
-
-  var html = '<div style="font-size:10px;color:#9CA3AF;width:100%;margin-bottom:2px;">Suggestions (clic pour ajouter) :</div>';
-  shown.forEach(function(h) {
-    html += '<span onclick="addHashTag(\'' + h + '\')" style="cursor:pointer;display:inline-block;background:#F3F4F6;color:#4B5563;font-size:11px;padding:3px 9px;border-radius:12px;border:1px solid #E5E7EB;transition:background .15s;" onmouseenter="this.style.background=\'#EDE9FE\';this.style.color=\'#7C3AED\'" onmouseleave="this.style.background=\'#F3F4F6\';this.style.color=\'#4B5563\'">' + h + '</span>';
-  });
-  box.innerHTML = html;
+function renderFeedHashBank() {
+  var row = document.getElementById('feed-hash-bank-row');
+  if (!row) return;
+  var groups = (typeof HASHTAG_GROUPS !== 'undefined' && HASHTAG_GROUPS) ? HASHTAG_GROUPS : [];
+  if (!groups.length) { row.innerHTML = '<span style="font-size:11px;color:#9CA3AF;">Aucune banque — crée-en une dans l\'onglet Hashtags</span>'; return; }
+  row.innerHTML = '<div style="font-size:10px;color:#9CA3AF;width:100%;margin-bottom:4px;">Ta banque de hashtags :</div>'
+    + groups.map(function(g) {
+      return '<button onclick="insertHashGroupFeed(\'' + g.id + '\')" style="cursor:pointer;background:' + (g.color || '#8B5CF6') + '22;color:' + (g.color || '#8B5CF6') + ';border:1px solid ' + (g.color || '#8B5CF6') + '55;border-radius:12px;padding:3px 10px;font-size:11px;font-weight:600;font-family:inherit;">' + escapeHtml(g.name) + '</button>';
+    }).join('');
 }
 
-function addHashTag(tag) {
+function insertHashGroupFeed(id) {
+  var groups = (typeof HASHTAG_GROUPS !== 'undefined' && HASHTAG_GROUPS) ? HASHTAG_GROUPS : [];
+  var g = groups.find(function(x) { return x.id === id; });
+  if (!g) return;
   var input = document.getElementById('feed-hashtags');
   if (!input) return;
-  var val = input.value.trim();
-  input.value = val ? val + ' ' + tag : tag;
+  var cur = input.value.trim();
+  input.value = cur ? cur + ' ' + g.tags : g.tags;
   updateHashPreview();
-  input.focus();
 }
 
 function closeFeedModal() {
