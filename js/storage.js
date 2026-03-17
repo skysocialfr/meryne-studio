@@ -1,91 +1,81 @@
 /* ═══════════════════════════════════════════════
-   MERYNE STUDIO V4 — Storage (Supabase + localStorage)
+   MERYNE STUDIO — Storage (localStorage prioritaire + Supabase optionnel)
    ═══════════════════════════════════════════════ */
 
 const SUPA_URL = 'https://uqyprtitkuqkdrrzckbc.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxeXBydGl0a3Vxa2Rycnpja2JjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNzUwNzUsImV4cCI6MjA4ODk1MTA3NX0.6SWZcRcctqMecI6VIsO3gwdGopiadcMP-W5HD66fo0c';
 
-let sb = null;
+var sb = null;
 
 function initSupabase() {
   if (typeof supabase !== 'undefined' && SUPA_URL) {
-    sb = supabase.createClient(SUPA_URL, SUPA_KEY);
-    return true;
+    try { sb = supabase.createClient(SUPA_URL, SUPA_KEY); return true; } catch(e) {}
   }
   return false;
 }
 
-// ─── Get current user ID for multi-user data isolation ───
-function getCurrentUserId() {
-  if (sb && sb.auth) {
-    var session = null;
-    // Use cached session from auth module
-    if (window._currentSession && window._currentSession.user) {
-      return window._currentSession.user.id;
-    }
-  }
-  return 'default';
+// ─── Timeout helper ───
+function _sbTimeout(ms) {
+  return new Promise(function(resolve) { setTimeout(function() { resolve(null); }, ms); });
 }
 
-// ─── Cloud Save (with user isolation) ───
+// ─── Clé de stockage (toujours "default" car auth locale) ───
+function _storageKey(key) { return key; }
+
+// ─── Cloud Save ───
 async function cloudSave(key, data) {
-  var userId = getCurrentUserId();
-  var storageKey = userId !== 'default' ? userId + ':' + key : key;
+  var sk = _storageKey(key);
 
-  // Always save to localStorage as backup
-  try { localStorage.setItem(storageKey, JSON.stringify(data)); } catch(e) {}
+  // Sauvegarde localStorage en priorité (toujours)
+  try { localStorage.setItem(sk, JSON.stringify(data)); } catch(e) {}
 
-  // If Supabase configured, sync to cloud
+  // Supabase en arrière-plan si disponible (avec timeout 4s)
   if (!sb) return;
   try {
-    await sb.from('studio_data').upsert({
-      key: storageKey,
-      data: data,
-      updated_at: new Date().toISOString()
+    var savePromise = sb.from('studio_data').upsert({
+      key: sk, data: data, updated_at: new Date().toISOString()
     }, { onConflict: 'key' });
-    showSync('Saved', null);
+    var result = await Promise.race([savePromise, _sbTimeout(4000)]);
+    if (result && !result.error) showSync('Saved', null);
+    else showSync('Local only', 'rgba(245,158,11,.8)');
   } catch(e) {
     showSync('Local only', 'rgba(245,158,11,.8)');
   }
 }
 
-// ─── Cloud Load (with user isolation + legacy migration) ───
+// ─── Cloud Load ───
 async function cloudLoad(key, fallback) {
-  var userId = getCurrentUserId();
-  var storageKey = userId !== 'default' ? userId + ':' + key : key;
+  var sk = _storageKey(key);
 
-  // Try Supabase first (with user prefix)
+  // 1. localStorage d'abord (instantané)
+  try {
+    var local = localStorage.getItem(sk);
+    if (local) return JSON.parse(local);
+  } catch(e) {}
+
+  // 2. Supabase si localStorage vide (avec timeout 4s)
   if (sb) {
     try {
-      var res = await sb.from('studio_data').select('data').eq('key', storageKey).single();
-      if (res.data && res.data.data !== undefined) {
-        try { localStorage.setItem(storageKey, JSON.stringify(res.data.data)); } catch(e) {}
+      var loadPromise = sb.from('studio_data').select('data').eq('key', sk).single();
+      var res = await Promise.race([loadPromise, _sbTimeout(4000)]);
+      if (res && res.data && res.data.data !== undefined) {
+        try { localStorage.setItem(sk, JSON.stringify(res.data.data)); } catch(e) {}
         return res.data.data;
       }
     } catch(e) {}
 
-    // Try Supabase with legacy key (no user prefix) — migration path
-    if (userId !== 'default') {
-      try {
-        var legacyRes = await sb.from('studio_data').select('data').eq('key', key).single();
-        if (legacyRes.data && legacyRes.data.data !== undefined) {
-          try { localStorage.setItem(storageKey, JSON.stringify(legacyRes.data.data)); } catch(e) {}
-          return legacyRes.data.data;
-        }
-      } catch(e) {}
-    }
+    // Tentative clé legacy (ancien format avec préfixe userId)
+    try {
+      var keys = await _sbTimeout(0); // ne bloque pas
+      var legacyPromise = sb.from('studio_data').select('key,data').like('key', '%:' + key).limit(1);
+      var legacyRes = await Promise.race([legacyPromise, _sbTimeout(4000)]);
+      if (legacyRes && legacyRes.data && legacyRes.data.length > 0) {
+        var d = legacyRes.data[0].data;
+        try { localStorage.setItem(sk, JSON.stringify(d)); } catch(e) {}
+        return d;
+      }
+    } catch(e) {}
   }
-
-  // Fallback to localStorage (try new key format first, then legacy)
-  try {
-    var r = localStorage.getItem(storageKey);
-    if (r) return JSON.parse(r);
-    // Try legacy key (without user prefix) for migration
-    if (userId !== 'default') {
-      var legacy = localStorage.getItem(key);
-      if (legacy) return JSON.parse(legacy);
-    }
-  } catch(e) {}
 
   return fallback;
 }
