@@ -331,7 +331,8 @@ function openFeedModal(idx, plat) {
     // Hashtags
     + '<div style="margin-bottom:14px;">'
     + '<label style="font-size:12px;font-weight:600;color:#6B7280;display:block;margin-bottom:6px;">Hashtags</label>'
-    + '<input type="text" id="feed-hashtags" value="' + escapeHtml(hashVal) + '" placeholder="#mode #lifestyle #inspiration" oninput="updateHashPreview()" style="width:100%;padding:8px 10px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box;">'
+    + '<input type="text" id="feed-hashtags" value="' + escapeHtml(hashVal) + '" placeholder="#mode #lifestyle #inspiration" oninput="updateHashPreview()" onfocus="showHashSuggestions()" style="width:100%;padding:8px 10px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box;">'
+    + '<div id="feed-hash-suggestions" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;"></div>'
     + '<div id="feed-hash-preview" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:2px;"></div>'
     + '</div>'
 
@@ -362,12 +363,45 @@ function openFeedModal(idx, plat) {
   }, 50);
 }
 
+// ─── Hashtag suggestions bank ───
+var HASH_SUGGESTIONS = [
+  // Mode / Style
+  '#mode','#fashion','#style','#ootd','#tenue','#outfit','#look','#stylefrance',
+  '#frenchstyle','#parisianstyle','#fashionista','#instafashion','#fashionblogger',
+  // Grande taille
+  '#grandetaille','#plussize','#plussizefashion','#plussizestyle','#curvy',
+  '#curvyfashion','#curvystyle','#bodypositive','#bodypositivity','#plussizeootd',
+  '#grandetaillemode','#modegrandetaille','#curvygirl','#plussizemodel',
+  // Paris / France
+  '#paris','#parisienne','#france','#frenchgirl','#parisfashion','#modefrancaise',
+  '#parislife','#frenchfashion',
+  // Lifestyle
+  '#lifestyle','#beauty','#inspiration','#inspo','#motivation','#selflove',
+  '#confidence','#empowerment','#womanpower','#girlboss',
+  // Réseaux
+  '#instadaily','#instagram','#photooftheday','#picoftheday','#reels','#trending',
+  '#viral','#explore','#fyp','#tiktok',
+  // Beauté
+  '#makeup','#skincare','#beaute','#glam','#naturalbeauty','#maquillage',
+  // Taille / Corps
+  '#1m82','#tall','#tallgirl','#tallfashion','#tallstyle','#longlegs',
+];
+
+function showHashSuggestions() {
+  updateHashSuggestions('');
+}
+
 function updateHashPreview() {
   var input = document.getElementById('feed-hashtags');
   var preview = document.getElementById('feed-hash-preview');
   if (!input || !preview) return;
 
   var val = input.value.trim();
+  // Update suggestions based on last word typed
+  var words = val.split(/\s+/);
+  var lastWord = words[words.length - 1] || '';
+  updateHashSuggestions(lastWord);
+
   if (!val) {
     preview.innerHTML = '';
     return;
@@ -379,6 +413,38 @@ function updateHashPreview() {
     html += '<span style="display:inline-block;background:#EDE9FE;color:#7C3AED;font-size:11px;padding:2px 8px;border-radius:12px;margin:2px;">' + escapeHtml(tag) + '</span>';
   }
   preview.innerHTML = html;
+}
+
+function updateHashSuggestions(filter) {
+  var box = document.getElementById('feed-hash-suggestions');
+  if (!box) return;
+  var input = document.getElementById('feed-hashtags');
+  var already = input ? input.value.toLowerCase() : '';
+
+  var f = (filter || '').toLowerCase().replace(/^#/, '');
+  var shown = HASH_SUGGESTIONS.filter(function(h) {
+    var inAlready = already.indexOf(h) !== -1;
+    if (inAlready) return false;
+    if (!f) return true;
+    return h.indexOf(f) !== -1;
+  }).slice(0, 20);
+
+  if (!shown.length) { box.innerHTML = ''; return; }
+
+  var html = '<div style="font-size:10px;color:#9CA3AF;width:100%;margin-bottom:2px;">Suggestions (clic pour ajouter) :</div>';
+  shown.forEach(function(h) {
+    html += '<span onclick="addHashTag(\'' + h + '\')" style="cursor:pointer;display:inline-block;background:#F3F4F6;color:#4B5563;font-size:11px;padding:3px 9px;border-radius:12px;border:1px solid #E5E7EB;transition:background .15s;" onmouseenter="this.style.background=\'#EDE9FE\';this.style.color=\'#7C3AED\'" onmouseleave="this.style.background=\'#F3F4F6\';this.style.color=\'#4B5563\'">' + h + '</span>';
+  });
+  box.innerHTML = html;
+}
+
+function addHashTag(tag) {
+  var input = document.getElementById('feed-hashtags');
+  if (!input) return;
+  var val = input.value.trim();
+  input.value = val ? val + ' ' + tag : tag;
+  updateHashPreview();
+  input.focus();
 }
 
 function closeFeedModal() {
