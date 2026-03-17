@@ -20,104 +20,66 @@ function _sk(key) {
   return window._MERYNE_UID ? window._MERYNE_UID + ':' + key : key;
 }
 
-// ─── Cloud Load : compare timestamps localStorage vs Supabase ───
+// ─── Cloud Load : Supabase en priorité, localStorage en fallback offline ───
 async function cloudLoad(key, fallback) {
   var sk = _sk(key);
 
-  // Lire localStorage (données + timestamp)
-  var localData = null;
-  var localTs = 0;
-  try {
-    var local = localStorage.getItem(sk);
-    if (local !== null) {
-      localData = JSON.parse(local);
-      localTs = parseInt(localStorage.getItem(sk + ':ts') || '0');
-    }
-  } catch(e) {}
-
-  // Fallback legacy (sans préfixe UUID)
-  if (localData === null) {
-    try {
-      var local2 = localStorage.getItem(key);
-      if (local2 !== null) { localData = JSON.parse(local2); localTs = 0; }
-    } catch(e) {}
-  }
-
-  // Supabase : vérifier si plus récent (timeout 4s)
+  // 1. Supabase en priorité (données fraîches, sync multi-appareils)
   if (sb) {
     try {
-      var timeout = new Promise(function(res) { setTimeout(function(){ res(null); }, 4000); });
-      var query = sb.from('studio_data').select('data,updated_at').eq('key', sk).single();
+      var timeout = new Promise(function(res) { setTimeout(function(){ res(null); }, 5000); });
+      var query = sb.from('studio_data').select('data').eq('key', sk).single();
       var result = await Promise.race([query, timeout]);
       if (result && result.data && result.data.data !== undefined) {
-        var sbTs = result.data.updated_at ? new Date(result.data.updated_at).getTime() : 0;
-        if (sbTs > localTs) {
-          // Supabase est plus récent → mettre à jour localStorage
-          try {
-            localStorage.setItem(sk, JSON.stringify(result.data.data));
-            localStorage.setItem(sk + ':ts', sbTs.toString());
-          } catch(e) {}
-          return result.data.data;
-        }
+        // Mettre à jour localStorage comme cache offline
+        try { localStorage.setItem(sk, JSON.stringify(result.data.data)); } catch(e) {}
+        return result.data.data;
       }
     } catch(e) {}
 
-    // Legacy clé sans préfixe
-    if (localData === null) {
-      try {
-        var timeout2 = new Promise(function(res) { setTimeout(function(){ res(null); }, 3000); });
-        var query2 = sb.from('studio_data').select('data').eq('key', key).single();
-        var result2 = await Promise.race([query2, timeout2]);
-        if (result2 && result2.data && result2.data.data !== undefined) {
-          try { localStorage.setItem(sk, JSON.stringify(result2.data.data)); } catch(e) {}
-          return result2.data.data;
-        }
-      } catch(e) {}
-    }
+    // Supabase legacy (clé sans préfixe UUID)
+    try {
+      var timeout2 = new Promise(function(res) { setTimeout(function(){ res(null); }, 3000); });
+      var query2 = sb.from('studio_data').select('data').eq('key', key).single();
+      var result2 = await Promise.race([query2, timeout2]);
+      if (result2 && result2.data && result2.data.data !== undefined) {
+        try { localStorage.setItem(sk, JSON.stringify(result2.data.data)); } catch(e) {}
+        return result2.data.data;
+      }
+    } catch(e) {}
   }
 
-  if (localData !== null) return localData;
+  // 2. localStorage en fallback (mode offline)
+  try {
+    var local = localStorage.getItem(sk);
+    if (local !== null) return JSON.parse(local);
+  } catch(e) {}
+  try {
+    var local2 = localStorage.getItem(key);
+    if (local2 !== null) return JSON.parse(local2);
+  } catch(e) {}
+
   return fallback;
 }
 
-// ─── Debounce Supabase : max 1 sync toutes les 30s ───
-var _syncQueue = {};
-var _syncTimer = null;
-function _scheduleSupa() {
-  if (_syncTimer) clearTimeout(_syncTimer);
-  _syncTimer = setTimeout(function() {
-    if (!sb) return;
-    var queue = _syncQueue;
-    _syncQueue = {};
-    Object.keys(queue).forEach(function(sk) {
-      try {
-        sb.from('studio_data').upsert({
-          key: sk,
-          data: queue[sk],
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'key' }).then(function(r) {
-          if (!r || r.error) showSync('Local only', 'rgba(245,158,11,.8)');
-          else showSync('Saved ☁️', null);
-        }).catch(function() { showSync('Local only', 'rgba(245,158,11,.8)'); });
-      } catch(e) {}
-    });
-  }, 10000); // 10 secondes de délai
-}
-
-// ─── Cloud Save : localStorage immédiat + Supabase debounced ───
+// ─── Cloud Save : localStorage + Supabase immédiat ───
 async function cloudSave(key, data) {
   var sk = _sk(key);
 
-  // localStorage immédiat (toujours) avec timestamp
-  var now = Date.now();
-  try {
-    localStorage.setItem(sk, JSON.stringify(data));
-    localStorage.setItem(sk + ':ts', now.toString());
-  } catch(e) {}
-  showSync('Saved', null);
+  // 1. localStorage immédiat (backup offline)
+  try { localStorage.setItem(sk, JSON.stringify(data)); } catch(e) {}
 
-  // Supabase en arrière-plan avec debounce (ne pas surcharger la DB)
-  if (!sb) return;
-  _syncQueue[sk] = data;
-  _scheduleSupa();
+  // 2. Supabase immédiat (sync multi-appareils)
+  if (!sb) { showSync('Saved', null); return; }
+  try {
+    var res = await sb.from('studio_data').upsert({
+      key: sk,
+      data: data,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'key' });
+    if (res && res.error) showSync('Local only ⚠️', 'rgba(245,158,11,.8)');
+    else showSync('Saved ☁️', null);
+  } catch(e) {
+    showSync('Local only ⚠️', 'rgba(245,158,11,.8)');
+  }
 }
