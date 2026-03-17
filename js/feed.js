@@ -116,11 +116,11 @@ function renderFeedGrid(plat) {
     var photoCount = (p.photos && p.photos.length > 1) ? p.photos.length : 0;
     var isVideoFmt = p.format && ['Reel', 'TikTok', 'Short', 'IGTV'].indexOf(p.format) !== -1;
     if (isVideoFmt && p.cover) {
-      mediaHtml = '<img src="' + p.cover + '" style="width:100%;height:100%;object-fit:cover;" alt="">';
+      mediaHtml = '<img draggable="false" src="' + p.cover + '" style="width:100%;height:100%;object-fit:cover;pointer-events:none;" alt="">';
     } else if (firstMedia && firstMedia.indexOf('data:video') === 0) {
-      mediaHtml = '<video src="' + firstMedia + '" style="width:100%;height:100%;object-fit:cover;" muted></video>';
+      mediaHtml = '<video src="' + firstMedia + '" style="width:100%;height:100%;object-fit:cover;pointer-events:none;" muted></video>';
     } else if (firstMedia && firstMedia.indexOf('data:') === 0) {
-      mediaHtml = '<img src="' + firstMedia + '" style="width:100%;height:100%;object-fit:cover;" alt="">';
+      mediaHtml = '<img draggable="false" src="' + firstMedia + '" style="width:100%;height:100%;object-fit:cover;pointer-events:none;" alt="">';
     } else if (p.emoji) {
       mediaHtml = '<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:48px;background:#F3F4F6;">' + escapeHtml(p.emoji) + '</div>';
     } else {
