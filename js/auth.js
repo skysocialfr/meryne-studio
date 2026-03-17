@@ -1,117 +1,81 @@
 /* ═══════════════════════════════════════════════
-   MERYNE STUDIO V4 — Authentication (Supabase Auth)
-   ═══════════════════════════════════════════════
+   MERYNE STUDIO — Authentification locale
+   (pas de dépendance Supabase pour le login)
 
-   SECURITY: No hardcoded passwords. Uses Supabase Auth
-   with email/password. Users are created via Supabase
-   dashboard (Authentication > Users > Add user).
-
-   To create users:
-   1. Go to https://supabase.com/dashboard
-   2. Select your project
-   3. Go to Authentication > Users
-   4. Click "Add user" > "Create new user"
-   5. Enter email + password
+   Pour changer le mot de passe :
+   1. Ouvre ce fichier
+   2. Modifie la valeur de APP_PASS ci-dessous
    ═══════════════════════════════════════════════ */
 
-// Cache the current session
-window._currentSession = null;
+// ─── Identifiants ───
+var APP_USER = 'meryne';
+var APP_PASS = 'Studio2024!';
 
-// ─── TEMPORARY DEV MODE — remove before production deploy ───
-var DEV_MODE = false;
+// ─── Login ───
+function doLogin() {
+  var loginEl = document.getElementById('lu');
+  var passEl  = document.getElementById('lp');
+  var btn     = document.querySelector('.lbtn');
 
-function devBypass() {
-  document.getElementById('login-page').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
-  initApp();
-}
+  var login = (loginEl ? loginEl.value : '').trim().toLowerCase();
+  var pass  = passEl  ? passEl.value  : '';
 
-// ─── Login with Supabase Auth ───
-async function doLogin() {
-  // DEV MODE: skip auth
-  if (DEV_MODE) { devBypass(); return; }
-
-  var emailEl = document.getElementById('lu');
-  var passEl = document.getElementById('lp');
-  var btn = document.querySelector('.lbtn');
-
-  var email = (emailEl.value || '').trim();
-  var pass = passEl.value || '';
-
-  if (!email || !pass) {
+  if (!login || !pass) {
     showLoginError('Remplis tous les champs');
     return;
   }
 
-  // Disable button during login
-  if (btn) { btn.disabled = true; btn.textContent = 'Connexion...'; }
-
-  try {
-    if (!sb) {
-      initSupabase();
-    }
-
-    if (!sb) {
-      showLoginError('Service indisponible');
-      return;
-    }
-
-    var loginTimeout = new Promise(function(_, rej) { setTimeout(function(){ rej(new Error('timeout')); }, 15000); });
-    var result = await Promise.race([sb.auth.signInWithPassword({ email: email, password: pass }), loginTimeout]);
-
-    if (result.error) {
-      showLoginError('Email ou mot de passe incorrect');
-      return;
-    }
-
-    // Store session
-    window._currentSession = result.data.session;
-
-    // Show app
-    document.getElementById('login-page').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-
-    // Update user display in header
-    updateUserDisplay(result.data.session.user);
-
-    // Initialize app
-    initApp();
-
-  } catch(e) {
-    showLoginError('Erreur de connexion');
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = 'Accéder au studio \u2192'; }
+  if (login !== APP_USER || pass !== APP_PASS) {
+    showLoginError('Identifiant ou mot de passe incorrect');
+    if (btn) { btn.disabled = false; btn.textContent = 'Accéder au studio →'; }
+    return;
   }
+
+  // Session valide — on mémorise dans localStorage (30 jours)
+  var expire = Date.now() + 30 * 24 * 60 * 60 * 1000;
+  localStorage.setItem('ms_session', JSON.stringify({ user: login, exp: expire }));
+
+  _enterApp();
+}
+
+// ─── Auto-check session au chargement ───
+function autoLogin() {
+  try {
+    var raw = localStorage.getItem('ms_session');
+    if (raw) {
+      var sess = JSON.parse(raw);
+      if (sess && sess.exp > Date.now()) {
+        _enterApp();
+        return;
+      }
+    }
+  } catch(e) {}
+  // Pas de session — affiche login
+  var lp = document.getElementById('login-page');
+  if (lp) lp.style.display = 'flex';
+}
+
+// ─── Entrer dans l'app ───
+function _enterApp() {
+  var lp  = document.getElementById('login-page');
+  var app = document.getElementById('app');
+  if (lp)  lp.style.display  = 'none';
+  if (app) app.style.display = 'block';
+  var badge = document.getElementById('user-badge');
+  if (badge) {
+    badge.innerHTML = '<span class="user-dot"></span>Meryne';
+    badge.style.display = 'flex';
+  }
+  initApp();
 }
 
 // ─── Logout ───
-async function doLogout() {
-  if (sb) {
-    try { await sb.auth.signOut(); } catch(e) {}
-  }
-  window._currentSession = null;
+function doLogout() {
+  localStorage.removeItem('ms_session');
   location.reload();
 }
 
-// ─── Check existing session on page load ───
-async function checkSession() {
-  if (!sb) {
-    initSupabase();
-  }
-  if (!sb) return false;
-
-  try {
-    var timeout = new Promise(function(_, rej) { setTimeout(function(){ rej(new Error('timeout')); }, 6000); });
-    var result = await Promise.race([sb.auth.getSession(), timeout]);
-    if (result.data && result.data.session) {
-      window._currentSession = result.data.session;
-      return true;
-    }
-  } catch(e) {}
-  return false;
-}
-
-// ─── Show login error ───
+// ─── Afficher erreur ───
 function showLoginError(msg) {
   var el = document.getElementById('lerr');
   if (!el) return;
@@ -120,35 +84,10 @@ function showLoginError(msg) {
   setTimeout(function() { el.classList.remove('show'); }, 3000);
 }
 
-// ─── Update header with user info ───
-function updateUserDisplay(user) {
-  var badge = document.getElementById('user-badge');
-  if (badge && user) {
-    var name = user.user_metadata && user.user_metadata.name
-      ? user.user_metadata.name
-      : user.email.split('@')[0];
-    badge.innerHTML = '<span class="user-dot"></span>' + escapeHtml(name);
-    badge.style.display = 'flex';
-  }
-}
-
-// ─── Auto-check session on load ───
-async function autoLogin() {
-  // DEV MODE: auto-enter
-  if (DEV_MODE) { devBypass(); return; }
-
-  var hasSession = await checkSession();
-  if (hasSession) {
-    document.getElementById('login-page').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-    updateUserDisplay(window._currentSession.user);
-    initApp();
-  }
-}
-
-// ─── Enter key on login form ───
+// ─── Touche Entrée sur le formulaire ───
 document.addEventListener('keydown', function(e) {
-  if (e.key === 'Enter' && document.getElementById('login-page').style.display !== 'none') {
+  var lp = document.getElementById('login-page');
+  if (e.key === 'Enter' && lp && lp.style.display !== 'none') {
     doLogin();
   }
 });
