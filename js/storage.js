@@ -20,46 +20,63 @@ function _sk(key) {
   return window._MERYNE_UID ? window._MERYNE_UID + ':' + key : key;
 }
 
-// ─── Cloud Load : localStorage en priorité, INSTANTANÉ ───
+// ─── Cloud Load : compare timestamps localStorage vs Supabase ───
 async function cloudLoad(key, fallback) {
   var sk = _sk(key);
 
-  // 1. localStorage avec clé UUID (priorité)
+  // Lire localStorage (données + timestamp)
+  var localData = null;
+  var localTs = 0;
   try {
     var local = localStorage.getItem(sk);
-    if (local !== null) return JSON.parse(local);
+    if (local !== null) {
+      localData = JSON.parse(local);
+      localTs = parseInt(localStorage.getItem(sk + ':ts') || '0');
+    }
   } catch(e) {}
 
-  // 1b. localStorage sans préfixe (fallback legacy)
-  try {
-    var local2 = localStorage.getItem(key);
-    if (local2 !== null) return JSON.parse(local2);
-  } catch(e) {}
-
-  // 2. Supabase avec clé UUID (timeout 3s)
-  if (sb) {
+  // Fallback legacy (sans préfixe UUID)
+  if (localData === null) {
     try {
-      var timeout = new Promise(function(res) { setTimeout(function(){ res(null); }, 3000); });
-      var query = sb.from('studio_data').select('data').eq('key', sk).single();
-      var result = await Promise.race([query, timeout]);
-      if (result && result.data && result.data.data !== undefined) {
-        try { localStorage.setItem(sk, JSON.stringify(result.data.data)); } catch(e) {}
-        return result.data.data;
-      }
-    } catch(e) {}
-
-    // 2b. Supabase clé sans préfixe (legacy, timeout 3s)
-    try {
-      var timeout2 = new Promise(function(res) { setTimeout(function(){ res(null); }, 3000); });
-      var query2 = sb.from('studio_data').select('data').eq('key', key).single();
-      var result2 = await Promise.race([query2, timeout2]);
-      if (result2 && result2.data && result2.data.data !== undefined) {
-        try { localStorage.setItem(sk, JSON.stringify(result2.data.data)); } catch(e) {}
-        return result2.data.data;
-      }
+      var local2 = localStorage.getItem(key);
+      if (local2 !== null) { localData = JSON.parse(local2); localTs = 0; }
     } catch(e) {}
   }
 
+  // Supabase : vérifier si plus récent (timeout 4s)
+  if (sb) {
+    try {
+      var timeout = new Promise(function(res) { setTimeout(function(){ res(null); }, 4000); });
+      var query = sb.from('studio_data').select('data,updated_at').eq('key', sk).single();
+      var result = await Promise.race([query, timeout]);
+      if (result && result.data && result.data.data !== undefined) {
+        var sbTs = result.data.updated_at ? new Date(result.data.updated_at).getTime() : 0;
+        if (sbTs > localTs) {
+          // Supabase est plus récent → mettre à jour localStorage
+          try {
+            localStorage.setItem(sk, JSON.stringify(result.data.data));
+            localStorage.setItem(sk + ':ts', sbTs.toString());
+          } catch(e) {}
+          return result.data.data;
+        }
+      }
+    } catch(e) {}
+
+    // Legacy clé sans préfixe
+    if (localData === null) {
+      try {
+        var timeout2 = new Promise(function(res) { setTimeout(function(){ res(null); }, 3000); });
+        var query2 = sb.from('studio_data').select('data').eq('key', key).single();
+        var result2 = await Promise.race([query2, timeout2]);
+        if (result2 && result2.data && result2.data.data !== undefined) {
+          try { localStorage.setItem(sk, JSON.stringify(result2.data.data)); } catch(e) {}
+          return result2.data.data;
+        }
+      } catch(e) {}
+    }
+  }
+
+  if (localData !== null) return localData;
   return fallback;
 }
 
@@ -84,15 +101,19 @@ function _scheduleSupa() {
         }).catch(function() { showSync('Local only', 'rgba(245,158,11,.8)'); });
       } catch(e) {}
     });
-  }, 30000); // 30 secondes de délai
+  }, 10000); // 10 secondes de délai
 }
 
 // ─── Cloud Save : localStorage immédiat + Supabase debounced ───
 async function cloudSave(key, data) {
   var sk = _sk(key);
 
-  // localStorage immédiat (toujours)
-  try { localStorage.setItem(sk, JSON.stringify(data)); } catch(e) {}
+  // localStorage immédiat (toujours) avec timestamp
+  var now = Date.now();
+  try {
+    localStorage.setItem(sk, JSON.stringify(data));
+    localStorage.setItem(sk + ':ts', now.toString());
+  } catch(e) {}
   showSync('Saved', null);
 
   // Supabase en arrière-plan avec debounce (ne pas surcharger la DB)
