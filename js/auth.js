@@ -66,6 +66,8 @@ function _enterApp() {
     badge.innerHTML = '<span class="user-dot"></span>Meryne';
     badge.style.display = 'flex';
   }
+  // Identifiant unique pour retrouver les données Supabase
+  window._MERYNE_UID = 'f15ab0bc-d2cd-4a49-9868-81b47d037eda';
   initApp();
 }
 
