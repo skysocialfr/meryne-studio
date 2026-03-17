@@ -63,27 +63,40 @@ async function cloudLoad(key, fallback) {
   return fallback;
 }
 
-// ─── Cloud Save : localStorage immédiat + Supabase en arrière-plan ───
+// ─── Debounce Supabase : max 1 sync toutes les 30s ───
+var _syncQueue = {};
+var _syncTimer = null;
+function _scheduleSupa() {
+  if (_syncTimer) clearTimeout(_syncTimer);
+  _syncTimer = setTimeout(function() {
+    if (!sb) return;
+    var queue = _syncQueue;
+    _syncQueue = {};
+    Object.keys(queue).forEach(function(sk) {
+      try {
+        sb.from('studio_data').upsert({
+          key: sk,
+          data: queue[sk],
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'key' }).then(function(r) {
+          if (!r || r.error) showSync('Local only', 'rgba(245,158,11,.8)');
+          else showSync('Saved ☁️', null);
+        }).catch(function() { showSync('Local only', 'rgba(245,158,11,.8)'); });
+      } catch(e) {}
+    });
+  }, 30000); // 30 secondes de délai
+}
+
+// ─── Cloud Save : localStorage immédiat + Supabase debounced ───
 async function cloudSave(key, data) {
   var sk = _sk(key);
 
   // localStorage immédiat (toujours)
   try { localStorage.setItem(sk, JSON.stringify(data)); } catch(e) {}
+  showSync('Saved', null);
 
-  // Supabase en arrière-plan (fire & forget, ne bloque pas l'UI)
+  // Supabase en arrière-plan avec debounce (ne pas surcharger la DB)
   if (!sb) return;
-  try {
-    sb.from('studio_data').upsert({
-      key: sk,
-      data: data,
-      updated_at: new Date().toISOString()
-    }, { onConflict: 'key' }).then(function(r) {
-      if (!r || r.error) showSync('Local only', 'rgba(245,158,11,.8)');
-      else showSync('Saved', null);
-    }).catch(function() {
-      showSync('Local only', 'rgba(245,158,11,.8)');
-    });
-  } catch(e) {
-    showSync('Local only', 'rgba(245,158,11,.8)');
-  }
+  _syncQueue[sk] = data;
+  _scheduleSupa();
 }
