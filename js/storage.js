@@ -1,5 +1,7 @@
 /* ═══════════════════════════════════════════════
-   MERYNE STUDIO — Storage (localStorage prioritaire + Supabase optionnel)
+   MERYNE STUDIO — Storage
+   Priorité : localStorage (instantané)
+   Supabase : sync en arrière-plan uniquement
    ═══════════════════════════════════════════════ */
 
 const SUPA_URL = 'https://uqyprtitkuqkdrrzckbc.supabase.co';
@@ -9,73 +11,54 @@ var sb = null;
 
 function initSupabase() {
   if (typeof supabase !== 'undefined' && SUPA_URL) {
-    try { sb = supabase.createClient(SUPA_URL, SUPA_KEY); return true; } catch(e) {}
-  }
-  return false;
-}
-
-// ─── Timeout helper ───
-function _sbTimeout(ms) {
-  return new Promise(function(resolve) { setTimeout(function() { resolve(null); }, ms); });
-}
-
-// ─── Clé de stockage (toujours "default" car auth locale) ───
-function _storageKey(key) { return key; }
-
-// ─── Cloud Save ───
-async function cloudSave(key, data) {
-  var sk = _storageKey(key);
-
-  // Sauvegarde localStorage en priorité (toujours)
-  try { localStorage.setItem(sk, JSON.stringify(data)); } catch(e) {}
-
-  // Supabase en arrière-plan si disponible (avec timeout 4s)
-  if (!sb) return;
-  try {
-    var savePromise = sb.from('studio_data').upsert({
-      key: sk, data: data, updated_at: new Date().toISOString()
-    }, { onConflict: 'key' });
-    var result = await Promise.race([savePromise, _sbTimeout(4000)]);
-    if (result && !result.error) showSync('Saved', null);
-    else showSync('Local only', 'rgba(245,158,11,.8)');
-  } catch(e) {
-    showSync('Local only', 'rgba(245,158,11,.8)');
+    try { sb = supabase.createClient(SUPA_URL, SUPA_KEY); } catch(e) { sb = null; }
   }
 }
 
-// ─── Cloud Load ───
+// ─── Cloud Load : localStorage en priorité, INSTANTANÉ ───
 async function cloudLoad(key, fallback) {
-  var sk = _storageKey(key);
-
-  // 1. localStorage d'abord (instantané)
+  // 1. localStorage (instantané, toujours en premier)
   try {
-    var local = localStorage.getItem(sk);
-    if (local) return JSON.parse(local);
+    var local = localStorage.getItem(key);
+    if (local !== null) return JSON.parse(local);
   } catch(e) {}
 
-  // 2. Supabase si localStorage vide (avec timeout 4s)
+  // 2. Supabase uniquement si localStorage vide (avec timeout court 3s)
   if (sb) {
     try {
-      var loadPromise = sb.from('studio_data').select('data').eq('key', sk).single();
-      var res = await Promise.race([loadPromise, _sbTimeout(4000)]);
-      if (res && res.data && res.data.data !== undefined) {
-        try { localStorage.setItem(sk, JSON.stringify(res.data.data)); } catch(e) {}
-        return res.data.data;
-      }
-    } catch(e) {}
-
-    // Tentative clé legacy (ancien format avec préfixe userId)
-    try {
-      var keys = await _sbTimeout(0); // ne bloque pas
-      var legacyPromise = sb.from('studio_data').select('key,data').like('key', '%:' + key).limit(1);
-      var legacyRes = await Promise.race([legacyPromise, _sbTimeout(4000)]);
-      if (legacyRes && legacyRes.data && legacyRes.data.length > 0) {
-        var d = legacyRes.data[0].data;
-        try { localStorage.setItem(sk, JSON.stringify(d)); } catch(e) {}
-        return d;
+      var timeout = new Promise(function(res) { setTimeout(function(){ res(null); }, 3000); });
+      var query = sb.from('studio_data').select('data').eq('key', key).single();
+      var result = await Promise.race([query, timeout]);
+      if (result && result.data && result.data.data !== undefined) {
+        // Copie en localStorage pour les prochaines fois
+        try { localStorage.setItem(key, JSON.stringify(result.data.data)); } catch(e) {}
+        return result.data.data;
       }
     } catch(e) {}
   }
 
   return fallback;
+}
+
+// ─── Cloud Save : localStorage immédiat + Supabase en arrière-plan ───
+async function cloudSave(key, data) {
+  // localStorage immédiat (toujours)
+  try { localStorage.setItem(key, JSON.stringify(data)); } catch(e) {}
+
+  // Supabase en arrière-plan (fire & forget, ne bloque pas l'UI)
+  if (!sb) return;
+  try {
+    sb.from('studio_data').upsert({
+      key: key,
+      data: data,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'key' }).then(function(r) {
+      if (!r || r.error) showSync('Local only', 'rgba(245,158,11,.8)');
+      else showSync('Saved', null);
+    }).catch(function() {
+      showSync('Local only', 'rgba(245,158,11,.8)');
+    });
+  } catch(e) {
+    showSync('Local only', 'rgba(245,158,11,.8)');
+  }
 }
