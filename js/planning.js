@@ -2,6 +2,40 @@
    MERYNE STUDIO V4 — Planning Section
    =============================================== */
 
+// ─── Search State ───
+var fSearch = '';
+
+function setSearch(val) {
+  fSearch = (val || '').toLowerCase();
+  renderPlanning();
+}
+
+// ─── Today Reminder ───
+function checkTodayReminders() {
+  var banner = document.getElementById('today-reminder-banner');
+  if (!banner || !PUBS) return;
+  var now = new Date();
+  var todayPosts = PUBS.filter(function(p) {
+    return p.day === now.getDate() && p.mo === now.getMonth() && p.yr === now.getFullYear();
+  });
+  if (!todayPosts.length) { banner.style.display = 'none'; return; }
+  var unpub = todayPosts.filter(function(p) { return !p.done; });
+  var done = todayPosts.filter(function(p) { return p.done; });
+  var isOk = unpub.length === 0;
+  var html = (isOk ? '✅ ' : '📅 ') + '<strong>' + (isOk ? 'Tous les posts du jour sont publiés !' : unpub.length + ' post' + (unpub.length > 1 ? 's' : '') + ' à publier aujourd\'hui') + '</strong>';
+  if (!isOk) unpub.forEach(function(p) { html += ' &nbsp;·&nbsp; <span style="opacity:.8">' + escapeHtml(p.title || p.fmt) + ' ' + escapeHtml(p.heure) + '</span>'; });
+  banner.innerHTML = html;
+  banner.style.display = 'flex';
+  banner.style.background = isOk ? 'rgba(5,150,105,.08)' : 'rgba(255,45,122,.07)';
+  banner.style.borderColor = isOk ? 'rgba(5,150,105,.25)' : 'rgba(255,45,122,.2)';
+  banner.style.color = isOk ? '#065F46' : '#9D174D';
+}
+
+// ─── Print Planning ───
+function printPlanning() {
+  window.print();
+}
+
 // ─── Engagement Rate ───
 function eng(p) {
   if (!p.stats || !p.stats.v || p.stats.v === 0) return 0;
@@ -46,6 +80,14 @@ function renderPlanning() {
   var pubs = PUBS;
   if (fSem !== 'all') pubs = pubs.filter(function(p) { return p.sem === fSem; });
   if (fPlat !== 'all') pubs = pubs.filter(function(p) { return p.plat === fPlat; });
+  if (fSearch) pubs = pubs.filter(function(p) {
+    var q = fSearch;
+    return (p.title || '').toLowerCase().indexOf(q) !== -1
+        || (p.fmt || '').toLowerCase().indexOf(q) !== -1
+        || (p.tags || '').toLowerCase().indexOf(q) !== -1
+        || (p.son || '').toLowerCase().indexOf(q) !== -1
+        || (p.src || '').toLowerCase().indexOf(q) !== -1;
+  });
   var bySem = {};
   pubs.forEach(function(p) {
     if (!bySem[p.sem]) bySem[p.sem] = [];

@@ -93,8 +93,8 @@ async function load() {
   TAGS           = await cloudLoad('tags2', null);
   NOTES          = await cloudLoad('notes', null);
   HASHTAG_GROUPS = await cloudLoad('hashtag_groups', null);
-  if (!PROD)           PROD           = JSON.parse(JSON.stringify(D_PROD));
-  if (!PUBS)           PUBS           = JSON.parse(JSON.stringify(D_PUBS));
+  if (!PROD)           PROD           = [];
+  if (!PUBS)           PUBS           = [];
   if (!FW)             FW             = JSON.parse(JSON.stringify(D_FW));
   if (!GOALS)          GOALS          = {ig: 30000, tt: 100000};
   if (!TAGS)           TAGS           = [];
@@ -104,7 +104,7 @@ async function load() {
 
 // ─── INIT ───
 async function initApp() {
-  initSupabase();
+  // initSupabase() est maintenant appelé au chargement de storage.js
   await load();
   await loadIgProfile();
   await loadFeedData();
@@ -147,6 +147,7 @@ function setTab(id, btn) {
   if (id === 'planning') { renderCalendar(); if (typeof checkTodayReminders === 'function') checkTodayReminders(); }
   if (id === 'followers') renderFollowers();
   if (id === 'tags') renderTags();
+  if (id === 'admin' && typeof renderAdmin === 'function') renderAdmin();
 }
 
 // ─── KPIs ───
