@@ -607,12 +607,19 @@ function togglePubMore(id, e) {
   var isOpen = menu.classList.contains('open');
   closePubMore();
   if (!isOpen) {
-    var btn = e && e.currentTarget ? e.currentTarget : null;
+    var btn = e && e.currentTarget ? e.currentTarget : document.querySelector('[onclick*="togglePubMore(\'' + id + '\'"]');
     if (btn) {
       var r = btn.getBoundingClientRect();
-      menu.style.position = 'fixed';
-      menu.style.top = (r.bottom + 4) + 'px';
-      menu.style.left = r.left + 'px';
+      // Only position if button is actually visible in viewport
+      if (r.bottom > 0 && r.top < window.innerHeight) {
+        menu.style.position = 'fixed';
+        menu.style.top = (r.bottom + 4) + 'px';
+        // Prevent menu from going off right edge
+        var menuW = 170;
+        var left = Math.min(r.left, window.innerWidth - menuW - 8);
+        menu.style.left = Math.max(8, left) + 'px';
+        menu.style.right = 'auto';
+      }
     }
     menu.classList.add('open');
   }
