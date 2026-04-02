@@ -133,13 +133,25 @@ function renderFeedGrid(plat) {
     var overlayDate = p.date ? escapeHtml(p.date) : '';
     var overlayFormat = p.format ? escapeHtml(p.format) : '';
 
+    // Performance border based on linked PUBS engagement
+    var perfBorder = '1.5px solid #E5E7EB';
+    if (p.pubId && typeof PUBS !== 'undefined') {
+      var linkedPub = (PUBS || []).find(function(x) { return x.id === p.pubId; });
+      if (linkedPub && linkedPub.stats && linkedPub.stats.v > 0) {
+        var linkedEng = parseFloat(eng(linkedPub));
+        if (linkedEng >= 5) perfBorder = '2.5px solid #10B981';
+        else if (linkedEng >= 2) perfBorder = '2.5px solid #F59E0B';
+        else perfBorder = '2.5px solid #EF4444';
+      }
+    }
+
     html += '<div class="feed-cell" draggable="true"'
       + ' ondragstart="feedDragStart(event,' + i + ',\'' + plat + '\')"'
       + ' ondragover="feedDragOver(event)"'
       + ' ondrop="feedDrop(event,' + i + ',\'' + plat + '\')"'
       + ' ondragend="feedDragEnd(event)"'
       + ' onclick="openFeedModal(' + i + ',\'' + plat + '\')"'
-      + ' style="position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;cursor:grab;border:1.5px solid #E5E7EB;background:#fff;">'
+      + ' style="position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;cursor:grab;border:' + perfBorder + ';background:#fff;">'
       // Position number
       + '<div style="position:absolute;top:6px;left:6px;z-index:2;background:rgba(0,0,0,.55);color:#fff;font-size:10px;font-weight:700;border-radius:6px;padding:2px 7px;line-height:1.4;">' + (i + 1) + '</div>'
       // Done status dot
@@ -156,6 +168,7 @@ function renderFeedGrid(plat) {
       + '<div style="display:flex;gap:4px;align-items:center;margin-top:2px;">'
       + (overlayDate ? '<span style="font-size:9px;color:rgba(255,255,255,.75);">' + overlayDate + '</span>' : '')
       + (overlayFormat ? '<span style="font-size:8px;color:#fff;background:rgba(255,255,255,.2);border-radius:4px;padding:1px 5px;">' + overlayFormat + '</span>' : '')
+      + (p.pubId ? '<span style="font-size:8px;color:#fff;background:rgba(139,92,246,.6);border-radius:4px;padding:1px 5px;">📋 Planning</span>' : '')
       + '</div>'
       + '</div>'
       + '</div>';
@@ -341,10 +354,29 @@ function openFeedModal(idx, plat) {
     + '</div>'
 
     // Done checkbox
-    + '<div style="margin-bottom:18px;display:flex;align-items:center;gap:8px;">'
+    + '<div style="margin-bottom:14px;display:flex;align-items:center;gap:8px;">'
     + '<input type="checkbox" id="feed-done"' + (doneVal ? ' checked' : '') + ' style="width:16px;height:16px;accent-color:#8B5CF6;">'
     + '<label for="feed-done" style="font-size:13px;color:#374151;cursor:pointer;">Marquer comme fait</label>'
     + '</div>'
+
+    // Link to planning post
+    + (function() {
+        var pubs = (typeof PUBS !== 'undefined' && PUBS) ? PUBS.slice().sort(function(a, b) {
+          return (b.yr * 10000 + b.mo * 100 + b.day) - (a.yr * 10000 + a.mo * 100 + a.day);
+        }) : [];
+        var opts = '<option value="">-- Aucun --</option>';
+        var curPubId = post.pubId || '';
+        pubs.forEach(function(pub) {
+          var sel = (pub.id === curPubId) ? ' selected' : '';
+          var lbl = escapeHtml((pub.date || '') + ' · ' + (pub.title || pub.fmt || ''));
+          opts += '<option value="' + escapeHtml(pub.id) + '"' + sel + '>' + lbl + '</option>';
+        });
+        return '<div style="margin-bottom:18px;">'
+          + '<label style="font-size:12px;font-weight:600;color:#6B7280;display:block;margin-bottom:6px;">📋 Lier au planning</label>'
+          + '<select id="feed-pubid" style="width:100%;padding:8px 10px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;background:#fff;box-sizing:border-box;">'
+          + opts + '</select>'
+          + '</div>';
+      })()
 
     // Action buttons
     + '<div style="display:flex;gap:8px;justify-content:flex-end;">'
@@ -541,12 +573,18 @@ function saveFeedPost() {
   var desc = (document.getElementById('feed-desc') || {}).value || '';
   var hashtags = (document.getElementById('feed-hashtags') || {}).value || '';
   var done = (document.getElementById('feed-done') || {}).checked || false;
+  var pubId = (document.getElementById('feed-pubid') || {}).value || '';
 
   // Get photos from carousel state
   var photos = window._carouselPhotos || [];
   var media = photos.length > 0 ? photos[0] : null;
 
+  // Preserve existing id or generate new one
+  var existingPost = (feedEditIdx !== null && FEED_DATA[feedPlat]) ? (FEED_DATA[feedPlat][feedEditIdx] || {}) : {};
+  var postId = existingPost.id || ('fp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7));
+
   var post = {
+    id: postId,
     title: title,
     date: date,
     format: format,
@@ -555,7 +593,8 @@ function saveFeedPost() {
     done: done,
     media: media,
     photos: photos,
-    cover: window._carouselCover || null
+    cover: window._carouselCover || null,
+    pubId: pubId || null
   };
 
   if (!FEED_DATA[feedPlat]) FEED_DATA[feedPlat] = [];

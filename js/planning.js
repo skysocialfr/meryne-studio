@@ -52,6 +52,19 @@ function eng(p) {
   return ((p.stats.l + p.stats.c * 2 + p.stats.s * 3 + p.stats.sh) / p.stats.v * 100).toFixed(1);
 }
 
+// ─── Find linked feed post for a PUBS id ───
+function _findFeedPost(pubId) {
+  if (!pubId || typeof FEED_DATA === 'undefined') return null;
+  var plats = ['insta', 'tiktok'];
+  for (var i = 0; i < plats.length; i++) {
+    var arr = (FEED_DATA[plats[i]] || []);
+    for (var j = 0; j < arr.length; j++) {
+      if (arr[j].pubId === pubId) return { plat: plats[i], idx: j };
+    }
+  }
+  return null;
+}
+
 // ─── Post date → JS Date ───
 function _pubDate(p) {
   if (p.yr && p.mo !== undefined && p.day) {
@@ -183,6 +196,12 @@ function _pubCardHtml(p) {
     + (scriptHtml ? '<button class="sb sb-script" onclick="togglePubScript(\'' + p.id + '\')">\uD83D\uDCDD Script</button>' : '')
     + '<button class="sb sb-edit" onclick="openPubModal(' + realIdx + ')">✏️ Modifier</button>'
     + (p.done ? '<button class="sb sb-stats" onclick="toggleStats(\'' + p.id + '\')">\uD83D\uDCCA Stats</button>' : '')
+    + (function() {
+        var fl = _findFeedPost(p.id);
+        if (!fl) return '';
+        return '<button class="sb" style="background:rgba(139,92,246,.1);color:#7C3AED;border-color:rgba(139,92,246,.25);"'
+          + ' onclick="goToFeedPost(\'' + p.id + '\')">📸 Feed</button>';
+      })()
     + '<div class="pub-more-wrap">'
     + '<button class="sb sb-more" onclick="togglePubMore(\'' + p.id + '\',event)">•••</button>'
     + '<div class="pub-more-menu" id="pub-more-' + p.id + '">'
@@ -609,4 +628,24 @@ document.addEventListener('click', function() { closePubMore(); });
 function openPubById(id) {
   var idx = PUBS.findIndex(function(p) { return p.id === id; });
   if (idx !== -1) openPubModal(idx);
+}
+
+// ─── Navigate to linked feed post ───
+function goToFeedPost(pubId) {
+  var fl = _findFeedPost(pubId);
+  if (!fl) return;
+  // Switch to feed tab
+  if (typeof setSection === 'function') setSection('feed');
+  else {
+    var feedTab = document.querySelector('[onclick*="setSection(\'feed\'"]') || document.querySelector('[data-section="feed"]');
+    if (feedTab) feedTab.click();
+  }
+  // Switch to correct platform and open modal
+  setTimeout(function() {
+    if (typeof switchFeed === 'function') {
+      var btn = document.querySelector('[onclick*="switchFeed(\'' + fl.plat + '\'"]');
+      switchFeed(fl.plat, btn);
+    }
+    if (typeof openFeedModal === 'function') openFeedModal(fl.idx, fl.plat);
+  }, 150);
 }
