@@ -1,9 +1,14 @@
 /* ===============================================
-   MERYNE STUDIO V4 — Planning Section
+   MERYNE STUDIO V5 — Planning Section
    =============================================== */
 
 // ─── Search State ───
 var fSearch = '';
+var fSem = 'all'; // kept for compatibility
+var fPlat = 'all';
+
+// ─── Group collapse state ───
+var _grpCollapsed = { pub: true };
 
 function setSearch(val) {
   fSearch = (val || '').toLowerCase();
@@ -20,7 +25,6 @@ function checkTodayReminders() {
   });
   if (!todayPosts.length) { banner.style.display = 'none'; return; }
   var unpub = todayPosts.filter(function(p) { return !p.done; });
-  var done = todayPosts.filter(function(p) { return p.done; });
   var isOk = unpub.length === 0;
   var html = (isOk ? '✅ ' : '📅 ') + '<strong>' + (isOk ? 'Tous les posts du jour sont publiés !' : unpub.length + ' post' + (unpub.length > 1 ? 's' : '') + ' à publier aujourd\'hui') + '</strong>';
   if (!isOk) unpub.forEach(function(p) { html += ' &nbsp;·&nbsp; <span style="opacity:.8">' + escapeHtml(p.title || p.fmt) + ' ' + escapeHtml(p.heure) + '</span>'; });
@@ -42,18 +46,19 @@ function eng(p) {
   return ((p.stats.l + p.stats.c * 2 + p.stats.s * 3 + p.stats.sh) / p.stats.v * 100).toFixed(1);
 }
 
-// ─── Filter Bar ───
+// ─── Post date → JS Date ───
+function _pubDate(p) {
+  if (p.yr && p.mo !== undefined && p.day) {
+    return new Date(p.yr, p.mo, p.day);
+  }
+  return null;
+}
+
+// ─── Filter Bar (plateforme only) ───
 function buildFilters() {
   var el = document.getElementById('filter-bar');
   if (!el) return;
-  var sems = Object.keys(SEM);
-  var h = '<span class="fb-label">Semaine :</span>'
-    + '<button class="fb-btn' + (fSem === 'all' ? ' a-sem' : '') + '" onclick="setFSem(\'all\',this)">Toutes</button>';
-  sems.forEach(function(s) {
-    h += '<button class="fb-btn' + (fSem === s ? ' a-sem' : '') + '" onclick="setFSem(\'' + s + '\',this)">'
-      + escapeHtml(SEM[s].l.replace('Semaine ', 'Sem ')) + '</button>';
-  });
-  h += '<span class="fb-sep"></span><span class="fb-label">Plateforme :</span>';
+  var h = '<span class="fb-label">Plateforme :</span>';
   ['all', 'tiktok', 'insta', 'stories'].forEach(function(p) {
     var lbl = p === 'all' ? 'Toutes' : { tiktok: 'TikTok', insta: 'Instagram', stories: 'Stories' }[p];
     h += '<button class="fb-btn' + (fPlat === p ? ' a-plat' : '') + '" onclick="setFPlat(\'' + p + '\',this)">' + escapeHtml(lbl) + '</button>';
@@ -73,12 +78,118 @@ function setFPlat(p, btn) {
   renderPlanning();
 }
 
-// ─── Render Planning (List View) ───
+// ─── Toggle group collapse ───
+function togglePubGroup(key) {
+  _grpCollapsed[key] = !_grpCollapsed[key];
+  renderPlanning();
+}
+
+// ─── Build a single post card HTML ───
+function _pubCardHtml(p) {
+  var realIdx = PUBS.findIndex(function(x) { return x.id === p.id; });
+  var platInfo = PM[p.plat] || { l: p.plat, cls: 'b-ig' };
+  var platLbl = platInfo.l.toUpperCase();
+  var doneCls = p.done ? 'done' : '';
+  var lcCls = p.launch ? 'lc' : '';
+  var platCls2 = p.plat === 'tiktok' ? 'plat-tt' : p.plat === 'insta' ? 'plat-ig' : 'plat-st';
+
+  // Script panel
+  var scriptHtml = '';
+  if (p.script && p.script.shots && p.script.shots.length) {
+    scriptHtml = '<div class="pub-script-panel" id="pubsp-' + p.id + '">'
+      + '<div class="psp-pub-head">' + escapeHtml(p.script.title || 'Script') + '</div>';
+    p.script.shots.forEach(function(sh) {
+      scriptHtml += '<div class="psp-pub-shot"><div class="psp-pub-n">Plan ' + sh.n + '</div>'
+        + '<div class="psp-pub-d">' + escapeHtml(sh.d) + '</div></div>';
+    });
+    scriptHtml += '<div class="psp-pub-foot">' + escapeHtml(p.src || '') + '</div></div>';
+  }
+
+  // Stats panel — enriched with reach, watch time, profile visits
+  var statsFields = [
+    ['Vues', 'v', '👁'],
+    ['Likes', 'l', '❤️'],
+    ['Comments', 'c', '💬'],
+    ['Saves', 's', '🔖'],
+    ['Shares', 'sh', '🔁'],
+    ['Portée', 'reach', '📡'],
+    ['Visionnage (s)', 'wt', '⏱'],
+    ['Visites profil', 'pv', '👤']
+  ];
+  if (!p.stats) p.stats = {};
+  var statsHtml = '<div class="stats-panel" id="sp-' + p.id + '">'
+    + '<div class="sp-inner">'
+    + '<div class="sp-title">📊 Statistiques</div>'
+    + '<div class="stats-grid">';
+  statsFields.forEach(function(sf) {
+    var lbl = sf[0], key = sf[1], ico = sf[2];
+    statsHtml += '<div class="sf"><label style="color:var(--muted)">' + ico + ' ' + escapeHtml(lbl) + '</label>'
+      + '<input type="number" min="0" value="' + (p.stats[key] || 0)
+      + '" data-stat-id="' + p.id + '" data-stat-key="' + key + '"'
+      + ' oninput="updStat(\'' + p.id + '\',\'' + key + '\',this.value,this)" /></div>';
+  });
+  var totalInter = (p.stats.l || 0) + (p.stats.c || 0) + (p.stats.s || 0) + (p.stats.sh || 0);
+  statsHtml += '</div>'
+    + '<div class="eng-row"><span style="font-size:10px;color:var(--muted)">Taux d\'engagement</span>'
+    + '<span class="eng-v" style="color:var(--violet)">' + eng(p) + '%</span></div>'
+    + '<div style="font-size:10px;color:var(--muted);text-align:right;margin-top:4px;" class="stats-total-' + p.id + '">Total interactions : ' + totalInter.toLocaleString('fr-FR') + '</div>'
+    + '</div></div>';
+
+  // Published link
+  var linkHtml = '';
+  if (p.done && p.link) {
+    linkHtml = '<a href="' + escapeHtml(p.link) + '" target="_blank" rel="noopener" '
+      + 'style="display:inline-flex;align-items:center;gap:5px;margin-top:4px;font-size:11px;'
+      + 'font-weight:700;color:#059669;text-decoration:none;background:rgba(5,150,105,.08);'
+      + 'border:1px solid rgba(5,150,105,.2);border-radius:6px;padding:3px 8px;">'
+      + '🔗 Voir le post publié ↗</a>';
+  }
+
+  return '<div class="pub-card ' + doneCls + ' ' + (lcCls || platCls2) + '">'
+    + '<div class="pub-top">'
+    + '<div class="pub-chk' + (p.done ? ' on' : '') + '" onclick="togglePub(\'' + p.id + '\')">' + (p.done ? '✓' : '') + '</div>'
+    + '<div class="pub-body">'
+    + '<div class="pub-meta">'
+    + '<span class="badge ' + platInfo.cls + '">' + escapeHtml(platLbl) + '</span>'
+    + '<span class="fmt-t">' + escapeHtml(p.fmt) + '</span>'
+    + '<span class="time-t">⏰ ' + escapeHtml(p.heure) + '</span>'
+    + '</div>'
+    + '<div class="pub-title-main"><span class="pub-date-inline">' + escapeHtml(p.date) + ' · </span>' + escapeHtml(p.title) + '</div>'
+    + (p.son && p.son !== '—' ? '<div class="pub-son">🎵 ' + escapeHtml(p.son) + '</div>' : '')
+    + (p.src ? '<div class="src-t">📁 ' + escapeHtml(p.src) + '</div>' : '')
+    + linkHtml
+    + '<div class="pub-actions" style="margin-top:8px;">'
+    + '<div class="pub-btns">'
+    + (scriptHtml ? '<button class="sb sb-script" onclick="togglePubScript(\'' + p.id + '\')">\uD83D\uDCDD Script</button>' : '')
+    + '<button class="sb sb-edit" onclick="openPubModal(' + realIdx + ')">✏️ Modifier</button>'
+    + (p.done ? '<button class="sb sb-stats" onclick="toggleStats(\'' + p.id + '\')">\uD83D\uDCCA Stats</button>' : '')
+    + '<div class="pub-more-wrap">'
+    + '<button class="sb sb-more" onclick="togglePubMore(\'' + p.id + '\',event)">•••</button>'
+    + '<div class="pub-more-menu" id="pub-more-' + p.id + '">'
+    + '<button onclick="copyCaption(\'' + p.id + '\');closePubMore()">📋 Copier caption</button>'
+    + '<button onclick="dupPub(\'' + p.id + '\');closePubMore()">📝 Dupliquer</button>'
+    + '<button class="pmm-del" onclick="deletePubDirect(\'' + p.id + '\');closePubMore()">🗑️ Supprimer</button>'
+    + '</div>'
+    + '</div>'
+    + '</div>'
+    + '</div>'
+    + '</div>'
+    + '</div>'
+    + scriptHtml
+    + statsHtml
+    + '</div>';
+}
+
+// ─── Render Planning (status groups) ───
 function renderPlanning() {
   var el = document.getElementById('pubs-container');
   if (!el) return;
+
+  var now = new Date();
+  now.setHours(0, 0, 0, 0);
+  var inSevenDays = new Date(now.getTime() + 7 * 24 * 3600 * 1000);
+
   var pubs = PUBS;
-  if (fSem !== 'all') pubs = pubs.filter(function(p) { return p.sem === fSem; });
   if (fPlat !== 'all') pubs = pubs.filter(function(p) { return p.plat === fPlat; });
   if (fSearch) pubs = pubs.filter(function(p) {
     var q = fSearch;
@@ -88,113 +199,63 @@ function renderPlanning() {
         || (p.son || '').toLowerCase().indexOf(q) !== -1
         || (p.src || '').toLowerCase().indexOf(q) !== -1;
   });
-  var bySem = {};
+
+  // Sort by date
+  pubs = pubs.slice().sort(function(a, b) {
+    var da = _pubDate(a), db = _pubDate(b);
+    if (!da && !db) return 0;
+    if (!da) return 1;
+    if (!db) return -1;
+    return da - db;
+  });
+
+  var groups = [
+    { key: 'late',  label: '🔴 En retard',    color: '#DC2626', items: [] },
+    { key: 'week',  label: '📅 Cette semaine', color: '#FF2D7A', items: [] },
+    { key: 'soon',  label: '🗓 À venir',       color: '#7C3AED', items: [] },
+    { key: 'pub',   label: '✅ Publiés',        color: '#6B7280', items: [], collapsible: true }
+  ];
+
   pubs.forEach(function(p) {
-    if (!bySem[p.sem]) bySem[p.sem] = [];
-    bySem[p.sem].push(p);
+    if (p.done) {
+      groups[3].items.push(p);
+      return;
+    }
+    var d = _pubDate(p);
+    if (!d) { groups[2].items.push(p); return; }
+    if (d < now) {
+      groups[0].items.push(p);
+    } else if (d <= inSevenDays) {
+      groups[1].items.push(p);
+    } else {
+      groups[2].items.push(p);
+    }
   });
+
   var html = '';
-  Object.keys(SEM).forEach(function(s) {
-    var items = bySem[s];
-    if (!items || !items.length) return;
-    var done = items.filter(function(x) { return x.done; }).length;
-    html += '<div class="week-hdr" style="border-left-color:' + SEM[s].c + '">'
-      + '<div><span class="wn" style="color:' + SEM[s].c + '">' + escapeHtml(SEM[s].l) + '</span>'
-      + '<span class="wd">' + escapeHtml(SEM[s].d) + ' — ' + escapeHtml(SEM[s].desc) + '</span></div>'
-      + '<div class="wcnt">' + done + '/' + items.length + '</div></div>';
-    items.forEach(function(p) {
-      var realIdx = PUBS.findIndex(function(x) { return x.id === p.id; });
-      var platInfo = PM[p.plat] || { l: p.plat, cls: 'b-ig' };
-      var platCls = platInfo.cls;
-      var platLbl = platInfo.l.toUpperCase();
-      var doneCls = p.done ? 'done' : '';
-      var lcCls = p.launch ? 'lc' : '';
-      var platCls2 = p.plat === 'tiktok' ? 'plat-tt' : p.plat === 'insta' ? 'plat-ig' : 'plat-st';
-
-      // Script panel
-      var scriptHtml = '';
-      if (p.script && p.script.shots && p.script.shots.length) {
-        scriptHtml = '<div class="pub-script-panel" id="pubsp-' + p.id + '">'
-          + '<div class="psp-pub-head">' + escapeHtml(p.script.title || 'Script') + '</div>';
-        p.script.shots.forEach(function(sh) {
-          scriptHtml += '<div class="psp-pub-shot"><div class="psp-pub-n">Plan ' + sh.n + '</div>'
-            + '<div class="psp-pub-d">' + escapeHtml(sh.d) + '</div></div>';
-        });
-        scriptHtml += '<div class="psp-pub-foot">' + escapeHtml(p.src || '') + '</div></div>';
-      }
-
-      // Stats panel
-      var statsFields = [
-        ['Vues', 'v', '\uD83D\uDC41'],
-        ['Likes', 'l', '\u2764\uFE0F'],
-        ['Comments', 'c', '\uD83D\uDCAC'],
-        ['Saves', 's', '\uD83D\uDD16'],
-        ['Shares', 'sh', '\uD83D\uDD01']
-      ];
-      var statsHtml = '<div class="stats-panel" id="sp-' + p.id + '">'
-        + '<div class="sp-inner">'
-        + '<div class="sp-title">\uD83D\uDCCA Statistiques</div>'
-        + '<div class="stats-grid">';
-      statsFields.forEach(function(sf) {
-        var lbl = sf[0], key = sf[1], ico = sf[2];
-        statsHtml += '<div class="sf"><label style="color:var(--muted)">' + ico + ' ' + escapeHtml(lbl) + '</label>'
-          + '<input type="number" min="0" value="' + (p.stats[key] || 0)
-          + '" data-stat-id="' + p.id + '" data-stat-key="' + key + '"'
-          + ' oninput="updStat(\'' + p.id + '\',\'' + key + '\',this.value,this)" /></div>';
-      });
-      var totalInter = (p.stats.l || 0) + (p.stats.c || 0) + (p.stats.s || 0) + (p.stats.sh || 0);
-      statsHtml += '</div>'
-        + '<div class="eng-row"><span style="font-size:10px;color:var(--muted)">Taux d\'engagement</span>'
-        + '<span class="eng-v" style="color:var(--violet)">' + eng(p) + '%</span></div>'
-        + '<div style="font-size:10px;color:var(--muted);text-align:right;margin-top:4px;" class="stats-total-' + p.id + '">Total interactions : ' + totalInter.toLocaleString('fr-FR') + '</div>'
-        + '</div></div>';
-
-      // Published link
-      var linkHtml = '';
-      if (p.done && p.link) {
-        linkHtml = '<a href="' + escapeHtml(p.link) + '" target="_blank" rel="noopener" '
-          + 'style="display:inline-flex;align-items:center;gap:5px;margin-top:4px;font-size:11px;'
-          + 'font-weight:700;color:#059669;text-decoration:none;background:rgba(5,150,105,.08);'
-          + 'border:1px solid rgba(5,150,105,.2);border-radius:6px;padding:3px 8px;">'
-          + '\uD83D\uDD17 Voir le post publi\u00E9 \u2197</a>';
-      }
-
-      // Card
-      html += '<div class="pub-card ' + doneCls + ' ' + (lcCls || platCls2) + '">'
-        + '<div class="pub-top">'
-        + '<div class="pub-chk' + (p.done ? ' on' : '') + '" onclick="togglePub(\'' + p.id + '\')">' + (p.done ? '\u2713' : '') + '</div>'
-        + '<div class="pub-body">'
-        + '<div class="pub-meta">'
-        + '<span class="badge ' + platCls + '">' + escapeHtml(platLbl) + '</span>'
-        + '<span class="fmt-t">' + escapeHtml(p.fmt) + '</span>'
-        + '<span class="time-t">\u23F0 ' + escapeHtml(p.heure) + '</span>'
-        + '</div>'
-        + '<div class="pub-title-main"><span class="pub-date-inline">' + escapeHtml(p.date) + ' \u00B7 </span>' + escapeHtml(p.title) + '</div>'
-        + (p.son && p.son !== '\u2014' ? '<div class="pub-son">\uD83C\uDFB5 ' + escapeHtml(p.son) + '</div>' : '')
-        + (p.src ? '<div class="src-t">\uD83D\uDCC1 ' + escapeHtml(p.src) + '</div>' : '')
-        + linkHtml
-        + '<div class="pub-actions" style="margin-top:8px;">'
-        + '<div class="pub-btns">'
-        + (scriptHtml ? '<button class="sb sb-script" onclick="togglePubScript(\'' + p.id + '\')">\uD83D\uDCDD Script</button>' : '')
-        + '<button class="sb sb-edit" onclick="openPubModal(' + realIdx + ')">\u270F\uFE0F Modifier</button>'
-        + (p.done ? '<button class="sb sb-stats" onclick="toggleStats(\'' + p.id + '\')">\uD83D\uDCCA Stats</button>' : '')
-        + '<div class="pub-more-wrap">'
-        + '<button class="sb sb-more" onclick="togglePubMore(\'' + p.id + '\',event)">\u2022\u2022\u2022</button>'
-        + '<div class="pub-more-menu" id="pub-more-' + p.id + '">'
-        + '<button onclick="copyCaption(\'' + p.id + '\');closePubMore()">\uD83D\uDCCB Copier caption</button>'
-        + '<button onclick="dupPub(\'' + p.id + '\');closePubMore()">\uD83D\uDCDD Dupliquer</button>'
-        + '<button class="pmm-del" onclick="deletePubDirect(\'' + p.id + '\');closePubMore()">\uD83D\uDDD1\uFE0F Supprimer</button>'
-        + '</div>'
-        + '</div>'
-        + '</div>'
-        + '</div>'
-        + '</div>'
-        + '</div>'
-        + scriptHtml
-        + statsHtml
-        + '</div>';
-    });
+  groups.forEach(function(grp) {
+    if (!grp.items.length) return;
+    var collapsed = grp.collapsible && _grpCollapsed[grp.key];
+    var arrow = grp.collapsible ? (collapsed ? '▸ ' : '▾ ') : '';
+    html += '<div class="pubs-grp">'
+      + '<div class="pubs-ghdr" style="border-left-color:' + grp.color + ';'
+      + (grp.collapsible ? 'cursor:pointer;' : '') + '"'
+      + (grp.collapsible ? ' onclick="togglePubGroup(\'' + grp.key + '\')"' : '') + '>'
+      + '<span style="color:' + grp.color + ';font-weight:800;">' + arrow + escapeHtml(grp.label) + '</span>'
+      + '<span class="wcnt" style="color:' + grp.color + ';">' + grp.items.length + '</span>'
+      + '</div>';
+    if (!collapsed) {
+      html += '<div class="pubs-gbody">';
+      grp.items.forEach(function(p) { html += _pubCardHtml(p); });
+      html += '</div>';
+    }
+    html += '</div>';
   });
+
+  if (!html) {
+    html = '<div style="text-align:center;padding:40px;color:var(--muted);font-size:13px;">Aucun post à afficher</div>';
+  }
+
   el.innerHTML = html;
 }
 
@@ -285,16 +346,17 @@ function openPubModal(idx) {
       son: '',
       heure: '18h00',
       tags: '',
-      src: 'A filmer \uD83C\uDFAC',
+      src: 'A filmer 🎬',
       done: false,
       launch: false,
-      stats: { v: 0, l: 0, c: 0, s: 0, sh: 0 },
+      stats: { v: 0, l: 0, c: 0, s: 0, sh: 0, reach: 0, wt: 0, pv: 0 },
       script: { title: '', shots: [] }
     };
   } else {
     _pubbe = JSON.parse(JSON.stringify(PUBS[idx]));
   }
   if (!_pubbe.script) _pubbe.script = { title: '', shots: [] };
+  if (!_pubbe.stats) _pubbe.stats = {};
 
   // Build semaine select options
   var semOptions = '';
@@ -319,11 +381,15 @@ function openPubModal(idx) {
   if (_pubbe.done) {
     linkField = '<div class="fr" style="background:linear-gradient(135deg,rgba(5,150,105,.06),rgba(52,211,153,.04));'
       + 'border:1.5px solid rgba(5,150,105,.2);border-radius:10px;padding:10px 12px;">'
-      + '<label style="color:#059669;">\uD83D\uDD17 Lien du post publi\u00E9</label>'
+      + '<label style="color:#059669;">🔗 Lien du post publié</label>'
       + '<input id="ppe-link" placeholder="https://www.tiktok.com/@meryne.eis/..." value="' + escapeHtml(_pubbe.link || '') + '"></div>';
   }
 
-  var modalHtml = '<button class="modal-x" onclick="closeModal()">\u2715</button>'
+  // Hashtag count
+  var currentTagCount = (_pubbe.tags || '').split(' ').filter(function(t) { return t.startsWith('#'); }).length;
+  var tagCountHtml = '<span id="hash-count" style="font-size:10px;color:var(--muted);font-weight:600;">' + currentTagCount + ' hashtag' + (currentTagCount !== 1 ? 's' : '') + '</span>';
+
+  var modalHtml = '<button class="modal-x" onclick="closeModal()">✕</button>'
     + '<h2>' + (isNew ? 'Nouveau post' : 'Modifier le post') + '</h2>'
     + '<div class="fg">'
     + '<div class="fr"><label>Date (JJ/MM)</label><input id="ppe-date" value="' + escapeHtml(_pubbe.date) + '"></div>'
@@ -343,26 +409,48 @@ function openPubModal(idx) {
     + '<div class="fr"><label>Son/Trend</label><input id="ppe-son" value="' + escapeHtml(_pubbe.son) + '"></div>'
     + '</div>'
     + '<div class="fr"><label>Source</label><input id="ppe-src" value="' + escapeHtml(_pubbe.src) + '"></div>'
-    + '<div class="fr"><label>Hashtags</label>'
-    + '<div id="hash-modal-row" class="hash-modal-row"></div>'
-    + '<input id="ppe-tags" value="' + escapeHtml(_pubbe.tags) + '"></div>'
+    // ─── Hashtags section — prominent ───
+    + '<div class="fr hash-section">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">'
+    + '<label style="margin-bottom:0;"># Hashtags</label>'
+    + '<div style="display:flex;align-items:center;gap:8px;">'
+    + tagCountHtml
+    + '<button onclick="clearHashTags()" style="font-size:10px;color:var(--muted);background:var(--surf);border:1px solid var(--bord);border-radius:6px;padding:2px 8px;cursor:pointer;font-family:\'DM Sans\',sans-serif;">Vider</button>'
+    + '</div>'
+    + '</div>'
+    + '<div id="hash-modal-row" class="hash-modal-row" style="margin-bottom:6px;"></div>'
+    + '<input id="ppe-tags" value="' + escapeHtml(_pubbe.tags) + '" placeholder="#hashtag1 #hashtag2..." oninput="updateHashCount(this.value)">'
+    + '</div>'
     + '<div class="ai-caption-row">'
-    + '<button id="ai-caption-btn" class="btn-ai-sm" onclick="generateCaption(\'' + _pubbe.id + '\')">\u2728 Caption IA</button>'
+    + '<button id="ai-caption-btn" class="btn-ai-sm" onclick="generateCaption(\'' + _pubbe.id + '\')">✨ Caption IA</button>'
     + '</div>'
     + '<div id="ai-caption-result"></div>'
     + linkField
     + '<hr class="sep">'
-    + '<div class="fr"><label>\uD83C\uDFAC Titre du script</label><input id="ppe-stitle" value="' + escapeHtml(_pubbe.script.title) + '"></div>'
+    + '<div class="fr"><label>🎬 Titre du script</label><input id="ppe-stitle" value="' + escapeHtml(_pubbe.script.title) + '"></div>'
     + '<div id="ppe-shots">' + shotsHtml + '</div>'
-    + '<button class="add-btn" onclick="addPubShot()">\uFF0B Ajouter un plan</button>'
+    + '<button class="add-btn" onclick="addPubShot()">＋ Ajouter un plan</button>'
     + '<div class="modal-acts">'
-    + (!isNew ? '<button class="btn-d" onclick="delPubM(\'' + _pubbe.id + '\')">\uD83D\uDDD1 Supprimer</button>' : '')
+    + (!isNew ? '<button class="btn-d" onclick="delPubM(\'' + _pubbe.id + '\')">🗑 Supprimer</button>' : '')
     + '<button class="btn-s" onclick="closeModal()">Annuler</button>'
-    + '<button class="btn-p" onclick="savePub(\'' + _pubbe.id + '\',' + isNew + ',' + idx + ')">Enregistrer \u2713</button>'
+    + '<button class="btn-p" onclick="savePub(\'' + _pubbe.id + '\',' + isNew + ',' + idx + ')">Enregistrer ✓</button>'
     + '</div>';
 
   openModal(modalHtml);
   if (typeof renderHashModalRow === 'function') renderHashModalRow();
+}
+
+// ─── Hashtag count update ───
+function updateHashCount(val) {
+  var count = (val || '').split(' ').filter(function(t) { return t.startsWith('#'); }).length;
+  var el = document.getElementById('hash-count');
+  if (el) el.textContent = count + ' hashtag' + (count !== 1 ? 's' : '');
+}
+
+// ─── Clear hashtags ───
+function clearHashTags() {
+  var el = document.getElementById('ppe-tags');
+  if (el) { el.value = ''; updateHashCount(''); }
 }
 
 // ─── Shot Editor Helpers ───
@@ -370,7 +458,7 @@ function pubShotHtml(i, d) {
   return '<div class="shot-edit" id="pse-' + i + '">'
     + '<div class="shot-edit-n">Plan ' + (i + 1) + '</div>'
     + '<textarea oninput="updPubShot(' + i + ',this.value)">' + escapeHtml(d || '') + '</textarea>'
-    + '<button class="shot-edit-del" onclick="removePubShot(' + i + ')">\u2715</button>'
+    + '<button class="shot-edit-del" onclick="removePubShot(' + i + ')">✕</button>'
     + '</div>';
 }
 
@@ -446,7 +534,7 @@ function dupPub(id) {
   copy.id = 'pub' + Date.now();
   copy.title = orig.title + ' (copie)';
   copy.done = false;
-  copy.stats = {v:0, l:0, c:0, s:0, sh:0};
+  copy.stats = {v:0, l:0, c:0, s:0, sh:0, reach:0, wt:0, pv:0};
   PUBS.push(copy);
   save();
   buildFilters();
@@ -460,7 +548,7 @@ function copyCaption(id) {
   if (!p) return;
   var text = p.title + (p.tags ? '\n\n' + p.tags : '');
   if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(function() { showSync('\uD83D\uDCCB Caption copié !', 'rgba(5,150,105,.8)'); });
+    navigator.clipboard.writeText(text).then(function() { showSync('📋 Caption copié !', 'rgba(5,150,105,.8)'); });
   } else {
     var ta = document.createElement('textarea');
     ta.value = text;
@@ -468,7 +556,7 @@ function copyCaption(id) {
     ta.select();
     document.execCommand('copy');
     ta.remove();
-    showSync('\uD83D\uDCCB Caption copié !', 'rgba(5,150,105,.8)');
+    showSync('📋 Caption copié !', 'rgba(5,150,105,.8)');
   }
 }
 
@@ -480,13 +568,12 @@ function togglePubMore(id, e) {
   var isOpen = menu.classList.contains('open');
   closePubMore();
   if (!isOpen) {
-    var btn = e && e.currentTarget ? e.currentTarget : document.querySelector('[onclick*="togglePubMore(\'' + id + '\'"]');
+    var btn = e && e.currentTarget ? e.currentTarget : null;
     if (btn) {
       var r = btn.getBoundingClientRect();
-      menu.style.top = (r.bottom + window.scrollY + 4) + 'px';
-      menu.style.left = r.left + 'px';
       menu.style.position = 'fixed';
       menu.style.top = (r.bottom + 4) + 'px';
+      menu.style.left = r.left + 'px';
     }
     menu.classList.add('open');
   }

@@ -86,13 +86,18 @@ function save() {
 }
 
 async function load() {
-  PROD           = await cloudLoad('prod2', null);
-  PUBS           = await cloudLoad('pubs2', null);
-  FW             = await cloudLoad('fw2', null);
-  GOALS          = await cloudLoad('goals', null);
-  TAGS           = await cloudLoad('tags2', null);
-  NOTES          = await cloudLoad('notes', null);
-  HASHTAG_GROUPS = await cloudLoad('hashtag_groups', null);
+  var results = await Promise.all([
+    cloudLoad('prod2', null),
+    cloudLoad('pubs2', null),
+    cloudLoad('fw2', null),
+    cloudLoad('goals', null),
+    cloudLoad('tags2', null),
+    cloudLoad('notes', null),
+    cloudLoad('hashtag_groups', null)
+  ]);
+  PROD = results[0]; PUBS = results[1]; FW = results[2];
+  GOALS = results[3]; TAGS = results[4]; NOTES = results[5];
+  HASHTAG_GROUPS = results[6];
   if (!PROD)           PROD           = [];
   if (!PUBS)           PUBS           = [];
   if (!FW)             FW             = JSON.parse(JSON.stringify(D_FW));
@@ -202,7 +207,7 @@ async function syncFromCloud() {
 }
 
 // Auto-sync toutes les 60 secondes
-setInterval(syncFromCloud, 60000);
+setInterval(syncFromCloud, 300000);
 
 // ─── Auto-login on page load ───
 autoLogin();

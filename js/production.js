@@ -7,6 +7,7 @@
 var prodView = 'list';
 var prodCalY = 2026;
 var prodCalM = 2;
+var _prodArchiveOpen = false;
 
 // ─── Current editing task for modal ───
 var _pe = null;
@@ -37,12 +38,12 @@ function renderProd() {
     progEl.style.background = pct === 100 ? 'var(--green)' : 'var(--amber)';
   }
 
-  var html = '';
+  var activeTasks = PROD.filter(function(t) { return !t.done; });
+  var doneTasks   = PROD.filter(function(t) { return t.done; });
 
-  // Task cards
-  for (var j = 0; j < PROD.length; j++) {
-    var t = PROD[j];
-    var id = t.id || j;
+  function _buildProdCard(t) {
+    var realIdx = PROD.indexOf(t);
+    var id = t.id || realIdx;
     var cardClass = 'prod-card';
     if (t.done) cardClass += ' done';
     if (t.launch) cardClass += ' lt';
@@ -51,113 +52,67 @@ function renderProd() {
     else if (platLow.indexOf('tiktok') !== -1) cardClass += ' plat-tt';
     else if (platLow.indexOf('insta') !== -1) cardClass += ' plat-ig';
 
-    html += '<div class="' + cardClass + '" id="prod-card-' + id + '">';
-
-    // Main row
-    html += '<div class="pc-main">';
-
-    // Checkbox
-    html += '<button class="pc-chk' + (t.done ? ' on' : '') + '" onclick="toggleProd(\'' + id + '\')">'
+    var c = '<div class="' + cardClass + '" id="prod-card-' + id + '">';
+    c += '<div class="pc-main">';
+    c += '<button class="pc-chk' + (t.done ? ' on' : '') + '" onclick="toggleProd(\'' + id + '\')">'
       + (t.done ? '<svg width="12" height="12" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>' : '')
       + '</button>';
+    c += '<div class="pc-body">';
+    c += '<div class="pc-meta">';
+    if (t.date) c += '<span class="pc-date">' + escapeHtml(t.date) + '</span>';
+    if (t.plat) c += '<span class="tag tg-rose">' + escapeHtml(t.plat) + '</span>';
+    if (t.fmt)  c += '<span class="tag tg-cyan">' + escapeHtml(t.fmt) + '</span>';
+    if (t.posts) c += '<span class="tag tg-amber">' + escapeHtml(String(t.posts)) + ' post' + (parseInt(t.posts, 10) > 1 ? 's' : '') + '</span>';
+    c += '</div>';
+    c += '<div class="pc-title' + (t.done ? ' done' : '') + '">';
+    if (t.em) c += escapeHtml(t.em) + ' ';
+    c += escapeHtml(t.title || 'Sans titre') + '</div>';
+    if (t.desc) c += '<div class="pc-desc">' + escapeHtml(t.desc) + '</div>';
+    if (t.note) c += '<div style="font-size:10px;color:#9CA3AF;font-style:italic;margin-bottom:4px;">' + escapeHtml(t.note) + '</div>';
+    if (t.launch) c += '<span class="badge b-launch" style="margin-bottom:5px;">⭐ Priorité</span>';
+    c += '<div class="pc-actions">';
+    if (t.script && t.script.title) c += '<button class="sb sb-script" onclick="toggleProdScript(\'' + id + '\')">Script</button>';
+    c += '<button class="sb sb-ai" id="ai-prod-btn-' + id + '" onclick="generateProdScript(\'' + id + '\')">\u2728 IA</button>';
+    c += '<button class="sb sb-edit" onclick="openProdModal(' + realIdx + ')">Modifier</button>';
+    c += '</div></div></div>'; // pc-actions + pc-body + pc-main
 
-    // Body
-    html += '<div class="pc-body">';
-
-    // Meta row: date + tags
-    html += '<div class="pc-meta">';
-    if (t.date) {
-      html += '<span class="pc-date">' + escapeHtml(t.date) + '</span>';
-    }
-    if (t.plat) {
-      html += '<span class="tag tg-rose">' + escapeHtml(t.plat) + '</span>';
-    }
-    if (t.fmt) {
-      html += '<span class="tag tg-cyan">' + escapeHtml(t.fmt) + '</span>';
-    }
-    if (t.posts) {
-      html += '<span class="tag tg-amber">' + escapeHtml(String(t.posts)) + ' post' + (parseInt(t.posts, 10) > 1 ? 's' : '') + '</span>';
-    }
-    html += '</div>';
-
-    // Title
-    html += '<div class="pc-title' + (t.done ? ' done' : '') + '">';
-    if (t.em) {
-      html += escapeHtml(t.em) + ' ';
-    }
-    html += escapeHtml(t.title || 'Sans titre');
-    html += '</div>';
-
-    // Description
-    if (t.desc) {
-      html += '<div class="pc-desc">' + escapeHtml(t.desc) + '</div>';
-    }
-
-    // Note
-    if (t.note) {
-      html += '<div style="font-size:10px;color:#9CA3AF;font-style:italic;margin-bottom:4px;">' + escapeHtml(t.note) + '</div>';
-    }
-
-    // Priority badge
-    if (t.launch) {
-      html += '<span class="badge b-launch" style="margin-bottom:5px;">⭐ Priorité</span>';
-    }
-
-    // Actions
-    html += '<div class="pc-actions">';
-
-    // Script panel toggle (only if script exists)
     if (t.script && t.script.title) {
-      html += '<button class="sb sb-script" onclick="toggleProdScript(\'' + id + '\')">Script</button>';
-    }
-
-    html += '<button class="sb sb-ai" id="ai-prod-btn-' + id + '" onclick="generateProdScript(\'' + id + '\')">\u2728 IA</button>';
-    html += '<button class="sb sb-edit" onclick="openProdModal(' + j + ')">Modifier</button>';
-    html += '</div>';
-
-    html += '</div>'; // pc-body
-    html += '</div>'; // pc-main
-
-    // Script panel
-    if (t.script && t.script.title) {
-      html += '<div class="prod-script-panel" id="prod-script-' + id + '">';
-      html += '<div class="psp-inner">';
-
-      // Terminal header
-      html += '<div class="psp-hdr">'
-        + '<div class="psp-dots">'
+      c += '<div class="prod-script-panel" id="prod-script-' + id + '"><div class="psp-inner">';
+      c += '<div class="psp-hdr"><div class="psp-dots">'
         + '<div class="psp-dot" style="background:#FF5F57;"></div>'
         + '<div class="psp-dot" style="background:#FFBD2E;"></div>'
         + '<div class="psp-dot" style="background:#28CA41;"></div>'
-        + '</div>'
-        + '<span class="psp-label">script</span>'
-        + '</div>';
-
-      // Script title
-      html += '<div class="psp-head">' + escapeHtml(t.script.title) + '</div>';
-
-      // Shots
-      if (t.script.shots && t.script.shots.length > 0) {
+        + '</div><span class="psp-label">script</span></div>';
+      c += '<div class="psp-head">' + escapeHtml(t.script.title) + '</div>';
+      if (t.script.shots) {
         for (var s = 0; s < t.script.shots.length; s++) {
           var shot = t.script.shots[s];
-          html += '<div class="psp-shot">';
-          html += '<div class="psp-n">PLAN ' + (s + 1) + '</div>';
-          html += '<div class="psp-d">' + escapeHtml(shot.d || '') + '</div>';
-          html += '</div>';
+          c += '<div class="psp-shot"><div class="psp-n">PLAN ' + (s + 1) + '</div>'
+            + '<div class="psp-d">' + escapeHtml(shot.d || '') + '</div></div>';
         }
       }
-
-      html += '</div>'; // psp-inner
-      html += '</div>'; // prod-script-panel
+      c += '</div></div>';
     }
-
-    html += '</div>'; // prod-card
+    c += '</div>'; // prod-card
+    return c;
   }
 
-  if (PROD.length === 0) {
-    html += '<div style="text-align:center;padding:32px 16px;color:#9CA3AF;font-size:13px;">'
-      + 'Aucune tache de production'
-      + '</div>';
+  var html = '';
+  if (activeTasks.length === 0 && doneTasks.length === 0) {
+    html = '<div style="text-align:center;padding:32px 16px;color:#9CA3AF;font-size:13px;">Aucune tâche de production</div>';
+  } else {
+    for (var j = 0; j < activeTasks.length; j++) html += _buildProdCard(activeTasks[j]);
+    if (doneTasks.length > 0) {
+      html += '<div class="prod-archive-hdr" onclick="toggleProdArchive()">'
+        + '<span style="color:#6B7280;font-weight:800;">' + (_prodArchiveOpen ? '▾' : '▸') + ' Terminées (' + doneTasks.length + ')</span>'
+        + '<span style="font-size:10px;color:#6B7280;margin-left:6px;">— ' + pct + '% accompli</span>'
+        + '</div>';
+      if (_prodArchiveOpen) {
+        html += '<div class="prod-archive-body">';
+        for (var k = 0; k < doneTasks.length; k++) html += _buildProdCard(doneTasks[k]);
+        html += '</div>';
+      }
+    }
   }
 
   container.innerHTML = html;
@@ -187,6 +142,11 @@ function toggleProdScript(id) {
   var panel = document.getElementById('prod-script-' + id);
   if (!panel) return;
   panel.classList.toggle('open');
+}
+
+function toggleProdArchive() {
+  _prodArchiveOpen = !_prodArchiveOpen;
+  renderProd();
 }
 
 // ═══════════════════════════════════════════════
