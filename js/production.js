@@ -5,8 +5,9 @@
 
 // ─── Production View State ───
 var prodView = 'list';
-var prodCalY = 2026;
-var prodCalM = 2;
+var _prodCalNow = new Date();
+var prodCalY = _prodCalNow.getFullYear();
+var prodCalM = _prodCalNow.getMonth();
 var _prodArchiveOpen = false;
 
 // ─── Current editing task for modal ───
@@ -511,7 +512,12 @@ function renderProdCal() {
     if (cd.length < 2) cd = '0' + cd;
     var dateKey = cellYear + '-' + cm + '-' + cd;
 
-    html += '<div class="' + cellClass + '" onclick="handleEcalCellClick(' + dayNum + ',' + cellMonth + ',' + cellYear + ')">';
+    html += '<div class="' + cellClass + '"'
+      + ' onclick="handleEcalCellClick(' + dayNum + ',' + cellMonth + ',' + cellYear + ')"'
+      + ' ondragover="ecalDragOver(event)"'
+      + ' ondragleave="ecalDragLeave(event)"'
+      + ' ondrop="ecalDrop(event,\'' + dateKey + '\')"'
+      + '>';
 
     // Day number
     if (isToday) {
@@ -526,7 +532,10 @@ function renderProdCal() {
     for (var de = 0; de < dayEvents.length && de < maxShow; de++) {
       var evt = dayEvents[de];
       var evType = evt.type || 'other';
-      html += '<span class="ecal-event type-' + escapeHtml(evType) + '" onclick="event.stopPropagation();openEcalModal(\'' + escapeHtml(evt.id || '') + '\')">'
+      html += '<span class="ecal-event type-' + escapeHtml(evType) + '"'
+        + ' draggable="true"'
+        + ' ondragstart="ecalDragStart(event,\'' + escapeHtml(evt.id || '') + '\')"'
+        + ' onclick="event.stopPropagation();openEcalModal(\'' + escapeHtml(evt.id || '') + '\')">'
         + (evt.emoji ? escapeHtml(evt.emoji) + ' ' : '')
         + escapeHtml(evt.title || '')
         + '</span>';
@@ -561,6 +570,42 @@ function prodCalMove(dir) {
     prodCalM = 0;
     prodCalY++;
   }
+  renderProdCal();
+}
+
+// ─── Production Calendar Drag-and-Drop ───
+var _ecalDragId = null;
+
+function ecalDragStart(e, evtId) {
+  e.stopPropagation();
+  _ecalDragId = evtId;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', evtId);
+}
+
+function ecalDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.style.background = 'rgba(99,102,241,.12)';
+  e.currentTarget.style.outline = '2px dashed var(--accent,#6366f1)';
+}
+
+function ecalDragLeave(e) {
+  e.currentTarget.style.background = '';
+  e.currentTarget.style.outline = '';
+}
+
+function ecalDrop(e, dateKey) {
+  e.preventDefault();
+  e.currentTarget.style.background = '';
+  e.currentTarget.style.outline = '';
+  var evtId = _ecalDragId || e.dataTransfer.getData('text/plain');
+  _ecalDragId = null;
+  if (!evtId) return;
+  var ev = (EVENTS || []).find(function(x) { return x.id === evtId; });
+  if (!ev) return;
+  ev.dateStart = dateKey;
+  saveEvents();
   renderProdCal();
 }
 

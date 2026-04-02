@@ -118,7 +118,6 @@ function _pubCardHtml(p) {
     ['Comments', 'c', '💬', false],
     ['Saves', 's', '🔖', false],
     ['Shares', 'sh', '🔁', false],
-    ['Portée ①', 'reach', '📡', false],
     ['Visites profil', 'pv', '👤', false]
   ];
   var isVid = _isVideoPost(p.fmt);
@@ -131,9 +130,6 @@ function _pubCardHtml(p) {
     + '<div class="sp-inner">'
     + '<div class="sp-title">📊 Statistiques'
     + (isVid ? '' : ' <span style="font-size:9px;color:var(--muted);font-weight:400;">· Carousel / Photo</span>')
-    + '</div>'
-    + '<div style="font-size:9px;color:var(--muted);margin-bottom:8px;padding:5px 8px;background:rgba(6,182,212,.06);border-radius:6px;">'
-    + '① <strong>Portée</strong> = comptes <em>uniques</em> ayant vu ce post (≠ Vues qui comptent les revisions)'
     + '</div>'
     + '<div class="stats-grid">';
   statsFields.forEach(function(sf) {

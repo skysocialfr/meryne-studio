@@ -24,7 +24,7 @@ function _sk(key) {
   return window._MERYNE_UID ? window._MERYNE_UID + ':' + key : key;
 }
 
-// ─── Cloud Load : timestamp-based sync ───
+// ─── Cloud Load : local-first (instant render, sync in background) ───
 async function cloudLoad(key, fallback) {
   var sk = _sk(key);
 
@@ -38,31 +38,47 @@ async function cloudLoad(key, fallback) {
     }
   } catch (e) {}
 
+  // ─── LOCAL-FIRST: si on a des données en cache, retourner immédiatement ───
+  // La synchronisation cloud se fait en arrière-plan (pas de blocage UI)
+  if (localData !== null) {
+    if (sb) {
+      setTimeout(function() {
+        sb.from('studio_data').select('data,updated_at').eq('key', sk).single()
+          .then(function(res) {
+            if (res && res.data && res.data.data !== undefined) {
+              var sbTs = res.data.updated_at ? new Date(res.data.updated_at).getTime() : 0;
+              if (sbTs > localTs) {
+                try {
+                  localStorage.setItem(sk, JSON.stringify(res.data.data));
+                  localStorage.setItem(sk + '_ts', sbTs.toString());
+                } catch(e2) {}
+              } else if (localTs > sbTs) {
+                _sbResync(sk, localData);
+              }
+            }
+          }).catch(function() {});
+      }, 200);
+    }
+    return localData;
+  }
+
+  // ─── Pas de cache local : premier lancement → attendre le cloud ───
   if (sb) {
     try {
-      var ms = (key === 'feeddata2' || key === 'ig_posts') ? 12000 : 6000;
+      var ms = (key === 'feeddata2' || key === 'ig_posts') ? 8000 : 5000;
       var timeout = new Promise(function (res) { setTimeout(function () { res(null); }, ms); });
       var query = sb.from('studio_data').select('data,updated_at').eq('key', sk).single();
       var result = await Promise.race([query, timeout]);
       if (result && result.data && result.data.data !== undefined) {
-        var sbTs = result.data.updated_at ? new Date(result.data.updated_at).getTime() : 0;
-        if (sbTs >= localTs) {
-          try {
-            localStorage.setItem(sk, JSON.stringify(result.data.data));
-            localStorage.setItem(sk + '_ts', sbTs.toString());
-          } catch (e) {}
-          return result.data.data;
-        } else {
-          if (localData !== null) {
-            _sbResync(sk, localData);
-            return localData;
-          }
-        }
+        var sbTs2 = result.data.updated_at ? new Date(result.data.updated_at).getTime() : 0;
+        try {
+          localStorage.setItem(sk, JSON.stringify(result.data.data));
+          localStorage.setItem(sk + '_ts', sbTs2.toString());
+        } catch (e) {}
+        return result.data.data;
       }
     } catch (e) {}
   }
-
-  if (localData !== null) return localData;
 
   // Clé legacy (sans préfixe UUID)
   if (sb && window._MERYNE_UID) {
