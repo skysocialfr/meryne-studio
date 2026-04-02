@@ -7,6 +7,12 @@ var fSearch = '';
 var fSem = 'all'; // kept for compatibility
 var fPlat = 'all';
 
+// ─── Video format detection ───
+function _isVideoPost(fmt) {
+  var vf = ['tiktok','reel','video','short','igtv','grwm','grwm / reel','reel + tiktok','tiktok + reel','tiktok + insta','transformation'];
+  return vf.indexOf((fmt || '').toLowerCase()) !== -1;
+}
+
 // ─── Group collapse state ───
 var _grpCollapsed = { pub: true };
 
@@ -105,33 +111,51 @@ function _pubCardHtml(p) {
     scriptHtml += '<div class="psp-pub-foot">' + escapeHtml(p.src || '') + '</div></div>';
   }
 
-  // Stats panel — enriched with reach, watch time, profile visits
+  // Stats panel — conditional watch time (video only)
   var statsFields = [
-    ['Vues', 'v', '👁'],
-    ['Likes', 'l', '❤️'],
-    ['Comments', 'c', '💬'],
-    ['Saves', 's', '🔖'],
-    ['Shares', 'sh', '🔁'],
-    ['Portée', 'reach', '📡'],
-    ['Visionnage (s)', 'wt', '⏱'],
-    ['Visites profil', 'pv', '👤']
+    ['Vues', 'v', '👁', false],
+    ['Likes', 'l', '❤️', false],
+    ['Comments', 'c', '💬', false],
+    ['Saves', 's', '🔖', false],
+    ['Shares', 'sh', '🔁', false],
+    ['Portée ①', 'reach', '📡', false],
+    ['Visites profil', 'pv', '👤', false]
   ];
+  var isVid = _isVideoPost(p.fmt);
+  if (isVid) {
+    statsFields.push(['Durée vidéo (s)', 'dur', '🎬', true]);
+    statsFields.push(['Visionnage moy. (s)', 'wt', '⏱', true]);
+  }
   if (!p.stats) p.stats = {};
   var statsHtml = '<div class="stats-panel" id="sp-' + p.id + '">'
     + '<div class="sp-inner">'
-    + '<div class="sp-title">📊 Statistiques</div>'
+    + '<div class="sp-title">📊 Statistiques'
+    + (isVid ? '' : ' <span style="font-size:9px;color:var(--muted);font-weight:400;">· Carousel / Photo</span>')
+    + '</div>'
+    + '<div style="font-size:9px;color:var(--muted);margin-bottom:8px;padding:5px 8px;background:rgba(6,182,212,.06);border-radius:6px;">'
+    + '① <strong>Portée</strong> = comptes <em>uniques</em> ayant vu ce post (≠ Vues qui comptent les revisions)'
+    + '</div>'
     + '<div class="stats-grid">';
   statsFields.forEach(function(sf) {
-    var lbl = sf[0], key = sf[1], ico = sf[2];
+    var lbl = sf[0], key = sf[1], ico = sf[2], isFloat = sf[3];
+    var val = p.stats[key] || 0;
     statsHtml += '<div class="sf"><label style="color:var(--muted)">' + ico + ' ' + escapeHtml(lbl) + '</label>'
-      + '<input type="number" min="0" value="' + (p.stats[key] || 0)
+      + '<input type="number" min="0"' + (isFloat ? ' step="0.1"' : '')
+      + ' value="' + val
       + '" data-stat-id="' + p.id + '" data-stat-key="' + key + '"'
       + ' oninput="updStat(\'' + p.id + '\',\'' + key + '\',this.value,this)" /></div>';
   });
   var totalInter = (p.stats.l || 0) + (p.stats.c || 0) + (p.stats.s || 0) + (p.stats.sh || 0);
+  var completionHtml = '';
+  if (isVid && p.stats.dur > 0) {
+    var comp = Math.min(((p.stats.wt || 0) / p.stats.dur * 100).toFixed(1), 100);
+    completionHtml = '<div class="eng-row"><span style="font-size:10px;color:var(--muted)">Taux de complétion</span>'
+      + '<span style="font-size:14px;font-weight:800;color:#059669;">' + comp + '%</span></div>';
+  }
   statsHtml += '</div>'
     + '<div class="eng-row"><span style="font-size:10px;color:var(--muted)">Taux d\'engagement</span>'
     + '<span class="eng-v" style="color:var(--violet)">' + eng(p) + '%</span></div>'
+    + completionHtml
     + '<div style="font-size:10px;color:var(--muted);text-align:right;margin-top:4px;" class="stats-total-' + p.id + '">Total interactions : ' + totalInter.toLocaleString('fr-FR') + '</div>'
     + '</div></div>';
 
@@ -287,7 +311,7 @@ function toggleStats(id) {
 function updStat(id, key, val, el) {
   var p = PUBS.find(function(x) { return x.id === id; });
   if (p) {
-    var n = parseInt(val);
+    var n = (key === 'wt' || key === 'dur') ? parseFloat(val) : parseInt(val);
     if (isNaN(n) || n < 0) {
       if (el) { el.classList.add('stat-invalid'); setTimeout(function() { el.classList.remove('stat-invalid'); }, 1500); }
       p.stats[key] = 0;
@@ -349,7 +373,7 @@ function openPubModal(idx) {
       src: 'A filmer 🎬',
       done: false,
       launch: false,
-      stats: { v: 0, l: 0, c: 0, s: 0, sh: 0, reach: 0, wt: 0, pv: 0 },
+      stats: { v: 0, l: 0, c: 0, s: 0, sh: 0, reach: 0, wt: 0, pv: 0, dur: 0 },
       script: { title: '', shots: [] }
     };
   } else {
@@ -534,7 +558,7 @@ function dupPub(id) {
   copy.id = 'pub' + Date.now();
   copy.title = orig.title + ' (copie)';
   copy.done = false;
-  copy.stats = {v:0, l:0, c:0, s:0, sh:0, reach:0, wt:0, pv:0};
+  copy.stats = {v:0, l:0, c:0, s:0, sh:0, reach:0, wt:0, pv:0, dur:0};
   PUBS.push(copy);
   save();
   buildFilters();

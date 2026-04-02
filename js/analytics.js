@@ -47,11 +47,15 @@ function _chartDefaults() {
 function _getCanvas(containerId, height) {
   var wrap = document.getElementById(containerId);
   if (!wrap) return null;
-  var existing = wrap.querySelector('canvas');
-  if (existing) { existing.remove(); }
+  var oldWrap = wrap.querySelector('.chart-cvs-wrap');
+  if (oldWrap) { oldWrap.remove(); }
+  else { var ex = wrap.querySelector('canvas'); if (ex) ex.remove(); }
+  var inner = document.createElement('div');
+  inner.className = 'chart-cvs-wrap';
+  inner.style.cssText = 'position:relative;height:' + (height || 220) + 'px;width:100%;';
   var cv = document.createElement('canvas');
-  cv.style.height = (height || 200) + 'px';
-  wrap.appendChild(cv);
+  inner.appendChild(cv);
+  wrap.appendChild(inner);
   return cv.getContext('2d');
 }
 
@@ -110,7 +114,7 @@ function _makeLineChart(containerId, labels, datasets) {
 // ─── Horizontal bar chart (top 5) ───
 function _makeHBarChart(containerId, labels, data) {
   _destroyChart(containerId);
-  var ctx = _getCanvas(containerId, 180);
+  var ctx = _getCanvas(containerId, 200);
   if (!ctx) return;
   var opts = _chartDefaults();
   opts.indexAxis = 'y';
@@ -209,14 +213,39 @@ function renderAnalytics() {
   var totalInter = tl + tc + ts + tsh;
   var acctEng = (igC > 0 && posted.length > 0) ? ((totalInter / (igC * posted.length)) * 100).toFixed(2) : null;
 
+  // ─── Video stats ───
+  var videoPosts = withStats.filter(function(p) { return p.stats && p.stats.dur > 0 && p.stats.wt > 0; });
+  var avgCompletion = videoPosts.length
+    ? (videoPosts.reduce(function(s, p) { return s + Math.min(p.stats.wt / p.stats.dur * 100, 100); }, 0) / videoPosts.length).toFixed(1)
+    : null;
+  var saveRate = tv > 0 ? (ts / tv * 100).toFixed(2) : null;
+  var pvRate = tv > 0 ? (withStats.reduce(function(s, p) { return s + (p.stats.pv || 0); }, 0) / tv * 100).toFixed(2) : null;
+
+  // Best format by engagement
+  var fmtEngMap = {};
+  withStats.forEach(function(p) {
+    var f = p.fmt || 'Autre';
+    if (!fmtEngMap[f]) fmtEngMap[f] = { total: 0, count: 0 };
+    fmtEngMap[f].total += parseFloat(eng(p));
+    fmtEngMap[f].count++;
+  });
+  var bestFmt = null, bestFmtEng = 0;
+  Object.keys(fmtEngMap).forEach(function(f) {
+    var avg = fmtEngMap[f].total / fmtEngMap[f].count;
+    if (avg > bestFmtEng) { bestFmtEng = avg; bestFmt = f; }
+  });
+
   // ─── KPI Cards ───
   var kpis = [
-    { l: 'Posts publiés',      v: posted.length,              s: 'sur ' + PUBS.length + ' planifiés',    c: '#FF2D7A',  i: '📸', animate: false },
-    { l: 'Vues totales',        v: tv,                         s: 'tous posts confondus',                 c: '#06B6D4',  i: '👁',  animate: true },
-    { l: 'Engagement moyen',    v: avgE + '%',                 s: 'par post avec stats',                  c: '#7C3AED',  i: '💜', animate: false },
-    { l: 'Engagement compte',   v: acctEng ? acctEng + '%' : '—', s: 'vs abonnés IG × posts',           c: '#059669',  i: '📊', animate: false },
-    { l: 'Portée totale',       v: treach,                     s: 'comptes atteints',                     c: '#F59E0B',  i: '📡', animate: true },
-    { l: 'Visionnage moyen',    v: avgWt ? avgWt + 's' : '—', s: 'TikTok / Reels',                       c: '#EF4444',  i: '⏱', animate: false }
+    { l: 'Posts publiés',      v: posted.length,                        s: 'sur ' + PUBS.length + ' planifiés',  c: '#FF2D7A', i: '📸', animate: false },
+    { l: 'Vues totales',        v: tv,                                   s: 'tous posts confondus',               c: '#06B6D4', i: '👁',  animate: true },
+    { l: 'Engagement moyen',    v: avgE + '%',                           s: 'par post avec stats',                c: '#7C3AED', i: '💜', animate: false },
+    { l: 'Engagement compte',   v: acctEng ? acctEng + '%' : '—',       s: 'interactions / (abonnés × posts)',   c: '#059669', i: '📊', animate: false },
+    { l: 'Save rate',           v: saveRate ? saveRate + '%' : '—',     s: 'saves / vues · signal algo fort',    c: '#F59E0B', i: '🔖', animate: false },
+    { l: 'Portée totale',       v: treach,                               s: 'comptes uniques atteints',           c: '#0891B2', i: '📡', animate: true },
+    { l: 'Complétion vidéo',    v: avgCompletion ? avgCompletion + '%' : '—', s: 'visionnage moy. / durée',      c: '#EF4444', i: '⏱', animate: false },
+    { l: 'Visite profil',       v: pvRate ? pvRate + '%' : '—',         s: 'spectateurs qui veulent en savoir +',c: '#8B5CF6', i: '👤', animate: false },
+    { l: 'Meilleur format',     v: bestFmt || '—',                       s: bestFmt ? bestFmtEng.toFixed(1) + '% eng. moy.' : 'pas assez de données', c: '#EC4899', i: '🏆', animate: false }
   ];
 
   document.getElementById('ana-kpis').innerHTML = kpis.map(function(k, i) {
@@ -230,7 +259,7 @@ function renderAnalytics() {
 
   // Animate counters
   if (tv > 0) _countUp(document.getElementById('akv-1'), tv, '');
-  if (treach > 0) _countUp(document.getElementById('akv-4'), treach, '');
+  if (treach > 0) _countUp(document.getElementById('akv-5'), treach, '');
 
   // ─── Platform split ───
   var igPosts = withStats.filter(function(p) { return p.plat === 'insta'; });
@@ -269,7 +298,7 @@ function renderAnalytics() {
   if (bestEl) {
     if (sorted.length) {
       bestEl.innerHTML = '<div class="chart-title">Top 5 posts par vues</div>'
-        + '<div id="ch-top5" style="height:180px;position:relative;"></div>';
+        + '<div id="ch-top5"></div>';
       setTimeout(function() {
         _makeHBarChart('ch-top5',
           sorted.map(function(p) { return p.title.length > 30 ? p.title.slice(0, 30) + '…' : p.title; }),
