@@ -723,6 +723,12 @@ body.dark .prod-archive-hdr{background:#1A1A2E;border-color:#2A2A3A;}
   .sb{padding:5px 9px;font-size:11px;}
   .ana-kpi{padding:12px 10px;}
   .ak-v{font-size:18px;}
+  .ana-kpis{grid-template-columns:repeat(2,1fr);gap:6px;}
+  .plat-split{gap:6px;}
+  .best-title{font-size:11px;}
+  .ana-tbl table,.ana-tbl th,.ana-tbl td{font-size:10px;}
+  .chart-block{padding:12px;}
+  .chart-title{font-size:11px;margin-bottom:8px;}
   .modal-inner{border-radius:18px 18px 0 0;max-height:95vh;position:fixed;bottom:0;left:0;right:0;margin:0;animation:slideUp .25s ease;}
   @keyframes slideUp{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}
   .bnav{padding-bottom:env(safe-area-inset-bottom,8px);}

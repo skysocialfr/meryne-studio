@@ -285,22 +285,44 @@ function renderAnalytics() {
       + '</div>';
   }
 
-  // ─── Top 5 posts ───
+  // ─── Top 5 posts — text list ───
   var sorted = withStats.slice().sort(function(a, b) { return b.stats.v - a.stats.v; }).slice(0, 5);
   var bestEl = document.getElementById('best-block');
   if (bestEl) {
     if (sorted.length) {
-      bestEl.innerHTML = '<div class="chart-title">Top 5 posts par vues</div>'
-        + '<div id="ch-top5"></div>';
-      setTimeout(function() {
-        _makeHBarChart('ch-top5',
-          sorted.map(function(p) { return p.title.length > 30 ? p.title.slice(0, 30) + '…' : p.title; }),
-          sorted.map(function(p) { return p.stats.v; })
-        );
-      }, 50);
+      bestEl.innerHTML = '<div class="chart-title">🏆 Top 5 posts par vues</div>'
+        + sorted.map(function(p, i) {
+            var colors = ['var(--rose)','var(--violet)','var(--cyan)','#059669','#F59E0B'];
+            return '<div class="best-item">'
+              + '<span class="best-rank">#' + (i + 1) + '</span>'
+              + '<span class="best-title">' + escapeHtml(p.title.length > 35 ? p.title.slice(0, 35) + '…' : p.title) + '</span>'
+              + '<span class="best-val" style="color:' + colors[i] + '">' + (p.stats.v || 0).toLocaleString('fr-FR') + '</span>'
+              + '</div>';
+          }).join('');
     } else {
       bestEl.innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted);font-size:12px;">Aucune donnée</div>';
     }
+  }
+
+  // ─── Top 5 bar chart ───
+  if (sorted.length) {
+    setTimeout(function() {
+      _makeHBarChart('ch-top5',
+        sorted.map(function(p) { return p.title.length > 22 ? p.title.slice(0, 22) + '…' : p.title; }),
+        sorted.map(function(p) { return p.stats.v; })
+      );
+    }, 50);
+  }
+
+  // ─── Engagement per post bar chart ───
+  if (withStats.length) {
+    setTimeout(function() {
+      _makeBarChart('ch-eng',
+        withStats.map(function(p) { return p.date || p.title.slice(0, 10); }),
+        withStats.map(function(p) { return parseFloat(eng(p)); }),
+        'Engagement %'
+      );
+    }, 50);
   }
 
   // ─── Build week labels from PUBS data ───
