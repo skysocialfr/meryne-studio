@@ -203,7 +203,7 @@ function _pubCardHtml(p) {
           + ' onclick="goToFeedPost(\'' + p.id + '\')">📸 Feed</button>';
       })()
     + '<div class="pub-more-wrap">'
-    + '<button class="sb sb-more" onclick="togglePubMore(\'' + p.id + '\',event)">•••</button>'
+    + '<button class="sb sb-more" onclick="togglePubMore(\'' + p.id + '\',event,this)">•••</button>'
     + '<div class="pub-more-menu" id="pub-more-' + p.id + '">'
     + '<button onclick="copyCaption(\'' + p.id + '\');closePubMore()">📋 Copier caption</button>'
     + '<button onclick="dupPub(\'' + p.id + '\');closePubMore()">📝 Dupliquer</button>'
@@ -600,26 +600,22 @@ function copyCaption(id) {
 }
 
 // ─── More Menu ───
-function togglePubMore(id, e) {
+function togglePubMore(id, e, btnEl) {
   if (e) e.stopPropagation();
   var menu = document.getElementById('pub-more-' + id);
   if (!menu) return;
   var isOpen = menu.classList.contains('open');
   closePubMore();
   if (!isOpen) {
-    var btn = e && e.currentTarget ? e.currentTarget : document.querySelector('[onclick*="togglePubMore(\'' + id + '\'"]');
+    var btn = btnEl || (e && e.target) || null;
     if (btn) {
       var r = btn.getBoundingClientRect();
-      // Only position if button is actually visible in viewport
-      if (r.bottom > 0 && r.top < window.innerHeight) {
-        menu.style.position = 'fixed';
-        menu.style.top = (r.bottom + 4) + 'px';
-        // Prevent menu from going off right edge
-        var menuW = 170;
-        var left = Math.min(r.left, window.innerWidth - menuW - 8);
-        menu.style.left = Math.max(8, left) + 'px';
-        menu.style.right = 'auto';
-      }
+      menu.style.position = 'fixed';
+      menu.style.top = (r.bottom + 4) + 'px';
+      var menuW = 170;
+      var left = Math.min(r.left, window.innerWidth - menuW - 8);
+      menu.style.left = Math.max(8, left) + 'px';
+      menu.style.right = 'auto';
     }
     menu.classList.add('open');
   }
