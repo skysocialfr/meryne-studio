@@ -132,14 +132,14 @@ function _makeHBarChart(containerId, labels, data) {
 
 // ─── Export CSV ───
 function exportCSV() {
-  var rows = [['Titre','Plateforme','Date','Semaine','Vues','Likes','Comments','Saves','Shares','Portée','Visionnage(s)','Engagement %']];
+  var rows = [['Titre','Plateforme','Date','Semaine','Vues','Likes','Comments','Saves','Shares','Visionnage(s)','Engagement %']];
   PUBS.filter(function(p) { return p.done; }).forEach(function(p) {
     if (!p.stats) p.stats = {};
     rows.push([
       '"' + (p.title || '').replace(/"/g, '""') + '"',
       p.plat, p.date, p.sem,
       p.stats.v || 0, p.stats.l || 0, p.stats.c || 0, p.stats.s || 0, p.stats.sh || 0,
-      p.stats.reach || 0, p.stats.wt || 0,
+      p.stats.wt || 0,
       eng(p)
     ]);
   });
@@ -203,7 +203,6 @@ function renderAnalytics() {
   var ts = withStats.reduce(function(s, p) { return s + (p.stats.s || 0); }, 0);
   var tc = withStats.reduce(function(s, p) { return s + (p.stats.c || 0); }, 0);
   var tsh = withStats.reduce(function(s, p) { return s + (p.stats.sh || 0); }, 0);
-  var treach = posted.reduce(function(s, p) { return s + (p.stats && p.stats.reach ? p.stats.reach : 0); }, 0);
   var avgWt = withStats.length ? Math.round(withStats.reduce(function(s, p) { return s + (p.stats.wt || 0); }, 0) / withStats.length) : 0;
   var avgE = withStats.length ? (withStats.reduce(function(s, p) { return s + parseFloat(eng(p)); }, 0) / withStats.length).toFixed(1) : 0;
 
@@ -242,7 +241,6 @@ function renderAnalytics() {
     { l: 'Engagement moyen',    v: avgE + '%',                           s: 'par post avec stats',                c: '#7C3AED', i: '💜', animate: false },
     { l: 'Engagement compte',   v: acctEng ? acctEng + '%' : '—',       s: 'interactions / (abonnés × posts)',   c: '#059669', i: '📊', animate: false },
     { l: 'Save rate',           v: saveRate ? saveRate + '%' : '—',     s: 'saves / vues · signal algo fort',    c: '#F59E0B', i: '🔖', animate: false },
-    { l: 'Portée totale',       v: treach,                               s: 'comptes uniques atteints',           c: '#0891B2', i: '📡', animate: true },
     { l: 'Complétion vidéo',    v: avgCompletion ? avgCompletion + '%' : '—', s: 'visionnage moy. / durée',      c: '#EF4444', i: '⏱', animate: false },
     { l: 'Visite profil',       v: pvRate ? pvRate + '%' : '—',         s: 'spectateurs qui veulent en savoir +',c: '#8B5CF6', i: '👤', animate: false },
     { l: 'Meilleur format',     v: bestFmt || '—',                       s: bestFmt ? bestFmtEng.toFixed(1) + '% eng. moy.' : 'pas assez de données', c: '#EC4899', i: '🏆', animate: false }
@@ -259,7 +257,6 @@ function renderAnalytics() {
 
   // Animate counters
   if (tv > 0) _countUp(document.getElementById('akv-1'), tv, '');
-  if (treach > 0) _countUp(document.getElementById('akv-5'), treach, '');
 
   // ─── Platform split ───
   var igPosts = withStats.filter(function(p) { return p.plat === 'insta'; });
@@ -268,8 +265,6 @@ function renderAnalytics() {
   var ttV = ttPosts.reduce(function(s, p) { return s + p.stats.v; }, 0);
   var igE = igPosts.length ? (igPosts.reduce(function(s, p) { return s + parseFloat(eng(p)); }, 0) / igPosts.length).toFixed(1) : 0;
   var ttE = ttPosts.length ? (ttPosts.reduce(function(s, p) { return s + parseFloat(eng(p)); }, 0) / ttPosts.length).toFixed(1) : 0;
-  var igReach = igPosts.reduce(function(s, p) { return s + (p.stats.reach || 0); }, 0);
-  var ttReach = ttPosts.reduce(function(s, p) { return s + (p.stats.reach || 0); }, 0);
   var ttAvgWt = ttPosts.length ? Math.round(ttPosts.reduce(function(s, p) { return s + (p.stats.wt || 0); }, 0) / ttPosts.length) : 0;
 
   var platEl = document.getElementById('plat-split');
@@ -279,14 +274,12 @@ function renderAnalytics() {
       + '<div class="ps-head" style="color:var(--ig)">📸 Instagram</div>'
       + '<div class="ps-stat"><span>' + igPosts.length + ' posts</span></div>'
       + '<div class="ps-stat"><span>Vues</span><span class="ps-val">' + igV.toLocaleString('fr-FR') + '</span></div>'
-      + '<div class="ps-stat"><span>Portée</span><span class="ps-val">' + igReach.toLocaleString('fr-FR') + '</span></div>'
       + '<div class="ps-stat"><span>Engagement</span><span class="ps-val" style="color:var(--violet)">' + igE + '%</span></div>'
       + '</div>'
       + '<div class="ps-card">'
       + '<div class="ps-head" style="color:var(--tt)">🎵 TikTok</div>'
       + '<div class="ps-stat"><span>' + ttPosts.length + ' posts</span></div>'
       + '<div class="ps-stat"><span>Vues</span><span class="ps-val">' + ttV.toLocaleString('fr-FR') + '</span></div>'
-      + '<div class="ps-stat"><span>Portée</span><span class="ps-val">' + ttReach.toLocaleString('fr-FR') + '</span></div>'
       + '<div class="ps-stat"><span>Engagement</span><span class="ps-val" style="color:var(--violet)">' + ttE + '%</span></div>'
       + (ttAvgWt ? '<div class="ps-stat"><span>Visionnage moy.</span><span class="ps-val">' + ttAvgWt + 's</span></div>' : '')
       + '</div>';
@@ -409,7 +402,7 @@ function renderAnalytics() {
   // ─── Table ───
   var tbl = document.getElementById('ana-tbl');
   if (tbl) {
-    tbl.innerHTML = '<table><thead><tr><th>Post</th><th>Plat.</th><th>Date</th><th>Vues</th><th>Likes</th><th>Saves</th><th>Portée</th><th>Eng.</th></tr></thead><tbody>'
+    tbl.innerHTML = '<table><thead><tr><th>Post</th><th>Plat.</th><th>Date</th><th>Vues</th><th>Likes</th><th>Saves</th><th>Eng.</th></tr></thead><tbody>'
       + posted.map(function(p) {
         if (!p.stats) p.stats = {};
         return '<tr>'
@@ -419,7 +412,6 @@ function renderAnalytics() {
           + '<td>' + (p.stats.v || 0).toLocaleString('fr-FR') + '</td>'
           + '<td>' + (p.stats.l || 0) + '</td>'
           + '<td>' + (p.stats.s || 0) + '</td>'
-          + '<td>' + (p.stats.reach || 0).toLocaleString('fr-FR') + '</td>'
           + '<td style="color:var(--violet);font-weight:700;">' + eng(p) + '%</td>'
           + '</tr>';
       }).join('')

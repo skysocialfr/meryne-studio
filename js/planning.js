@@ -388,7 +388,7 @@ function openPubModal(idx) {
       src: 'A filmer 🎬',
       done: false,
       launch: false,
-      stats: { v: 0, l: 0, c: 0, s: 0, sh: 0, reach: 0, wt: 0, pv: 0, dur: 0 },
+      stats: { v: 0, l: 0, c: 0, s: 0, sh: 0, wt: 0, pv: 0, dur: 0 },
       script: { title: '', shots: [] }
     };
   } else {
@@ -573,7 +573,7 @@ function dupPub(id) {
   copy.id = 'pub' + Date.now();
   copy.title = orig.title + ' (copie)';
   copy.done = false;
-  copy.stats = {v:0, l:0, c:0, s:0, sh:0, reach:0, wt:0, pv:0, dur:0};
+  copy.stats = {v:0, l:0, c:0, s:0, sh:0, wt:0, pv:0, dur:0};
   PUBS.push(copy);
   save();
   buildFilters();
