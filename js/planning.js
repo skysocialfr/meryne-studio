@@ -204,11 +204,6 @@ function _pubCardHtml(p) {
       })()
     + '<div class="pub-more-wrap">'
     + '<button class="sb sb-more" onclick="togglePubMore(\'' + p.id + '\',event,this)">•••</button>'
-    + '<div class="pub-more-menu" id="pub-more-' + p.id + '">'
-    + '<button onclick="copyCaption(\'' + p.id + '\');closePubMore()">📋 Copier caption</button>'
-    + '<button onclick="dupPub(\'' + p.id + '\');closePubMore()">📝 Dupliquer</button>'
-    + '<button class="pmm-del" onclick="deletePubDirect(\'' + p.id + '\');closePubMore()">🗑️ Supprimer</button>'
-    + '</div>'
     + '</div>'
     + '</div>'
     + '</div>'
@@ -599,33 +594,66 @@ function copyCaption(id) {
   }
 }
 
-// ─── More Menu ───
+// ─── More Menu (global floating, body-level — bypasse overflow:hidden + transform stacking) ───
+function _getOrCreateGlobalMenu() {
+  var m = document.getElementById('pub-global-more-menu');
+  if (!m) {
+    m = document.createElement('div');
+    m.id = 'pub-global-more-menu';
+    m.className = 'pub-more-menu';
+    m.style.position = 'fixed';
+    m.style.zIndex = '999999';
+    m.style.display = 'none';
+    document.body.appendChild(m);
+  }
+  return m;
+}
+
 function togglePubMore(id, e, btnEl) {
   if (e) e.stopPropagation();
-  var menu = document.getElementById('pub-more-' + id);
-  if (!menu) return;
-  var isOpen = menu.classList.contains('open');
-  closePubMore();
-  if (!isOpen) {
-    var btn = btnEl || (e && e.target) || null;
-    if (btn) {
-      var r = btn.getBoundingClientRect();
-      menu.style.position = 'fixed';
-      menu.style.top = (r.bottom + 4) + 'px';
-      var menuW = 170;
-      var left = Math.min(r.left, window.innerWidth - menuW - 8);
-      menu.style.left = Math.max(8, left) + 'px';
-      menu.style.right = 'auto';
-    }
-    menu.classList.add('open');
+  var menu = _getOrCreateGlobalMenu();
+  var currentId = menu.getAttribute('data-pub-id');
+  var isOpen = menu.style.display !== 'none';
+
+  // Close if same button clicked again
+  if (isOpen && currentId === id) {
+    menu.style.display = 'none';
+    return;
   }
+
+  // Build menu content
+  menu.innerHTML = ''
+    + '<button onclick="copyCaption(\'' + id + '\');closePubMore()">📋 Copier caption</button>'
+    + '<button onclick="dupPub(\'' + id + '\');closePubMore()">📝 Dupliquer</button>'
+    + '<button class="pmm-del" onclick="deletePubDirect(\'' + id + '\');closePubMore()">🗑️ Supprimer</button>';
+  menu.setAttribute('data-pub-id', id);
+
+  // Position below the button
+  var btn = btnEl || (e && e.currentTarget) || (e && e.target) || null;
+  if (btn) {
+    var r = btn.getBoundingClientRect();
+    var menuW = 170;
+    var top = r.bottom + 4;
+    var left = Math.min(r.left, window.innerWidth - menuW - 8);
+    left = Math.max(8, left);
+    menu.style.top = top + 'px';
+    menu.style.left = left + 'px';
+    menu.style.right = 'auto';
+  }
+  menu.style.display = 'block';
 }
 
 function closePubMore() {
-  document.querySelectorAll('.pub-more-menu.open').forEach(function(m) { m.classList.remove('open'); });
+  var menu = document.getElementById('pub-global-more-menu');
+  if (menu) menu.style.display = 'none';
 }
 
-document.addEventListener('click', function() { closePubMore(); });
+document.addEventListener('click', function(e) {
+  var menu = document.getElementById('pub-global-more-menu');
+  if (menu && menu.style.display !== 'none') {
+    if (!menu.contains(e.target)) closePubMore();
+  }
+});
 
 // ─── Open Publication by ID ───
 function openPubById(id) {

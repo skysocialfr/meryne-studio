@@ -457,10 +457,17 @@ function handleCarouselAdd(event) {
   var files = event.target.files;
   if (!files || !files.length) return;
   if (!window._carouselPhotos) window._carouselPhotos = [];
-  var toProcess = Math.min(files.length, 9 - window._carouselPhotos.length);
+
+  // ⚠️ Copier les fichiers en array AVANT de vider l'input
+  // (vider l'input invalide la référence FileList dans certains navigateurs)
+  var fileArr = [];
+  var limit = Math.min(files.length, 9 - window._carouselPhotos.length);
+  for (var k = 0; k < limit; k++) {
+    fileArr.push(files[k]);
+  }
   event.target.value = '';
 
-  for (var i = 0; i < toProcess; i++) {
+  for (var i = 0; i < fileArr.length; i++) {
     (function(file) {
       var reader = new FileReader();
       reader.onload = function(ev) {
@@ -475,8 +482,11 @@ function handleCarouselAdd(event) {
           });
         }
       };
+      reader.onerror = function() {
+        renderCarouselStrip();
+      };
       reader.readAsDataURL(file);
-    })(files[i]);
+    })(fileArr[i]);
   }
 }
 
