@@ -67,6 +67,44 @@ function compressImage(dataUrl, cb) {
 }
 
 // ═══════════════════════════════════════════════
+//  Supabase Storage Upload
+// ═══════════════════════════════════════════════
+
+var _feedUploading = 0;
+
+async function uploadFeedMedia(file) {
+  if (!sb || !window._MERYNE_UID) return null;
+  try {
+    // Create bucket if not exists (silently ignore if already exists)
+    await sb.storage.createBucket('feed-media', { public: true }).catch(function(){});
+    var ext = ((file.name || 'img').split('.').pop() || 'jpg').toLowerCase().split('?')[0];
+    var path = window._MERYNE_UID + '/' + Date.now() + '_' + Math.random().toString(36).slice(2, 6) + '.' + ext;
+    var res = await sb.storage.from('feed-media').upload(path, file, { contentType: file.type, upsert: false });
+    if (res.error) return null;
+    var urlRes = sb.storage.from('feed-media').getPublicUrl(path);
+    return (urlRes.data && urlRes.data.publicUrl) ? urlRes.data.publicUrl : null;
+  } catch(e) { return null; }
+}
+
+function _isVideoSrc(src) {
+  return src && (src.indexOf('data:video') === 0 || /\.(mp4|mov|webm|avi)(\?|$)/i.test(src));
+}
+
+function _updateFeedSaveBtn() {
+  var btn = document.querySelector('#feed-modal-body .feed-save-btn');
+  if (!btn) return;
+  if (_feedUploading > 0) {
+    btn.disabled = true;
+    btn.style.opacity = '0.6';
+    btn.textContent = '⏳ Upload...';
+  } else {
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.textContent = 'Enregistrer';
+  }
+}
+
+// ═══════════════════════════════════════════════
 //  Feed Switching & Count
 // ═══════════════════════════════════════════════
 
@@ -118,9 +156,9 @@ function renderFeedGrid(plat) {
     var isVideoFmt = p.format && ['Reel', 'TikTok', 'Short', 'IGTV'].indexOf(p.format) !== -1;
     if (isVideoFmt && p.cover) {
       mediaHtml = '<img draggable="false" src="' + p.cover + '" style="width:100%;height:100%;object-fit:cover;pointer-events:none;" alt="">';
-    } else if (firstMedia && firstMedia.indexOf('data:video') === 0) {
+    } else if (firstMedia && _isVideoSrc(firstMedia)) {
       mediaHtml = '<video src="' + firstMedia + '" style="width:100%;height:100%;object-fit:cover;pointer-events:none;" muted></video>';
-    } else if (firstMedia && firstMedia.indexOf('data:') === 0) {
+    } else if (firstMedia && (firstMedia.indexOf('data:') === 0 || firstMedia.indexOf('http') === 0)) {
       mediaHtml = '<img draggable="false" src="' + firstMedia + '" style="width:100%;height:100%;object-fit:cover;pointer-events:none;" alt="">';
     } else if (p.emoji) {
       mediaHtml = '<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:48px;background:#F3F4F6;">' + escapeHtml(p.emoji) + '</div>';
@@ -382,7 +420,7 @@ function openFeedModal(idx, plat) {
     + '<div style="display:flex;gap:8px;justify-content:flex-end;">'
     + (isEdit ? '<button onclick="deleteFeedPost()" style="padding:8px 16px;border-radius:8px;border:1.5px solid #FCA5A5;background:#FEF2F2;color:#EF4444;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;margin-right:auto;">Supprimer</button>' : '')
     + '<button onclick="closeFeedModal()" style="padding:8px 16px;border-radius:8px;border:1.5px solid #E5E7EB;background:#F9FAFB;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Annuler</button>'
-    + '<button onclick="saveFeedPost()" style="padding:8px 16px;border-radius:8px;border:none;background:#8B5CF6;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Enregistrer</button>'
+    + '<button onclick="saveFeedPost()" class="feed-save-btn" style="padding:8px 16px;border-radius:8px;border:none;background:#8B5CF6;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Enregistrer</button>'
     + '</div>';
 
   // Render into dedicated feed-modal
@@ -448,36 +486,46 @@ function closeFeedModal() {
 //  Feed Media Upload
 // ═══════════════════════════════════════════════
 
-function handleCarouselAdd(event) {
+async function handleCarouselAdd(event) {
   var files = event.target.files;
   if (!files || !files.length) return;
   if (!window._carouselPhotos) window._carouselPhotos = [];
-
   var toProcess = Math.min(files.length, 9 - window._carouselPhotos.length);
-  var processed = 0;
+  event.target.value = '';
 
   for (var i = 0; i < toProcess; i++) {
-    (function(file) {
-      var reader = new FileReader();
-      reader.onload = function(ev) {
-        var dataUrl = ev.target.result;
-        if (file.type.indexOf('video') === 0) {
-          window._carouselPhotos.push(dataUrl);
-          processed++;
-          if (processed === toProcess) renderCarouselStrip();
-        } else {
-          compressImage(dataUrl, function(compressed) {
-            window._carouselPhotos.push(compressed);
-            processed++;
-            if (processed === toProcess) renderCarouselStrip();
-          });
-        }
-      };
-      reader.readAsDataURL(file);
-    })(files[i]);
+    var file = files[i];
+    _feedUploading++;
+    _updateFeedSaveBtn();
+    renderCarouselStrip();
+
+    // Try Supabase Storage first
+    var url = await uploadFeedMedia(file);
+    if (url) {
+      window._carouselPhotos.push(url);
+    } else {
+      // Fallback: base64 local
+      await new Promise(function(resolve) {
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+          var dataUrl = ev.target.result;
+          if (file.type.indexOf('video') === 0) {
+            window._carouselPhotos.push(dataUrl);
+            resolve();
+          } else {
+            compressImage(dataUrl, function(compressed) {
+              window._carouselPhotos.push(compressed);
+              resolve();
+            });
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+    _feedUploading--;
+    _updateFeedSaveBtn();
+    renderCarouselStrip();
   }
-  // Reset input so same file can be re-added
-  event.target.value = '';
 }
 
 function removeCarouselPhoto(idx) {
@@ -502,17 +550,31 @@ function feedFormatChanged(sel) {
   if (section) section.style.display = vf.indexOf(sel.value) !== -1 ? '' : 'none';
 }
 
-function handleCoverUpload(event) {
+async function handleCoverUpload(event) {
   var file = event.target.files && event.target.files[0];
   if (!file) return;
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    compressImage(e.target.result, function(compressed) {
-      window._carouselCover = compressed;
-      renderCoverPreview();
+  _feedUploading++;
+  _updateFeedSaveBtn();
+  var url = await uploadFeedMedia(file);
+  if (url) {
+    window._carouselCover = url;
+    renderCoverPreview();
+  } else {
+    // Fallback: base64
+    await new Promise(function(resolve) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        compressImage(e.target.result, function(compressed) {
+          window._carouselCover = compressed;
+          renderCoverPreview();
+          resolve();
+        });
+      };
+      reader.readAsDataURL(file);
     });
-  };
-  reader.readAsDataURL(file);
+  }
+  _feedUploading--;
+  _updateFeedSaveBtn();
 }
 
 function renderCoverPreview() {
@@ -533,9 +595,12 @@ function renderCarouselStrip() {
   if (!strip) return;
   var photos = window._carouselPhotos || [];
   var html = '';
+  if (_feedUploading > 0) {
+    html += '<div style="font-size:11px;color:#7C3AED;padding:6px 0;display:flex;align-items:center;gap:6px;"><span style="animation:spin 1s linear infinite;display:inline-block;">⏳</span> Upload en cours...</div>';
+  }
   for (var i = 0; i < photos.length; i++) {
     var src = photos[i];
-    var isVideo = src && src.indexOf('data:video') === 0;
+    var isVideo = _isVideoSrc(src);
     // Wrapper column: thumbnail + reorder arrows
     html += '<div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;">';
     // Thumbnail
