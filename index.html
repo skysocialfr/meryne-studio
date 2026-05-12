@@ -14,15 +14,31 @@
 </head>
 <body>
 
-<!-- LOGIN -->
+<!-- LOGIN / SIGNUP -->
 <div id="login-page">
   <div class="lbox">
     <div class="llogo">Veyra Studio</div>
-    <div class="lsub">Content Studio &middot; 2026</div>
+    <div class="lsub" id="auth-sub">Content Studio &middot; 2026</div>
+
+    <div class="auth-tabs">
+      <button type="button" class="auth-tab active" id="auth-tab-login" onclick="setAuthMode('login')">Connexion</button>
+      <button type="button" class="auth-tab" id="auth-tab-signup" onclick="setAuthMode('signup')">Cr&eacute;er un compte</button>
+    </div>
+
     <div class="lf"><label>Email</label><input type="email" id="lu" placeholder="vous@exemple.com" autocomplete="email"></div>
-    <div class="lf"><label>Mot de passe</label><input type="password" id="lp" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
-    <button class="lbtn" onclick="doLogin()">Acc&eacute;der au studio &rarr;</button>
+    <div class="lf">
+      <label>Mot de passe</label>
+      <input type="password" id="lp" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="current-password" onkeydown="if(event.key==='Enter')submitAuth()">
+      <div id="lp-hint" class="auth-hint" style="display:none;">Au moins 8 caract&egrave;res.</div>
+    </div>
+
+    <button class="lbtn" id="auth-submit" onclick="submitAuth()">Acc&eacute;der au studio &rarr;</button>
     <div id="lerr" class="lerr">Identifiants incorrects</div>
+
+    <div class="auth-switch" id="auth-switch">
+      Pas encore de compte ?
+      <a href="#" onclick="setAuthMode('signup');return false;">Cr&eacute;er un compte</a>
+    </div>
   </div>
 </div>
 
@@ -357,7 +373,7 @@
 <!-- JS Modules (order matters: utils > storage > auth > modules > app) -->
 <script src="js/utils.js?v=3"></script>
 <script src="js/storage.js?v=7"></script>
-<script src="js/auth.js?v=7"></script>
+<script src="js/auth.js?v=8"></script>
 <script src="js/onboarding.js?v=1"></script>
 <script src="js/feed.js?v=13"></script>
 <script src="js/production.js?v=5"></script>

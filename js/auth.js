@@ -3,11 +3,49 @@
    Authentification via Supabase Auth (email + mdp)
    ═══════════════════════════════════════════════ */
 
+// ─── Auth mode toggle ───
+var AUTH_MODE = 'login'; // 'login' | 'signup'
+
+function setAuthMode(mode) {
+  AUTH_MODE = mode === 'signup' ? 'signup' : 'login';
+
+  var tabLogin   = document.getElementById('auth-tab-login');
+  var tabSignup  = document.getElementById('auth-tab-signup');
+  var submitBtn  = document.getElementById('auth-submit');
+  var passInput  = document.getElementById('lp');
+  var hint       = document.getElementById('lp-hint');
+  var sub        = document.getElementById('auth-sub');
+  var switchLink = document.getElementById('auth-switch');
+  var err        = document.getElementById('lerr');
+
+  if (tabLogin)  tabLogin.classList.toggle('active',  AUTH_MODE === 'login');
+  if (tabSignup) tabSignup.classList.toggle('active', AUTH_MODE === 'signup');
+  if (err) { err.classList.remove('show'); err.classList.remove('success'); }
+
+  if (AUTH_MODE === 'signup') {
+    if (submitBtn) submitBtn.textContent = 'Créer mon compte →';
+    if (passInput) passInput.setAttribute('autocomplete', 'new-password');
+    if (hint) hint.style.display = 'block';
+    if (sub) sub.textContent = 'Rejoins la plateforme';
+    if (switchLink) switchLink.innerHTML = 'Déjà inscrit ? <a href="#" onclick="setAuthMode(\'login\');return false;">Se connecter</a>';
+  } else {
+    if (submitBtn) submitBtn.textContent = 'Accéder au studio →';
+    if (passInput) passInput.setAttribute('autocomplete', 'current-password');
+    if (hint) hint.style.display = 'none';
+    if (sub) sub.textContent = 'Content Studio · 2026';
+    if (switchLink) switchLink.innerHTML = 'Pas encore de compte ? <a href="#" onclick="setAuthMode(\'signup\');return false;">Créer un compte</a>';
+  }
+}
+
+function submitAuth() {
+  return AUTH_MODE === 'signup' ? doSignup() : doLogin();
+}
+
 // ─── Login ───
 async function doLogin() {
   var emailEl = document.getElementById('lu');
   var passEl  = document.getElementById('lp');
-  var btn     = document.querySelector('.lbtn');
+  var btn     = document.getElementById('auth-submit');
 
   var email = emailEl ? emailEl.value.trim() : '';
   var pass  = passEl  ? passEl.value : '';
@@ -22,6 +60,49 @@ async function doLogin() {
   if (result.error) {
     showLoginError('Email ou mot de passe incorrect');
     if (btn) { btn.disabled = false; btn.textContent = 'Accéder au studio →'; }
+    return;
+  }
+
+  await _enterApp(result.data.user);
+}
+
+// ─── Signup ───
+async function doSignup() {
+  var emailEl = document.getElementById('lu');
+  var passEl  = document.getElementById('lp');
+  var btn     = document.getElementById('auth-submit');
+
+  var email = emailEl ? emailEl.value.trim() : '';
+  var pass  = passEl  ? passEl.value : '';
+
+  if (!email || !pass) { showLoginError('Remplis tous les champs'); return; }
+  if (pass.length < 8) { showLoginError('Mot de passe : 8 caractères minimum'); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showLoginError('Email invalide'); return; }
+  if (!sb) { showLoginError('Erreur serveur — réessaie'); return; }
+
+  if (btn) { btn.disabled = true; btn.textContent = 'Création…'; }
+
+  var result = await sb.auth.signUp({ email: email, password: pass });
+
+  if (result.error) {
+    var msg = result.error.message || '';
+    if (/already registered|already exists|user already/i.test(msg)) {
+      showLoginError('Cet email a déjà un compte — connecte-toi');
+    } else if (/pwned|breached|compromised/i.test(msg)) {
+      showLoginError('Ce mot de passe est compromis — choisis-en un autre');
+    } else if (/weak password|password should/i.test(msg)) {
+      showLoginError('Mot de passe trop faible');
+    } else {
+      showLoginError('Erreur : ' + msg);
+    }
+    if (btn) { btn.disabled = false; btn.textContent = 'Créer mon compte →'; }
+    return;
+  }
+
+  // If email confirmation is enabled, signUp does NOT return a session
+  if (!result.data.session) {
+    showLoginSuccess('Compte créé ! Vérifie ta boîte mail pour confirmer.');
+    if (btn) { btn.disabled = false; btn.textContent = 'Créer mon compte →'; }
     return;
   }
 
@@ -166,15 +247,25 @@ async function doLogout() {
 function showLoginError(msg) {
   var el = document.getElementById('lerr');
   if (!el) return;
+  el.classList.remove('success');
   el.textContent = msg;
   el.classList.add('show');
-  setTimeout(function () { el.classList.remove('show'); }, 3500);
+  setTimeout(function () { el.classList.remove('show'); }, 4500);
+}
+
+function showLoginSuccess(msg) {
+  var el = document.getElementById('lerr');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add('show');
+  el.classList.add('success');
+  setTimeout(function () { el.classList.remove('show'); el.classList.remove('success'); }, 6000);
 }
 
 // ─── Touche Entrée ───
 document.addEventListener('keydown', function (e) {
   var lp = document.getElementById('login-page');
   if (e.key === 'Enter' && lp && lp.style.display !== 'none') {
-    doLogin();
+    submitAuth();
   }
 });
