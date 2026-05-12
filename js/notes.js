@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════
-   MERYNE STUDIO V4 — Notes Rapides
+   VEYRA STUDIO — Notes Rapides
    ═══════════════════════════════════════════════ */
 
 var NOTES = [];

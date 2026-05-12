@@ -1,5 +1,5 @@
 /* ===============================================
-   MERYNE STUDIO V5 — Planning Section
+   VEYRA STUDIO — Planning Section
    =============================================== */
 
 // ─── Search State ───

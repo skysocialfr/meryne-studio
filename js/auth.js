@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════
-   MERYNE STUDIO — Auth v6
+   VEYRA STUDIO — Auth v6
    Authentification via Supabase Auth (email + mdp)
    ═══════════════════════════════════════════════ */
 
@@ -56,7 +56,7 @@ async function _enterApp(user) {
   if (lp)  lp.style.display  = 'none';
   if (app) app.style.display = 'block';
 
-  window._MERYNE_UID   = user.id;
+  window._VEYRA_UID    = user.id;
   window._USER_EMAIL   = user.email;
   window._IS_ADMIN     = false;
 

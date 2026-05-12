@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════
-   MERYNE STUDIO V4 — Badges & Milestones
+   VEYRA STUDIO — Badges & Milestones
    ═══════════════════════════════════════════════ */
 
 var MS_DEFS = [

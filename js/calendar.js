@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════
-   MERYNE STUDIO V5 — Planning Calendar
+   VEYRA STUDIO — Planning Calendar
    ═══════════════════════════════════════════════ */
 
 var _calNow = new Date();

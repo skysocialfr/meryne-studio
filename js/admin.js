@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════
-   MERYNE STUDIO — Admin Panel
+   VEYRA STUDIO — Admin Panel
    Visible uniquement si role = 'admin'
    ═══════════════════════════════════════════════ */
 
@@ -110,7 +110,7 @@ function _renderAdminContent(profiles) {
       + '</tr></thead><tbody>';
 
     profiles.forEach(function (p) {
-      var isMe = p.id === window._MERYNE_UID;
+      var isMe = p.id === window._VEYRA_UID;
       var roleStyle = p.role === 'admin'
         ? 'background:rgba(124,58,237,.1);color:#7C3AED;'
         : 'background:rgba(107,114,128,.1);color:#6B7280;';

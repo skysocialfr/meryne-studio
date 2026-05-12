@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════
-   MERYNE STUDIO V4 — Utilities
+   VEYRA STUDIO — Utilities
    ═══════════════════════════════════════════════ */
 
 // ─── XSS Protection ───

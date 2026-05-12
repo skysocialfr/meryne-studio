@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════
-   MERYNE STUDIO V5 — Analytics & Charts (Chart.js)
+   VEYRA STUDIO — Analytics & Charts (Chart.js)
    ═══════════════════════════════════════════════ */
 
 // ─── Chart.js instance registry ───
@@ -147,7 +147,7 @@ function exportCSV() {
   var blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
-  a.href = url; a.download = 'meryne-studio-stats.csv';
+  a.href = url; a.download = 'veyra-studio-stats.csv';
   document.body.appendChild(a); a.click();
   document.body.removeChild(a); URL.revokeObjectURL(url);
 }

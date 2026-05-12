@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════
-   MERYNE STUDIO V4 — Production Module
+   VEYRA STUDIO — Production Module
    Task management + Production calendar
    ═══════════════════════════════════════════════ */
 
@@ -806,10 +806,10 @@ function exportICS() {
   var lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Meryne Studio//FR',
+    'PRODID:-//Veyra Studio//FR',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
-    'X-WR-CALNAME:Meryne Studio',
+    'X-WR-CALNAME:Veyra Studio',
     'X-WR-TIMEZONE:Europe/Paris'
   ];
 
@@ -831,7 +831,7 @@ function exportICS() {
     }
 
     lines.push('BEGIN:VEVENT');
-    lines.push('UID:' + ev.id + '@mey-studio.netlify.app');
+    lines.push('UID:' + ev.id + '@veyrastudio.fr');
     if (allDay) {
       lines.push('DTSTART;VALUE=DATE:' + dtstart);
       lines.push('DTEND;VALUE=DATE:' + dtend);
@@ -852,7 +852,7 @@ function exportICS() {
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
   a.href = url;
-  a.download = 'meryne-studio-events.ics';
+  a.download = 'veyra-studio-events.ics';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

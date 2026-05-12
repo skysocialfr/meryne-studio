@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════
-   MERYNE STUDIO V4 — Feed Module
+   VEYRA STUDIO — Feed Module
    Instagram + TikTok feed grid with drag & drop
    ═══════════════════════════════════════════════ */
 

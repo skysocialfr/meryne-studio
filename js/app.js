@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════
-   MERYNE STUDIO V4 — Main App
+   VEYRA STUDIO — Main App
    Global state, default data, init, tabs, KPIs
    ═══════════════════════════════════════════════ */
 

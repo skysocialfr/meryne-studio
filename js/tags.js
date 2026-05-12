@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════
-   MERYNE STUDIO V4 — Banque de Hashtags
+   VEYRA STUDIO — Banque de Hashtags
    ═══════════════════════════════════════════════ */
 
 var TAGS = [];

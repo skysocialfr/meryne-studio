@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════
-   MERYNE STUDIO V4 — IA (Claude API)
+   VEYRA STUDIO — IA (Claude API)
    ═══════════════════════════════════════════════ */
 
 var AI_KEY_LS = 'claude_api_key';

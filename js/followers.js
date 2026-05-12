@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════
-   MERYNE STUDIO V4 — Followers Tracking
+   VEYRA STUDIO — Followers Tracking
    ═══════════════════════════════════════════════ */
 
 function renderFollowers() {
