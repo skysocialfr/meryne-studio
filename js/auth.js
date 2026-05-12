@@ -59,45 +59,100 @@ async function _enterApp(user) {
   window._VEYRA_UID    = user.id;
   window._USER_EMAIL   = user.email;
   window._IS_ADMIN     = false;
+  window._USER_PROFILE = null;
 
-  // Charger le profil depuis Supabase (role admin ?)
   if (sb) {
     try {
       var { data: profile } = await sb.from('profiles')
-        .select('id, role, display_name')
+        .select('id, role, display_name, niche, location, tagline, ig_handle, tt_handle, ig_goal, tt_goal, ai_persona, onboarded')
         .eq('id', user.id)
         .single();
 
       if (profile) {
+        window._USER_PROFILE = profile;
         if (profile.role === 'admin') window._IS_ADMIN = true;
       } else {
-        // Créer le profil si absent
-        await sb.from('profiles').insert({
+        var inserted = await sb.from('profiles').insert({
           id:           user.id,
           email:        user.email,
           display_name: (user.user_metadata && user.user_metadata.display_name) || '',
           role:         'user'
-        });
+        }).select().single();
+        if (inserted && inserted.data) window._USER_PROFILE = inserted.data;
       }
     } catch (e) {
-      // La table profiles n'existe pas encore — mode dégradé
+      // Mode dégradé
     }
   }
 
-  // Badge utilisateur
+  var p = window._USER_PROFILE || {};
+  var displayName = p.display_name || (user.user_metadata && user.user_metadata.display_name) || user.email.split('@')[0];
+
   var badge = document.getElementById('user-badge');
   if (badge) {
-    var meta = user.user_metadata;
-    var displayName = (meta && meta.display_name) ? meta.display_name : user.email.split('@')[0];
     badge.innerHTML = '<span class="user-dot"></span>' + escapeHtml(displayName);
     badge.style.display = 'flex';
   }
 
-  // Onglet admin visible uniquement pour les admins
   var adminBtn = document.getElementById('admin-nav-btn');
   if (adminBtn && window._IS_ADMIN) adminBtn.style.display = 'flex';
 
+  applyProfileToUI();
+
+  if (!p.onboarded) {
+    showOnboardingWizard();
+    return;
+  }
+
   initApp();
+}
+
+function applyProfileToUI() {
+  var p = window._USER_PROFILE || {};
+
+  var hdrBrand = document.querySelector('.hdr-brand');
+  if (hdrBrand) hdrBrand.textContent = p.display_name || 'Veyra Studio';
+
+  var hdrSub = document.querySelector('.hdr-sub');
+  if (hdrSub) {
+    var bits = [p.niche, p.location, p.tagline].filter(function(s){return s && s.trim();});
+    hdrSub.textContent = bits.length ? bits.join(' · ') : '';
+  }
+
+  var goalEls = document.querySelectorAll('.hdr-goal');
+  if (goalEls && goalEls.length >= 2) {
+    var igVal = goalEls[0].querySelector('.hg-val');
+    var ttVal = goalEls[1].querySelector('.hg-val');
+    if (igVal && p.ig_goal != null) igVal.textContent = formatGoal(p.ig_goal);
+    if (ttVal && p.tt_goal != null) ttVal.textContent = formatGoal(p.tt_goal);
+  }
+
+  var tipGoals = document.getElementById('fw-tip-goals');
+  if (tipGoals) {
+    if (p.ig_goal || p.tt_goal) {
+      var igFmt = p.ig_goal ? formatGoal(p.ig_goal) : '—';
+      var ttFmt = p.tt_goal ? formatGoal(p.tt_goal) : '—';
+      tipGoals.innerHTML = 'Objectif : Instagram <strong style="color:var(--ink)">'
+        + igFmt + '</strong> · TikTok <strong style="color:var(--ink)">' + ttFmt + '</strong>.';
+    } else {
+      tipGoals.textContent = 'Saisis tes objectifs depuis ton profil pour afficher ta progression.';
+    }
+  }
+
+  var anaLine = document.getElementById('ana-goals-line');
+  if (anaLine) {
+    var parts = ['Progression hebdomadaire'];
+    if (p.ig_goal) parts.push('Objectif ' + formatGoal(p.ig_goal) + ' IG');
+    if (p.tt_goal) parts.push(formatGoal(p.tt_goal) + ' TT');
+    anaLine.textContent = parts.join(' · ');
+  }
+}
+
+function formatGoal(n) {
+  if (n == null) return '';
+  if (n >= 1000000) return (n / 1000000).toFixed(n % 1000000 === 0 ? 0 : 1) + 'M';
+  if (n >= 1000)    return (n / 1000).toFixed(n % 1000 === 0 ? 0 : 1) + 'K';
+  return String(n);
 }
 
 // ─── Logout ───

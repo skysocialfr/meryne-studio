@@ -7,6 +7,12 @@ var fSearch = '';
 var fSem = 'all'; // kept for compatibility
 var fPlat = 'all';
 
+// Builds a TikTok URL placeholder based on the user's profile handle
+function _ttLinkPlaceholder() {
+  var h = (window._USER_PROFILE && window._USER_PROFILE.tt_handle) || '';
+  return h ? 'https://www.tiktok.com/@' + h + '/...' : 'https://www.tiktok.com/@...';
+}
+
 // ─── Video format detection ───
 function _isVideoPost(fmt) {
   var vf = ['tiktok','reel','video','short','igtv','grwm','grwm / reel','reel + tiktok','tiktok + reel','tiktok + insta','transformation'];
@@ -416,7 +422,7 @@ function openPubModal(idx) {
     linkField = '<div class="fr" style="background:linear-gradient(135deg,rgba(5,150,105,.06),rgba(52,211,153,.04));'
       + 'border:1.5px solid rgba(5,150,105,.2);border-radius:10px;padding:10px 12px;">'
       + '<label style="color:#059669;">🔗 Lien du post publié</label>'
-      + '<input id="ppe-link" placeholder="https://www.tiktok.com/@meryne.eis/..." value="' + escapeHtml(_pubbe.link || '') + '"></div>';
+      + '<input id="ppe-link" placeholder="' + _ttLinkPlaceholder() + '" value="' + escapeHtml(_pubbe.link || '') + '"></div>';
   }
 
   // Hashtag count

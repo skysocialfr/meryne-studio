@@ -80,6 +80,15 @@ function saveGoal(plat) {
   if (val > 0) {
     GOALS[plat] = val;
     save();
+    // Sync goal back to user profile so it persists across sessions
+    if (sb && window._VEYRA_UID && window._USER_PROFILE) {
+      var col = plat === 'ig' ? 'ig_goal' : 'tt_goal';
+      window._USER_PROFILE[col] = val;
+      var patch = {};
+      patch[col] = val;
+      sb.from('profiles').update(patch).eq('id', window._VEYRA_UID).then(function(){}, function(){});
+    }
+    applyProfileToUI();
   }
   renderFollowers();
 }

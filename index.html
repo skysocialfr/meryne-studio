@@ -37,7 +37,7 @@
         <div class="hdr-left">
           <div class="hdr-eyebrow">CONTENT STUDIO 2026</div>
           <div class="hdr-brand">Veyra Studio</div>
-          <div class="hdr-sub">Mode &middot; Paris &middot; 1m82</div>
+          <div class="hdr-sub"></div>
         </div>
         <div class="hdr-center">
           <div id="kpi-row" class="kpi-row"></div>
@@ -46,12 +46,12 @@
           <div class="hdr-goals">
             <div class="hdr-goal">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
-              <div><div class="hg-label">Instagram</div><div class="hg-val">30K</div></div>
+              <div><div class="hg-label">Instagram</div><div class="hg-val">&mdash;</div></div>
             </div>
             <div class="hdr-goal-sep"></div>
             <div class="hdr-goal">
               <svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px;color:rgba(255,255,255,.4)"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.77 1.52V6.76a4.85 4.85 0 01-1-.07z"/></svg>
-              <div><div class="hg-label">TikTok</div><div class="hg-val">100K</div></div>
+              <div><div class="hg-label">TikTok</div><div class="hg-val">&mdash;</div></div>
             </div>
           </div>
 <button class="dark-toggle" id="dark-toggle" onclick="toggleDark()" title="Mode sombre">🌙</button>
@@ -109,19 +109,15 @@
           </div>
           <div class="ig-profile-info">
             <div class="ig-handle-row">
-              <span class="ig-handle">meryne.eis</span>
+              <span class="ig-handle" id="ig-handle-display">&mdash;</span>
               <button class="ig-edit-btn" onclick="openIgProfileModal()">&#9998; Modifier</button>
             </div>
             <div class="ig-stats-row">
               <div class="ig-stat"><span class="ig-stat-n" id="ig-post-count">0</span><span class="ig-stat-l">posts</span></div>
               <div class="ig-stat"><span class="ig-stat-n" id="ig-followers-count">&mdash;</span><span class="ig-stat-l">abonn&eacute;s</span></div>
-              <div class="ig-stat"><span class="ig-stat-n">30K</span><span class="ig-stat-l">objectif</span></div>
+              <div class="ig-stat"><span class="ig-stat-n" id="feed-ig-goal">&mdash;</span><span class="ig-stat-l">objectif</span></div>
             </div>
-            <div class="ig-bio" id="ig-bio-display">
-              <strong>meryne.eis</strong> &#x1F338;<br>Mode &middot; Paris &middot; 1m82 &#x2728;<br>
-              <span style="color:var(--muted)">Grande taille &amp; style parisien &#x1F5FC;</span><br>
-              <span style="color:var(--rose)">&#x1F3AF; Objectif 30K &mdash; rejoins l'aventure !</span>
-            </div>
+            <div class="ig-bio" id="ig-bio-display"></div>
           </div>
         </div>
         <div class="ig-highlights-row" id="ig-highlights-row">
@@ -228,7 +224,7 @@
       <div class="fw-tip">
         <strong style="font-size:9px;font-weight:700;color:var(--rose);letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px;">Suivi hebdomadaire</strong>
         Saisis ton nombre d'abonn&eacute;s chaque lundi. La croissance (+/-) se calcule automatiquement.<br>
-        Objectif : Instagram <strong style="color:var(--ink)">30K</strong> &middot; TikTok <strong style="color:var(--ink)">100K</strong> en d&eacute;cembre 2026.
+        <span id="fw-tip-goals">Saisis tes objectifs depuis ton profil pour afficher ta progression.</span>
       </div>
       <div id="fw-grid" class="fw-grid"></div>
       <div id="fw-prog" class="fw-ps"></div>
@@ -265,7 +261,7 @@
       <div class="ana-tw"><div class="ana-tt">Tous les posts publi&eacute;s</div><div id="ana-tbl" class="ana-tbl"></div></div>
       <div style="background:#fff;border:1.5px solid var(--bord);border-radius:12px;padding:14px;margin-bottom:12px;">
         <div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:4px;">Suivi des abonn&eacute;s</div>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:12px;">Progression hebdomadaire &middot; Objectif 30K IG &middot; 100K TT</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:12px;" id="ana-goals-line">Progression hebdomadaire</div>
         <div id="fw-ana-kpis" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;"></div>
         <div id="ch-followers" class="chart-block" style="margin-bottom:0;"><div class="chart-title">Croissance abonn&eacute;s</div></div>
       </div>
@@ -278,7 +274,7 @@
 </div><!-- /app -->
 
 <!-- MODAL (prod + pub) -->
-<div id="modal-overlay" onclick="if(event.target===this)closeModal()">
+<div id="modal-overlay" onclick="if(event.target===this &amp;&amp; !this.hasAttribute('data-ob'))closeModal()">
   <div class="modal-box" id="modal-body"></div>
 </div>
 
@@ -361,7 +357,8 @@
 <!-- JS Modules (order matters: utils > storage > auth > modules > app) -->
 <script src="js/utils.js?v=3"></script>
 <script src="js/storage.js?v=7"></script>
-<script src="js/auth.js?v=6"></script>
+<script src="js/auth.js?v=7"></script>
+<script src="js/onboarding.js?v=1"></script>
 <script src="js/feed.js?v=13"></script>
 <script src="js/production.js?v=5"></script>
 <script src="js/planning.js?v=5"></script>

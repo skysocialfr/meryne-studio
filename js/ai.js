@@ -4,6 +4,29 @@
 
 var AI_KEY_LS = 'claude_api_key';
 
+// Build the "creator persona" preamble for AI prompts, derived from the user profile.
+// Falls back to a generic creator description if profile is empty.
+function _aiPersonaBlock() {
+  var p = window._USER_PROFILE || {};
+  var name = (p.display_name || '').trim();
+  var handle = (p.ig_handle || '').trim();
+  var niche = (p.niche || '').trim();
+  var location = (p.location || '').trim();
+  var tagline = (p.tagline || '').trim();
+  var persona = (p.ai_persona || '').trim();
+
+  var label = handle || name || 'le créateur';
+  var bits = [];
+  if (niche) bits.push('créateur·rice de contenu ' + niche.toLowerCase());
+  if (location) bits.push('basé·e à ' + location);
+  if (tagline) bits.push(tagline);
+
+  var profileLine = bits.length ? bits.join(', ') : 'créateur·rice de contenu sur TikTok et Instagram';
+  var personaLine = persona ? '\nPersonnalité : ' + persona + '.' : '';
+
+  return 'Tu es un assistant pour ' + label + ', ' + profileLine + '.' + personaLine + '\n\n';
+}
+
 function getAiKey() { return localStorage.getItem(AI_KEY_LS) || ''; }
 
 // ─── Key Configuration Modal ───
@@ -71,8 +94,7 @@ async function generateProdScript(prodId) {
   var btn = document.getElementById('ai-prod-btn-' + prodId);
   if (btn) { btn.textContent = '\u23F3'; btn.disabled = true; }
 
-  var prompt = 'Tu es un assistant pour Meryne.eis, créatrice de contenu mode sur TikTok et Instagram.\n'
-    + 'Profil : Parisienne, 1m82, style grande taille, lifestyle luxe accessible, authentique.\n\n'
+  var prompt = _aiPersonaBlock()
     + 'Génère un plan de tournage pour ce contenu :\n'
     + 'Titre : ' + p.title + '\n'
     + 'Description : ' + p.desc + '\n'
@@ -117,8 +139,7 @@ async function generateProdModalScript() {
   var btn = document.getElementById('ai-prod-modal-btn');
   if (btn) { btn.textContent = '\u23F3'; btn.disabled = true; }
 
-  var prompt = 'Tu es un assistant pour Meryne.eis, créatrice de contenu mode sur TikTok et Instagram.\n'
-    + 'Profil : Parisienne, 1m82, style grande taille, lifestyle luxe accessible, authentique.\n\n'
+  var prompt = _aiPersonaBlock()
     + 'Génère un plan de tournage pour :\n'
     + 'Titre : ' + titleVal + '\n'
     + (descVal ? 'Description : ' + descVal + '\n' : '')
@@ -173,7 +194,8 @@ async function generateCaption(pubId) {
   var fmtVal = (fmtEl && fmtEl.value) ? fmtEl.value : (p.fmt || '');
   var platLabel = platVal === 'tiktok' ? 'TikTok' : platVal === 'insta' ? 'Instagram' : 'Stories';
 
-  var prompt = 'Tu es un assistant pour Meryne.eis, créatrice de contenu mode. Parisienne, 1m82, grande taille, lifestyle luxe accessible.\n\n'
+  var creatorLabel = (window._USER_PROFILE && (window._USER_PROFILE.display_name || window._USER_PROFILE.ig_handle)) || 'le créateur';
+  var prompt = _aiPersonaBlock()
     + 'Génère une caption, des hashtags ET un script de tournage complet pour :\n'
     + 'Titre du post : ' + titleVal + '\n'
     + 'Plateforme : ' + platLabel + '\n'
@@ -186,7 +208,7 @@ async function generateCaption(pubId) {
     + '  "shots": [{"n":1,"d":"description concrète et courte du plan"},...]\n'
     + '}\n'
     + 'Règles script : 5 à 8 plans. Plan 1 = HOOK fort (1-3s). Dernier plan = CTA. Langage direct et actionnable.\n'
-    + 'La caption doit sonner comme si c\'était Meryne qui écrit, pas un robot.';
+    + 'La caption doit sonner comme si c\'était ' + creatorLabel + ' qui écrit, pas un robot.';
 
   var result = await callClaude(prompt);
   if (btn) { btn.textContent = '\u2728 Caption IA'; btn.disabled = false; }
