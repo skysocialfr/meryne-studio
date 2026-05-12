@@ -10,7 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/style.css?v=2">
 </head>
 <body>
 
@@ -18,27 +18,44 @@
 <div id="login-page">
   <div class="lbox">
     <div class="llogo">Veyra Studio</div>
-    <div class="lsub" id="auth-sub">Content Studio &middot; 2026</div>
+    <div class="lsub" id="auth-sub">Le studio des cr&eacute;ateurs ambitieux</div>
 
-    <div class="auth-tabs">
+    <div class="auth-tabs" id="auth-tabs" data-mode="login">
       <button type="button" class="auth-tab active" id="auth-tab-login" onclick="setAuthMode('login')">Connexion</button>
-      <button type="button" class="auth-tab" id="auth-tab-signup" onclick="setAuthMode('signup')">Cr&eacute;er un compte</button>
+      <button type="button" class="auth-tab" id="auth-tab-signup" onclick="setAuthMode('signup')">Inscription</button>
+      <span class="auth-tab-indicator" aria-hidden="true"></span>
     </div>
 
-    <div class="lf"><label>Email</label><input type="email" id="lu" placeholder="vous@exemple.com" autocomplete="email"></div>
+    <div class="lf">
+      <label>Email</label>
+      <input type="email" id="lu" placeholder="vous@exemple.com" autocomplete="email" spellcheck="false">
+    </div>
+
     <div class="lf">
       <label>Mot de passe</label>
-      <input type="password" id="lp" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="current-password" onkeydown="if(event.key==='Enter')submitAuth()">
-      <div id="lp-hint" class="auth-hint" style="display:none;">Au moins 8 caract&egrave;res.</div>
+      <div class="lp-wrap">
+        <input type="password" id="lp" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="current-password" onkeydown="if(event.key==='Enter')submitAuth()" oninput="onPasswordInput()">
+        <button type="button" class="lp-toggle" id="lp-toggle" onclick="togglePassword('lp','lp-toggle')" tabindex="-1" title="Afficher / masquer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+      <div id="lp-strength" class="pwd-strength" style="display:none;"><span></span></div>
+      <div id="lp-hint" class="auth-hint" style="display:none;">8 caract&egrave;res minimum &middot; vise plus de 12 pour un mot de passe solide.</div>
+    </div>
+
+    <div class="lf" id="lp2-wrap" style="display:none;">
+      <label>Confirmer le mot de passe</label>
+      <div class="lp-wrap">
+        <input type="password" id="lp2" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="new-password" onkeydown="if(event.key==='Enter')submitAuth()" oninput="onPasswordConfirmInput()">
+        <button type="button" class="lp-toggle" id="lp2-toggle" onclick="togglePassword('lp2','lp2-toggle')" tabindex="-1" title="Afficher / masquer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+      <div id="lp2-hint" class="auth-hint"></div>
     </div>
 
     <button class="lbtn" id="auth-submit" onclick="submitAuth()">Acc&eacute;der au studio &rarr;</button>
     <div id="lerr" class="lerr">Identifiants incorrects</div>
-
-    <div class="auth-switch" id="auth-switch">
-      Pas encore de compte ?
-      <a href="#" onclick="setAuthMode('signup');return false;">Cr&eacute;er un compte</a>
-    </div>
   </div>
 </div>
 
@@ -373,7 +390,7 @@
 <!-- JS Modules (order matters: utils > storage > auth > modules > app) -->
 <script src="js/utils.js?v=3"></script>
 <script src="js/storage.js?v=7"></script>
-<script src="js/auth.js?v=8"></script>
+<script src="js/auth.js?v=9"></script>
 <script src="js/onboarding.js?v=1"></script>
 <script src="js/feed.js?v=13"></script>
 <script src="js/production.js?v=5"></script>
