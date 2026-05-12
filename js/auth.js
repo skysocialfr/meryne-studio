@@ -9,15 +9,19 @@ var AUTH_MODE = 'login'; // 'login' | 'signup'
 function setAuthMode(mode) {
   AUTH_MODE = mode === 'signup' ? 'signup' : 'login';
 
+  var tabs       = document.getElementById('auth-tabs');
   var tabLogin   = document.getElementById('auth-tab-login');
   var tabSignup  = document.getElementById('auth-tab-signup');
   var submitBtn  = document.getElementById('auth-submit');
   var passInput  = document.getElementById('lp');
+  var pass2Wrap  = document.getElementById('lp2-wrap');
+  var pass2Input = document.getElementById('lp2');
+  var strength   = document.getElementById('lp-strength');
   var hint       = document.getElementById('lp-hint');
   var sub        = document.getElementById('auth-sub');
-  var switchLink = document.getElementById('auth-switch');
   var err        = document.getElementById('lerr');
 
+  if (tabs)      tabs.setAttribute('data-mode', AUTH_MODE);
   if (tabLogin)  tabLogin.classList.toggle('active',  AUTH_MODE === 'login');
   if (tabSignup) tabSignup.classList.toggle('active', AUTH_MODE === 'signup');
   if (err) { err.classList.remove('show'); err.classList.remove('success'); }
@@ -25,20 +29,84 @@ function setAuthMode(mode) {
   if (AUTH_MODE === 'signup') {
     if (submitBtn) submitBtn.textContent = 'Créer mon compte →';
     if (passInput) passInput.setAttribute('autocomplete', 'new-password');
-    if (hint) hint.style.display = 'block';
-    if (sub) sub.textContent = 'Rejoins la plateforme';
-    if (switchLink) switchLink.innerHTML = 'Déjà inscrit ? <a href="#" onclick="setAuthMode(\'login\');return false;">Se connecter</a>';
+    if (pass2Wrap) pass2Wrap.style.display = 'block';
+    if (strength)  strength.style.display = 'block';
+    if (hint)      hint.style.display = 'block';
+    if (sub)       sub.textContent = 'Crée ton studio en 30 secondes';
+    onPasswordInput();
   } else {
     if (submitBtn) submitBtn.textContent = 'Accéder au studio →';
     if (passInput) passInput.setAttribute('autocomplete', 'current-password');
-    if (hint) hint.style.display = 'none';
-    if (sub) sub.textContent = 'Content Studio · 2026';
-    if (switchLink) switchLink.innerHTML = 'Pas encore de compte ? <a href="#" onclick="setAuthMode(\'signup\');return false;">Créer un compte</a>';
+    if (pass2Wrap) pass2Wrap.style.display = 'none';
+    if (strength)  strength.style.display = 'none';
+    if (hint)      hint.style.display = 'none';
+    if (pass2Input) pass2Input.value = '';
+    if (sub)       sub.textContent = 'Le studio des créateurs ambitieux';
   }
 }
 
 function submitAuth() {
   return AUTH_MODE === 'signup' ? doSignup() : doLogin();
+}
+
+// Show / hide password field
+function togglePassword(inputId, toggleId) {
+  var inp = document.getElementById(inputId);
+  var btn = document.getElementById(toggleId);
+  if (!inp) return;
+  var shown = inp.type === 'text';
+  inp.type = shown ? 'password' : 'text';
+  if (btn) btn.classList.toggle('shown', !shown);
+}
+
+// Real-time password strength scoring (0..3)
+function _scorePassword(pw) {
+  if (!pw) return 0;
+  if (pw.length < 8) return 0;
+  var score = 0;
+  if (pw.length >= 8) score++;
+  if (pw.length >= 12) score++;
+  // bonus for variety: lower + upper + digit + symbol
+  var variety = 0;
+  if (/[a-z]/.test(pw)) variety++;
+  if (/[A-Z]/.test(pw)) variety++;
+  if (/[0-9]/.test(pw)) variety++;
+  if (/[^A-Za-z0-9]/.test(pw)) variety++;
+  if (variety >= 3) score++;
+  return Math.min(score, 3); // 0,1,2,3
+}
+
+function onPasswordInput() {
+  if (AUTH_MODE !== 'signup') return;
+  var inp = document.getElementById('lp');
+  var bar = document.getElementById('lp-strength');
+  if (!inp || !bar) return;
+  var pw = inp.value;
+  bar.classList.remove('weak', 'medium', 'strong');
+  if (!pw) return;
+  var s = _scorePassword(pw);
+  if (s >= 3)      bar.classList.add('strong');
+  else if (s === 2) bar.classList.add('medium');
+  else              bar.classList.add('weak');
+  // Re-check confirm match if user typed both fields
+  onPasswordConfirmInput();
+}
+
+function onPasswordConfirmInput() {
+  if (AUTH_MODE !== 'signup') return;
+  var p1 = document.getElementById('lp');
+  var p2 = document.getElementById('lp2');
+  var hint = document.getElementById('lp2-hint');
+  if (!p1 || !p2 || !hint) return;
+  hint.classList.remove('success', 'error');
+  if (!p2.value) { hint.textContent = ''; return; }
+  if (p1.value === p2.value) {
+    hint.textContent = 'Les mots de passe correspondent';
+    hint.classList.add('success');
+  } else {
+    hint.textContent = 'Les mots de passe ne correspondent pas';
+    hint.classList.add('error');
+  }
 }
 
 // ─── Login ───
@@ -68,17 +136,20 @@ async function doLogin() {
 
 // ─── Signup ───
 async function doSignup() {
-  var emailEl = document.getElementById('lu');
-  var passEl  = document.getElementById('lp');
-  var btn     = document.getElementById('auth-submit');
+  var emailEl  = document.getElementById('lu');
+  var passEl   = document.getElementById('lp');
+  var pass2El  = document.getElementById('lp2');
+  var btn      = document.getElementById('auth-submit');
 
-  var email = emailEl ? emailEl.value.trim() : '';
-  var pass  = passEl  ? passEl.value : '';
+  var email  = emailEl  ? emailEl.value.trim() : '';
+  var pass   = passEl   ? passEl.value : '';
+  var pass2  = pass2El  ? pass2El.value : '';
 
-  if (!email || !pass) { showLoginError('Remplis tous les champs'); return; }
-  if (pass.length < 8) { showLoginError('Mot de passe : 8 caractères minimum'); return; }
+  if (!email || !pass)          { showLoginError('Remplis tous les champs'); return; }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showLoginError('Email invalide'); return; }
-  if (!sb) { showLoginError('Erreur serveur — réessaie'); return; }
+  if (pass.length < 8)          { showLoginError('Mot de passe : 8 caractères minimum'); return; }
+  if (pass !== pass2)           { showLoginError('Les mots de passe ne correspondent pas'); return; }
+  if (!sb)                      { showLoginError('Erreur serveur — réessaie'); return; }
 
   if (btn) { btn.disabled = true; btn.textContent = 'Création…'; }
 
