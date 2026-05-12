@@ -202,9 +202,10 @@ async function obFinish() {
     return;
   }
 
+  // Reload via refreshProfileAndRoute() so all profile columns (incl. subscription) are fresh
   window._USER_PROFILE = res.data;
   closeModal();
   showSync('✨ Profil configuré', 'rgba(5,150,105,.8)');
-  applyProfileToUI();
-  initApp();
+  // Route: onboarding done → paywall (or app if entitled / admin)
+  refreshProfileAndRoute();
 }
