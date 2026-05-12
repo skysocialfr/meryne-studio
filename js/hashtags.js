@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════
-   MERYNE STUDIO V4 — Hashtag Library
+   VEYRA STUDIO — Hashtag Library
    ═══════════════════════════════════════════════ */
 
 var _hashOpen = false;

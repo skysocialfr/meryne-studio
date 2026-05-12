@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════
-   MERYNE STUDIO V4 — Main App
+   VEYRA STUDIO — Main App
    Global state, default data, init, tabs, KPIs
    ═══════════════════════════════════════════════ */
 
@@ -101,7 +101,11 @@ async function load() {
   if (!PROD)           PROD           = [];
   if (!PUBS)           PUBS           = [];
   if (!FW)             FW             = JSON.parse(JSON.stringify(D_FW));
-  if (!GOALS)          GOALS          = {ig: 30000, tt: 100000};
+  var p = window._USER_PROFILE || {};
+  if (!GOALS) GOALS = { ig: p.ig_goal || 0, tt: p.tt_goal || 0 };
+  // Sync GOALS with profile values if profile has been updated since last save
+  if (p.ig_goal && GOALS.ig !== p.ig_goal) GOALS.ig = p.ig_goal;
+  if (p.tt_goal && GOALS.tt !== p.tt_goal) GOALS.tt = p.tt_goal;
   if (!TAGS)           TAGS           = [];
   if (!NOTES)          NOTES          = [];
   if (!HASHTAG_GROUPS) HASHTAG_GROUPS = JSON.parse(JSON.stringify(D_HASHTAG_GROUPS));

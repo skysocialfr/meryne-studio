@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════
-   MERYNE STUDIO V4 — Feed Module
+   VEYRA STUDIO — Feed Module
    Instagram + TikTok feed grid with drag & drop
    ═══════════════════════════════════════════════ */
 
@@ -12,7 +12,7 @@ var dragSrcPlat = null;
 var _feedDragging = false;
 
 // ─── IG Profile State ───
-var IG_PROFILE = { handle: 'meryne.eis', bio: '', avatar: null, followers: null };
+var IG_PROFILE = { handle: '', bio: '', avatar: null, followers: null };
 var IG_HIGHLIGHTS = [];
 var IG_STORIES = [];
 var _storyIdx = 0;
@@ -819,9 +819,10 @@ function deleteFeedPost() {
 // ═══════════════════════════════════════════════
 
 async function loadIgProfile() {
-  var prof = await cloudLoad('ig_profile', { handle: 'meryne.eis', bio: '', avatar: null, followers: null });
+  var defaultHandle = (window._USER_PROFILE && window._USER_PROFILE.ig_handle) || '';
+  var prof = await cloudLoad('ig_profile', { handle: defaultHandle, bio: '', avatar: null, followers: null });
   IG_PROFILE = prof;
-  if (!IG_PROFILE.handle) IG_PROFILE.handle = 'meryne.eis';
+  if (!IG_PROFILE.handle) IG_PROFILE.handle = defaultHandle;
 
   var hl = await cloudLoad('ig_highlights', []);
   IG_HIGHLIGHTS = hl;
@@ -862,10 +863,25 @@ function renderHighlights() {
     }
   }
 
+  // Render handle (header chip)
+  var handleEl = document.getElementById('ig-handle-display');
+  if (handleEl) handleEl.textContent = IG_PROFILE.handle || '—';
+
+  // Render goal stat (feed header)
+  var goalEl = document.getElementById('feed-ig-goal');
+  if (goalEl) {
+    var igGoal = window._USER_PROFILE && window._USER_PROFILE.ig_goal;
+    goalEl.textContent = igGoal ? formatGoal(igGoal) : '—';
+  }
+
   // Render bio
   var bioEl = document.getElementById('ig-bio-display');
-  if (bioEl && IG_PROFILE.bio) {
-    bioEl.innerHTML = '<strong>' + escapeHtml(IG_PROFILE.handle) + '</strong><br>' + escapeHtml(IG_PROFILE.bio);
+  if (bioEl) {
+    if (IG_PROFILE.bio) {
+      bioEl.innerHTML = '<strong>' + escapeHtml(IG_PROFILE.handle) + '</strong><br>' + escapeHtml(IG_PROFILE.bio);
+    } else {
+      bioEl.textContent = '';
+    }
   }
 
   // Render followers
@@ -1167,7 +1183,8 @@ function handleAvatarUpload(ev) {
 }
 
 function saveIgProfileModal() {
-  var handle = (document.getElementById('ig-handle-input') || {}).value || 'meryne.eis';
+  var defaultHandle = (window._USER_PROFILE && window._USER_PROFILE.ig_handle) || '';
+  var handle = (document.getElementById('ig-handle-input') || {}).value || defaultHandle;
   var bio = (document.getElementById('ig-bio-input') || {}).value || '';
   var followersVal = (document.getElementById('ig-followers-input') || {}).value;
   var followers = followersVal ? parseInt(followersVal, 10) : null;

@@ -2,7 +2,7 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "Meryne Studio (serve)",
+      "name": "Veyra Studio (serve)",
       "runtimeExecutable": "npx",
       "runtimeArgs": ["serve", ".", "--listen", "3000"],
       "port": 3000

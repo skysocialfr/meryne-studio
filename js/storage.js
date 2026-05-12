@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════
-   MERYNE STUDIO — Storage v7
+   VEYRA STUDIO — Storage v7
    Supabase initialisé immédiatement (multi-user)
    ═══════════════════════════════════════════════ */
 
@@ -21,7 +21,7 @@ function initSupabase() {}
 
 // ─── Clé de stockage (préfixée par UUID utilisateur) ───
 function _sk(key) {
-  return window._MERYNE_UID ? window._MERYNE_UID + ':' + key : key;
+  return window._VEYRA_UID ? window._VEYRA_UID + ':' + key : key;
 }
 
 // ─── Cloud Load : local-first (instant render, sync in background) ───
@@ -81,7 +81,7 @@ async function cloudLoad(key, fallback) {
   }
 
   // Clé legacy (sans préfixe UUID)
-  if (sb && window._MERYNE_UID) {
+  if (sb && window._VEYRA_UID) {
     try {
       var timeout3 = new Promise(function (res) { setTimeout(function () { res(null); }, 3000); });
       var query3 = sb.from('studio_data').select('data').eq('key', key).single();

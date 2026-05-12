@@ -1,13 +1,51 @@
 /* ═══════════════════════════════════════════════
-   MERYNE STUDIO — Auth v6
+   VEYRA STUDIO — Auth v6
    Authentification via Supabase Auth (email + mdp)
    ═══════════════════════════════════════════════ */
+
+// ─── Auth mode toggle ───
+var AUTH_MODE = 'login'; // 'login' | 'signup'
+
+function setAuthMode(mode) {
+  AUTH_MODE = mode === 'signup' ? 'signup' : 'login';
+
+  var tabLogin   = document.getElementById('auth-tab-login');
+  var tabSignup  = document.getElementById('auth-tab-signup');
+  var submitBtn  = document.getElementById('auth-submit');
+  var passInput  = document.getElementById('lp');
+  var hint       = document.getElementById('lp-hint');
+  var sub        = document.getElementById('auth-sub');
+  var switchLink = document.getElementById('auth-switch');
+  var err        = document.getElementById('lerr');
+
+  if (tabLogin)  tabLogin.classList.toggle('active',  AUTH_MODE === 'login');
+  if (tabSignup) tabSignup.classList.toggle('active', AUTH_MODE === 'signup');
+  if (err) { err.classList.remove('show'); err.classList.remove('success'); }
+
+  if (AUTH_MODE === 'signup') {
+    if (submitBtn) submitBtn.textContent = 'Créer mon compte →';
+    if (passInput) passInput.setAttribute('autocomplete', 'new-password');
+    if (hint) hint.style.display = 'block';
+    if (sub) sub.textContent = 'Rejoins la plateforme';
+    if (switchLink) switchLink.innerHTML = 'Déjà inscrit ? <a href="#" onclick="setAuthMode(\'login\');return false;">Se connecter</a>';
+  } else {
+    if (submitBtn) submitBtn.textContent = 'Accéder au studio →';
+    if (passInput) passInput.setAttribute('autocomplete', 'current-password');
+    if (hint) hint.style.display = 'none';
+    if (sub) sub.textContent = 'Content Studio · 2026';
+    if (switchLink) switchLink.innerHTML = 'Pas encore de compte ? <a href="#" onclick="setAuthMode(\'signup\');return false;">Créer un compte</a>';
+  }
+}
+
+function submitAuth() {
+  return AUTH_MODE === 'signup' ? doSignup() : doLogin();
+}
 
 // ─── Login ───
 async function doLogin() {
   var emailEl = document.getElementById('lu');
   var passEl  = document.getElementById('lp');
-  var btn     = document.querySelector('.lbtn');
+  var btn     = document.getElementById('auth-submit');
 
   var email = emailEl ? emailEl.value.trim() : '';
   var pass  = passEl  ? passEl.value : '';
@@ -22,6 +60,49 @@ async function doLogin() {
   if (result.error) {
     showLoginError('Email ou mot de passe incorrect');
     if (btn) { btn.disabled = false; btn.textContent = 'Accéder au studio →'; }
+    return;
+  }
+
+  await _enterApp(result.data.user);
+}
+
+// ─── Signup ───
+async function doSignup() {
+  var emailEl = document.getElementById('lu');
+  var passEl  = document.getElementById('lp');
+  var btn     = document.getElementById('auth-submit');
+
+  var email = emailEl ? emailEl.value.trim() : '';
+  var pass  = passEl  ? passEl.value : '';
+
+  if (!email || !pass) { showLoginError('Remplis tous les champs'); return; }
+  if (pass.length < 8) { showLoginError('Mot de passe : 8 caractères minimum'); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showLoginError('Email invalide'); return; }
+  if (!sb) { showLoginError('Erreur serveur — réessaie'); return; }
+
+  if (btn) { btn.disabled = true; btn.textContent = 'Création…'; }
+
+  var result = await sb.auth.signUp({ email: email, password: pass });
+
+  if (result.error) {
+    var msg = result.error.message || '';
+    if (/already registered|already exists|user already/i.test(msg)) {
+      showLoginError('Cet email a déjà un compte — connecte-toi');
+    } else if (/pwned|breached|compromised/i.test(msg)) {
+      showLoginError('Ce mot de passe est compromis — choisis-en un autre');
+    } else if (/weak password|password should/i.test(msg)) {
+      showLoginError('Mot de passe trop faible');
+    } else {
+      showLoginError('Erreur : ' + msg);
+    }
+    if (btn) { btn.disabled = false; btn.textContent = 'Créer mon compte →'; }
+    return;
+  }
+
+  // If email confirmation is enabled, signUp does NOT return a session
+  if (!result.data.session) {
+    showLoginSuccess('Compte créé ! Vérifie ta boîte mail pour confirmer.');
+    if (btn) { btn.disabled = false; btn.textContent = 'Créer mon compte →'; }
     return;
   }
 
@@ -56,48 +137,103 @@ async function _enterApp(user) {
   if (lp)  lp.style.display  = 'none';
   if (app) app.style.display = 'block';
 
-  window._MERYNE_UID   = user.id;
+  window._VEYRA_UID    = user.id;
   window._USER_EMAIL   = user.email;
   window._IS_ADMIN     = false;
+  window._USER_PROFILE = null;
 
-  // Charger le profil depuis Supabase (role admin ?)
   if (sb) {
     try {
       var { data: profile } = await sb.from('profiles')
-        .select('id, role, display_name')
+        .select('id, role, display_name, niche, location, tagline, ig_handle, tt_handle, ig_goal, tt_goal, ai_persona, onboarded')
         .eq('id', user.id)
         .single();
 
       if (profile) {
+        window._USER_PROFILE = profile;
         if (profile.role === 'admin') window._IS_ADMIN = true;
       } else {
-        // Créer le profil si absent
-        await sb.from('profiles').insert({
+        var inserted = await sb.from('profiles').insert({
           id:           user.id,
           email:        user.email,
           display_name: (user.user_metadata && user.user_metadata.display_name) || '',
           role:         'user'
-        });
+        }).select().single();
+        if (inserted && inserted.data) window._USER_PROFILE = inserted.data;
       }
     } catch (e) {
-      // La table profiles n'existe pas encore — mode dégradé
+      // Mode dégradé
     }
   }
 
-  // Badge utilisateur
+  var p = window._USER_PROFILE || {};
+  var displayName = p.display_name || (user.user_metadata && user.user_metadata.display_name) || user.email.split('@')[0];
+
   var badge = document.getElementById('user-badge');
   if (badge) {
-    var meta = user.user_metadata;
-    var displayName = (meta && meta.display_name) ? meta.display_name : user.email.split('@')[0];
     badge.innerHTML = '<span class="user-dot"></span>' + escapeHtml(displayName);
     badge.style.display = 'flex';
   }
 
-  // Onglet admin visible uniquement pour les admins
   var adminBtn = document.getElementById('admin-nav-btn');
   if (adminBtn && window._IS_ADMIN) adminBtn.style.display = 'flex';
 
+  applyProfileToUI();
+
+  if (!p.onboarded) {
+    showOnboardingWizard();
+    return;
+  }
+
   initApp();
+}
+
+function applyProfileToUI() {
+  var p = window._USER_PROFILE || {};
+
+  var hdrBrand = document.querySelector('.hdr-brand');
+  if (hdrBrand) hdrBrand.textContent = p.display_name || 'Veyra Studio';
+
+  var hdrSub = document.querySelector('.hdr-sub');
+  if (hdrSub) {
+    var bits = [p.niche, p.location, p.tagline].filter(function(s){return s && s.trim();});
+    hdrSub.textContent = bits.length ? bits.join(' · ') : '';
+  }
+
+  var goalEls = document.querySelectorAll('.hdr-goal');
+  if (goalEls && goalEls.length >= 2) {
+    var igVal = goalEls[0].querySelector('.hg-val');
+    var ttVal = goalEls[1].querySelector('.hg-val');
+    if (igVal && p.ig_goal != null) igVal.textContent = formatGoal(p.ig_goal);
+    if (ttVal && p.tt_goal != null) ttVal.textContent = formatGoal(p.tt_goal);
+  }
+
+  var tipGoals = document.getElementById('fw-tip-goals');
+  if (tipGoals) {
+    if (p.ig_goal || p.tt_goal) {
+      var igFmt = p.ig_goal ? formatGoal(p.ig_goal) : '—';
+      var ttFmt = p.tt_goal ? formatGoal(p.tt_goal) : '—';
+      tipGoals.innerHTML = 'Objectif : Instagram <strong style="color:var(--ink)">'
+        + igFmt + '</strong> · TikTok <strong style="color:var(--ink)">' + ttFmt + '</strong>.';
+    } else {
+      tipGoals.textContent = 'Saisis tes objectifs depuis ton profil pour afficher ta progression.';
+    }
+  }
+
+  var anaLine = document.getElementById('ana-goals-line');
+  if (anaLine) {
+    var parts = ['Progression hebdomadaire'];
+    if (p.ig_goal) parts.push('Objectif ' + formatGoal(p.ig_goal) + ' IG');
+    if (p.tt_goal) parts.push(formatGoal(p.tt_goal) + ' TT');
+    anaLine.textContent = parts.join(' · ');
+  }
+}
+
+function formatGoal(n) {
+  if (n == null) return '';
+  if (n >= 1000000) return (n / 1000000).toFixed(n % 1000000 === 0 ? 0 : 1) + 'M';
+  if (n >= 1000)    return (n / 1000).toFixed(n % 1000 === 0 ? 0 : 1) + 'K';
+  return String(n);
 }
 
 // ─── Logout ───
@@ -111,15 +247,25 @@ async function doLogout() {
 function showLoginError(msg) {
   var el = document.getElementById('lerr');
   if (!el) return;
+  el.classList.remove('success');
   el.textContent = msg;
   el.classList.add('show');
-  setTimeout(function () { el.classList.remove('show'); }, 3500);
+  setTimeout(function () { el.classList.remove('show'); }, 4500);
+}
+
+function showLoginSuccess(msg) {
+  var el = document.getElementById('lerr');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add('show');
+  el.classList.add('success');
+  setTimeout(function () { el.classList.remove('show'); el.classList.remove('success'); }, 6000);
 }
 
 // ─── Touche Entrée ───
 document.addEventListener('keydown', function (e) {
   var lp = document.getElementById('login-page');
   if (e.key === 'Enter' && lp && lp.style.display !== 'none') {
-    doLogin();
+    submitAuth();
   }
 });

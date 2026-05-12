@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════
-   MERYNE STUDIO V4 — Utilities
+   VEYRA STUDIO — Utilities
    ═══════════════════════════════════════════════ */
 
 // ─── XSS Protection ───
@@ -39,7 +39,9 @@ function openModal(html) {
 }
 
 function closeModal() {
-  document.getElementById('modal-overlay').classList.remove('open');
+  var overlay = document.getElementById('modal-overlay');
+  overlay.classList.remove('open');
+  overlay.removeAttribute('data-ob');
   document.body.style.overflow = '';
 }
 
