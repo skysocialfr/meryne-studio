@@ -189,6 +189,8 @@ async function autoLogin() {
     var session = result.data && result.data.session;
     if (session && session.user) {
       await _enterApp(session.user);
+      // After we've loaded the profile, react to ?checkout=success|cancel from Stripe
+      if (typeof handleCheckoutReturn === 'function') handleCheckoutReturn();
       return;
     }
   } catch (e) {}
@@ -202,11 +204,14 @@ function _showLoginPage() {
 }
 
 // ─── Entrer dans l'app ───
+var PROFILE_COLUMNS = 'id, email, role, display_name, niche, location, tagline, '
+  + 'ig_handle, tt_handle, ig_goal, tt_goal, ai_persona, onboarded, '
+  + 'stripe_customer_id, subscription_id, subscription_status, subscription_price_id, '
+  + 'current_period_end, trial_end, cancel_at_period_end';
+
 async function _enterApp(user) {
   var lp  = document.getElementById('login-page');
-  var app = document.getElementById('app');
   if (lp)  lp.style.display  = 'none';
-  if (app) app.style.display = 'block';
 
   window._VEYRA_UID    = user.id;
   window._USER_EMAIL   = user.email;
@@ -216,7 +221,7 @@ async function _enterApp(user) {
   if (sb) {
     try {
       var { data: profile } = await sb.from('profiles')
-        .select('id, role, display_name, niche, location, tagline, ig_handle, tt_handle, ig_goal, tt_goal, ai_persona, onboarded')
+        .select(PROFILE_COLUMNS)
         .eq('id', user.id)
         .single();
 
@@ -229,7 +234,7 @@ async function _enterApp(user) {
           email:        user.email,
           display_name: (user.user_metadata && user.user_metadata.display_name) || '',
           role:         'user'
-        }).select().single();
+        }).select(PROFILE_COLUMNS).single();
         if (inserted && inserted.data) window._USER_PROFILE = inserted.data;
       }
     } catch (e) {
@@ -237,9 +242,31 @@ async function _enterApp(user) {
     }
   }
 
-  var p = window._USER_PROFILE || {};
-  var displayName = p.display_name || (user.user_metadata && user.user_metadata.display_name) || user.email.split('@')[0];
+  _routeAfterAuth();
+}
 
+// Routes the user to the right surface after we have a profile.
+// onboarding wizard → paywall → app
+function _routeAfterAuth() {
+  var p = window._USER_PROFILE || {};
+  var app = document.getElementById('app');
+
+  if (!p.onboarded) {
+    if (app) app.style.display = 'none';
+    showOnboardingWizard();
+    return;
+  }
+
+  if (!_isEntitled(p)) {
+    if (app) app.style.display = 'none';
+    showPaywall();
+    return;
+  }
+
+  // Entitled → enter the app
+  if (app) app.style.display = 'block';
+
+  var displayName = p.display_name || (window._USER_EMAIL || '').split('@')[0];
   var badge = document.getElementById('user-badge');
   if (badge) {
     badge.innerHTML = '<span class="user-dot"></span>' + escapeHtml(displayName);
@@ -250,13 +277,33 @@ async function _enterApp(user) {
   if (adminBtn && window._IS_ADMIN) adminBtn.style.display = 'flex';
 
   applyProfileToUI();
-
-  if (!p.onboarded) {
-    showOnboardingWizard();
-    return;
-  }
-
+  renderSubscriptionBadge();
   initApp();
+}
+
+// Is the user currently entitled to use the app?
+// Admins always pass; otherwise must be trialing or active and within current_period_end.
+function _isEntitled(p) {
+  if (!p) return false;
+  if (p.role === 'admin') return true;
+  if (p.subscription_status !== 'trialing' && p.subscription_status !== 'active') return false;
+  if (p.current_period_end) {
+    return new Date(p.current_period_end).getTime() > Date.now();
+  }
+  return true;
+}
+
+// Re-fetch profile from DB and re-route. Used after onboarding finish or checkout return.
+async function refreshProfileAndRoute() {
+  if (!sb || !window._VEYRA_UID) return;
+  try {
+    var { data: profile } = await sb.from('profiles')
+      .select(PROFILE_COLUMNS)
+      .eq('id', window._VEYRA_UID)
+      .single();
+    if (profile) window._USER_PROFILE = profile;
+  } catch (e) {}
+  _routeAfterAuth();
 }
 
 function applyProfileToUI() {
