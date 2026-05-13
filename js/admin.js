@@ -1,7 +1,17 @@
 /* ═══════════════════════════════════════════════
-   VEYRA STUDIO — Admin Panel
+   VEYRA STUDIO — Admin Dashboard
    Visible uniquement si role = 'admin'
+   KPIs + signups chart + status donut + conversion funnel
    ═══════════════════════════════════════════════ */
+
+// Plan price ID -> monthly EUR amount (for MRR calc)
+var ADMIN_PRICE_AMOUNTS = {
+  'price_1TWY5oAIFObJ3lA9b1ioqI8c':  9.99,  // Solo
+  'price_1TWjvS0wPb5M8Vv3ipQvWtU7': 19.99,  // Pro
+  'price_1TWjvl0wPb5M8Vv3887w92ru': 59.99   // Agency
+};
+
+var _adminCharts = {}; // Chart.js instances (so we can destroy on re-render)
 
 async function renderAdmin() {
   if (!window._IS_ADMIN) return;
@@ -10,10 +20,15 @@ async function renderAdmin() {
   if (!container) return;
 
   container.innerHTML = ''
-    + '<div style="max-width:620px;margin:0 auto;padding:16px 16px 80px;">'
-    + '<div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:4px;">Interface Administrateur</div>'
-    + '<div style="font-size:11px;color:var(--muted);margin-bottom:16px;">Connecté en tant que ' + escapeHtml(window._USER_EMAIL || '') + '</div>'
-    + '<div id="admin-content"><div style="text-align:center;padding:40px;color:var(--muted);font-size:12px;">Chargement…</div></div>'
+    + '<div class="adm-wrap">'
+    +   '<div class="adm-head">'
+    +     '<div>'
+    +       '<div class="adm-title">Dashboard administrateur</div>'
+    +       '<div class="adm-sub">Connect&eacute; en tant que ' + escapeHtml(window._USER_EMAIL || '') + '</div>'
+    +     '</div>'
+    +     '<button class="adm-refresh" onclick="renderAdmin()">&#x21bb; Actualiser</button>'
+    +   '</div>'
+    +   '<div id="admin-content"><div class="adm-loading">Chargement&hellip;</div></div>'
     + '</div>';
 
   var profiles = await _adminLoadProfiles();
@@ -25,11 +40,12 @@ async function _adminLoadProfiles() {
   try {
     var { data, error } = await sb
       .from('profiles')
-      .select('id, email, display_name, role, created_at')
+      .select('id, email, display_name, role, created_at, subscription_status, subscription_price_id, trial_end, current_period_end, onboarded')
       .order('created_at', { ascending: false });
     if (error) throw error;
     return data || [];
   } catch (e) {
+    console.error('admin profiles load failed:', e);
     return null;
   }
 }
@@ -38,113 +54,281 @@ function _renderAdminContent(profiles) {
   var c = document.getElementById('admin-content');
   if (!c) return;
 
-  var html = '';
-
-  // ─── Créer un compte ───
-  html += '<div style="background:#fff;border:1.5px solid var(--bord);border-radius:12px;padding:16px;margin-bottom:12px;">'
-    + '<div style="font-size:12px;font-weight:800;color:var(--ink);margin-bottom:12px;">Créer un compte utilisateur</div>'
-    + '<div style="margin-bottom:8px;">'
-    + '<label style="display:block;font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px;">Email</label>'
-    + '<input type="email" id="adm-email" placeholder="utilisateur@exemple.com" style="width:100%;padding:9px 12px;border:1.5px solid var(--bord);border-radius:9px;font-family:\'DM Sans\',sans-serif;font-size:13px;outline:none;">'
-    + '</div>'
-    + '<div style="margin-bottom:8px;">'
-    + '<label style="display:block;font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px;">Mot de passe</label>'
-    + '<input type="password" id="adm-pass" placeholder="••••••••" style="width:100%;padding:9px 12px;border:1.5px solid var(--bord);border-radius:9px;font-family:\'DM Sans\',sans-serif;font-size:13px;outline:none;">'
-    + '</div>'
-    + '<div style="margin-bottom:12px;">'
-    + '<label style="display:block;font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px;">Nom affiché</label>'
-    + '<input type="text" id="adm-name" placeholder="Prénom ou pseudo" style="width:100%;padding:9px 12px;border:1.5px solid var(--bord);border-radius:9px;font-family:\'DM Sans\',sans-serif;font-size:13px;outline:none;">'
-    + '</div>'
-    + '<div style="font-size:10px;color:var(--muted);background:var(--surf);border-radius:8px;padding:8px 10px;margin-bottom:10px;">'
-    + 'Un email de confirmation sera envoyé si activé dans Supabase. '
-    + 'Pour désactiver : Supabase dashboard → Auth → Email confirmations → OFF'
-    + '</div>'
-    + '<div style="display:flex;justify-content:flex-end;">'
-    + '<button onclick="adminCreateUser()" style="padding:9px 18px;background:var(--rose);color:#fff;border:none;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:\'DM Sans\',sans-serif;">Créer le compte</button>'
-    + '</div>'
-    + '</div>';
-
-  // ─── Liste utilisateurs ───
-  html += '<div style="background:#fff;border:1.5px solid var(--bord);border-radius:12px;padding:16px;margin-bottom:12px;">'
-    + '<div style="font-size:12px;font-weight:800;color:var(--ink);margin-bottom:12px;">Utilisateurs</div>';
-
   if (profiles === null) {
-    // Table profiles manquante
-    html += '<div style="background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.25);border-radius:8px;padding:14px;font-size:12px;">'
-      + '<strong style="color:var(--amber);display:block;margin-bottom:8px;">Table "profiles" introuvable</strong>'
-      + 'Exécute ce SQL dans ton dashboard Supabase (SQL Editor) :'
-      + '<pre style="background:#F3F4F6;border-radius:8px;padding:12px;font-size:10px;line-height:1.8;overflow-x:auto;margin-top:10px;white-space:pre;">'
-      + 'create table profiles (\n'
-      + '  id           uuid references auth.users primary key,\n'
-      + '  email        text,\n'
-      + '  display_name text,\n'
-      + '  role         text default \'user\',\n'
-      + '  created_at   timestamptz default now()\n'
-      + ');\n\n'
-      + 'alter table profiles enable row level security;\n\n'
-      + '-- Chaque utilisateur voit son propre profil\n'
-      + 'create policy "own_profile" on profiles\n'
-      + '  for all using (auth.uid() = id);\n\n'
-      + '-- L\'admin voit tous les profils\n'
-      + 'create policy "admin_sees_all" on profiles\n'
-      + '  for select using (\n'
-      + '    exists (\n'
-      + '      select 1 from profiles\n'
-      + '      where id = auth.uid() and role = \'admin\'\n'
-      + '    )\n'
-      + '  );\n\n'
-      + '-- Définir le premier admin (remplace l\'UUID)\n'
-      + 'update profiles set role = \'admin\' where email = \'ton@email.com\';'
-      + '</pre>'
-      + '</div>';
-  } else if (profiles.length === 0) {
-    html += '<div style="text-align:center;padding:24px;color:var(--muted);font-size:12px;">Aucun utilisateur</div>';
-  } else {
-    html += '<div style="overflow-x:auto;">'
-      + '<table style="width:100%;border-collapse:collapse;">'
-      + '<thead><tr>'
-      + '<th style="text-align:left;font-size:9px;font-weight:700;color:var(--muted);padding:6px 8px;border-bottom:1.5px solid var(--bord);text-transform:uppercase;letter-spacing:.5px;">Email</th>'
-      + '<th style="text-align:left;font-size:9px;font-weight:700;color:var(--muted);padding:6px 8px;border-bottom:1.5px solid var(--bord);text-transform:uppercase;letter-spacing:.5px;">Nom</th>'
-      + '<th style="text-align:left;font-size:9px;font-weight:700;color:var(--muted);padding:6px 8px;border-bottom:1.5px solid var(--bord);text-transform:uppercase;letter-spacing:.5px;">Rôle</th>'
-      + '<th style="text-align:left;font-size:9px;font-weight:700;color:var(--muted);padding:6px 8px;border-bottom:1.5px solid var(--bord);text-transform:uppercase;letter-spacing:.5px;">Inscrit le</th>'
-      + '</tr></thead><tbody>';
-
-    profiles.forEach(function (p) {
-      var isMe = p.id === window._VEYRA_UID;
-      var roleStyle = p.role === 'admin'
-        ? 'background:rgba(124,58,237,.1);color:#7C3AED;'
-        : 'background:rgba(107,114,128,.1);color:#6B7280;';
-      var date = p.created_at ? new Date(p.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
-
-      html += '<tr style="' + (isMe ? 'background:rgba(255,45,122,.03);' : '') + '">'
-        + '<td style="font-size:12px;padding:9px 8px;border-bottom:1px solid var(--bord);">'
-        + escapeHtml(p.email || '—')
-        + (isMe ? ' <span style="font-size:9px;color:var(--rose);font-weight:700;background:rgba(255,45,122,.08);padding:1px 6px;border-radius:20px;">vous</span>' : '')
-        + '</td>'
-        + '<td style="font-size:12px;padding:9px 8px;border-bottom:1px solid var(--bord);color:var(--muted);">' + escapeHtml(p.display_name || '—') + '</td>'
-        + '<td style="padding:9px 8px;border-bottom:1px solid var(--bord);">'
-        + '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;' + roleStyle + '">' + escapeHtml(p.role || 'user') + '</span>'
-        + '</td>'
-        + '<td style="font-size:11px;padding:9px 8px;border-bottom:1px solid var(--bord);color:var(--muted);">' + date + '</td>'
-        + '</tr>';
-    });
-
-    html += '</tbody></table></div>'
-      + '<div style="font-size:10px;color:var(--muted);margin-top:10px;">'
-      + 'Pour promouvoir un utilisateur en admin : Supabase → Table Editor → profiles → modifier le champ role.'
-      + '</div>';
+    c.innerHTML = '<div class="adm-error">Impossible de charger les profils. V&eacute;rifie la connexion Supabase et les RLS policies.</div>';
+    return;
   }
 
-  html += '</div>';
+  // ─── Compute KPIs ───
+  var total      = profiles.length;
+  var trialing   = profiles.filter(function(p){ return p.subscription_status === 'trialing'; }).length;
+  var active     = profiles.filter(function(p){ return p.subscription_status === 'active'; }).length;
+  var canceled   = profiles.filter(function(p){ return p.subscription_status === 'canceled'; }).length;
+  var pastDue    = profiles.filter(function(p){ return p.subscription_status === 'past_due' || p.subscription_status === 'unpaid'; }).length;
+  var none       = profiles.filter(function(p){ return !p.subscription_status || p.subscription_status === 'none' || p.subscription_status === 'incomplete' || p.subscription_status === 'incomplete_expired'; }).length;
+  var onboarded  = profiles.filter(function(p){ return p.onboarded; }).length;
 
-  c.innerHTML = html;
+  // MRR = sum of active subscriptions × monthly price (trialing not counted, will become active later)
+  var mrr = profiles.reduce(function(acc, p) {
+    if (p.subscription_status === 'active' && p.subscription_price_id) {
+      return acc + (ADMIN_PRICE_AMOUNTS[p.subscription_price_id] || 0);
+    }
+    return acc;
+  }, 0);
+
+  // ─── HTML structure ───
+  c.innerHTML = ''
+    + _renderKpiCards(total, trialing, active, mrr)
+    + '<div class="adm-row">'
+    +   '<div class="adm-panel adm-panel-2">'
+    +     '<div class="adm-panel-title">Inscriptions sur 30 jours</div>'
+    +     '<div class="adm-chart-wrap"><canvas id="adm-chart-signups"></canvas></div>'
+    +   '</div>'
+    +   '<div class="adm-panel">'
+    +     '<div class="adm-panel-title">R&eacute;partition des abonnements</div>'
+    +     '<div class="adm-chart-wrap"><canvas id="adm-chart-status"></canvas></div>'
+    +   '</div>'
+    + '</div>'
+    + _renderFunnel(total, onboarded, trialing + active + canceled, active)
+    + _renderRecentUsers(profiles.slice(0, 10))
+    + _renderCreateUserCard()
+    + _renderAllUsersTable(profiles);
+
+  // ─── Render charts (after DOM) ───
+  setTimeout(function() {
+    _renderSignupsChart(profiles);
+    _renderStatusDonut(trialing, active, canceled, pastDue, none);
+    _wireCreateUserBtn();
+  }, 0);
+}
+
+// ─── KPI cards ───
+function _renderKpiCards(total, trialing, active, mrr) {
+  var mrrFmt = mrr.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return ''
+    + '<div class="adm-kpis">'
+    +   '<div class="adm-kpi adm-kpi-cyan">'
+    +     '<div class="adm-kpi-label">Total utilisateurs</div>'
+    +     '<div class="adm-kpi-value">' + total + '</div>'
+    +     '<div class="adm-kpi-tag">Toutes inscriptions</div>'
+    +   '</div>'
+    +   '<div class="adm-kpi adm-kpi-violet">'
+    +     '<div class="adm-kpi-label">Essais en cours</div>'
+    +     '<div class="adm-kpi-value">' + trialing + '</div>'
+    +     '<div class="adm-kpi-tag">Trialing</div>'
+    +   '</div>'
+    +   '<div class="adm-kpi adm-kpi-rose">'
+    +     '<div class="adm-kpi-label">Abonn&eacute;s actifs</div>'
+    +     '<div class="adm-kpi-value">' + active + '</div>'
+    +     '<div class="adm-kpi-tag">Active</div>'
+    +   '</div>'
+    +   '<div class="adm-kpi adm-kpi-green">'
+    +     '<div class="adm-kpi-label">MRR</div>'
+    +     '<div class="adm-kpi-value">' + mrrFmt + ' &euro;</div>'
+    +     '<div class="adm-kpi-tag">Recurring mensuel</div>'
+    +   '</div>'
+    + '</div>';
+}
+
+// ─── Signups bar chart (last 30 days) ───
+function _renderSignupsChart(profiles) {
+  var canvas = document.getElementById('adm-chart-signups');
+  if (!canvas || typeof Chart === 'undefined') return;
+
+  // Build the last 30 days bucket
+  var labels = [];
+  var data = [];
+  var today = new Date(); today.setHours(0,0,0,0);
+  for (var i = 29; i >= 0; i--) {
+    var d = new Date(today.getTime() - i * 86400000);
+    var key = d.toISOString().slice(0, 10);
+    var label = d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+    labels.push(label);
+    var count = profiles.filter(function(p) {
+      return p.created_at && p.created_at.slice(0, 10) === key;
+    }).length;
+    data.push(count);
+  }
+
+  if (_adminCharts.signups) _adminCharts.signups.destroy();
+
+  var ctx = canvas.getContext('2d');
+  var grad = ctx.createLinearGradient(0, 0, 0, 200);
+  grad.addColorStop(0, 'rgba(255,45,122,1)');
+  grad.addColorStop(1, 'rgba(124,58,237,1)');
+
+  _adminCharts.signups = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: data,
+        backgroundColor: grad,
+        borderRadius: 4,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { backgroundColor: '#0A0A14', titleColor: '#fff', bodyColor: '#fff' } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: 'rgba(0,0,0,.45)', font: { size: 10 }, maxRotation: 0, autoSkipPadding: 12 } },
+        y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,.05)' }, ticks: { color: 'rgba(0,0,0,.45)', font: { size: 10 }, precision: 0 } }
+      }
+    }
+  });
+}
+
+// ─── Status donut ───
+function _renderStatusDonut(trialing, active, canceled, pastDue, none) {
+  var canvas = document.getElementById('adm-chart-status');
+  if (!canvas || typeof Chart === 'undefined') return;
+
+  if (_adminCharts.status) _adminCharts.status.destroy();
+
+  _adminCharts.status = new Chart(canvas.getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Trialing', 'Active', 'Canceled', 'Past due', 'Aucun'],
+      datasets: [{
+        data: [trialing, active, canceled, pastDue, none],
+        backgroundColor: ['#7C3AED', '#FF2D7A', '#9CA3AF', '#F59E0B', '#E5E7EB'],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '65%',
+      plugins: {
+        legend: { position: 'bottom', labels: { color: 'rgba(0,0,0,.6)', font: { size: 11 }, boxWidth: 10, padding: 12 } },
+        tooltip: { backgroundColor: '#0A0A14', titleColor: '#fff', bodyColor: '#fff' }
+      }
+    }
+  });
+}
+
+// ─── Conversion funnel ───
+function _renderFunnel(total, onboarded, anyPaymentEvent, active) {
+  // 4 steps : signup -> onboarded -> trial started -> active subscription
+  var steps = [
+    { label: 'Inscriptions',           count: total },
+    { label: 'Onboarding compl&eacute;t&eacute;', count: onboarded },
+    { label: 'Essai d&eacute;marr&eacute;',     count: anyPaymentEvent },
+    { label: 'Abonn&eacute; actif',           count: active }
+  ];
+  var max = total || 1;
+
+  var rows = steps.map(function(s, i) {
+    var pct = max ? Math.round(s.count / max * 100) : 0;
+    var prevPct = i > 0 && steps[i-1].count
+      ? Math.round(s.count / steps[i-1].count * 100)
+      : null;
+    return ''
+      + '<div class="adm-funnel-row">'
+      +   '<div class="adm-funnel-label">' + s.label + '</div>'
+      +   '<div class="adm-funnel-bar"><div class="adm-funnel-fill" style="width:' + pct + '%"></div></div>'
+      +   '<div class="adm-funnel-val">' + s.count + '</div>'
+      +   '<div class="adm-funnel-pct">' + (prevPct === null ? '&mdash;' : prevPct + '%') + '</div>'
+      + '</div>';
+  }).join('');
+
+  return ''
+    + '<div class="adm-panel">'
+    +   '<div class="adm-panel-title">Funnel de conversion</div>'
+    +   '<div class="adm-funnel-head">'
+    +     '<span></span><span></span><span class="adm-funnel-h">N</span><span class="adm-funnel-h">% &eacute;tape pr&eacute;c.</span>'
+    +   '</div>'
+    +   '<div class="adm-funnel">' + rows + '</div>'
+    + '</div>';
+}
+
+// ─── Recent users (last 10) ───
+function _renderRecentUsers(profiles) {
+  if (!profiles.length) return '';
+  var rows = profiles.map(function(p) {
+    return '<tr>'
+      + '<td class="adm-cell-email">' + escapeHtml(p.email || '—') + (p.id === window._VEYRA_UID ? ' <span class="adm-tag-me">vous</span>' : '') + '</td>'
+      + '<td>' + escapeHtml(p.display_name || '—') + '</td>'
+      + '<td>' + _statusBadge(p.subscription_status) + '</td>'
+      + '<td class="adm-cell-mute">' + _formatDate(p.created_at) + '</td>'
+      + '</tr>';
+  }).join('');
+  return ''
+    + '<div class="adm-panel">'
+    +   '<div class="adm-panel-title">10 derniers utilisateurs</div>'
+    +   '<table class="adm-table">'
+    +     '<thead><tr><th>Email</th><th>Nom</th><th>Statut</th><th>Inscrit le</th></tr></thead>'
+    +     '<tbody>' + rows + '</tbody>'
+    +   '</table>'
+    + '</div>';
+}
+
+// ─── Status badge helper ───
+function _statusBadge(status) {
+  var s = status || 'none';
+  var cls = 'adm-badge-mute', label = s;
+  if (s === 'active')   { cls = 'adm-badge-rose';   label = 'Actif'; }
+  if (s === 'trialing') { cls = 'adm-badge-violet'; label = 'Essai'; }
+  if (s === 'canceled') { cls = 'adm-badge-mute';   label = 'Annul&eacute;'; }
+  if (s === 'past_due' || s === 'unpaid') { cls = 'adm-badge-amber'; label = s === 'past_due' ? 'En retard' : 'Impay&eacute;'; }
+  return '<span class="adm-badge ' + cls + '">' + label + '</span>';
+}
+
+function _formatDate(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+// ─── All users table (existing, kept for backward compat) ───
+function _renderAllUsersTable(profiles) {
+  var rows = profiles.map(function(p) {
+    var roleStyle = p.role === 'admin'
+      ? 'adm-badge-violet'
+      : 'adm-badge-mute';
+    return '<tr' + (p.id === window._VEYRA_UID ? ' class="adm-row-me"' : '') + '>'
+      + '<td class="adm-cell-email">' + escapeHtml(p.email || '—') + (p.id === window._VEYRA_UID ? ' <span class="adm-tag-me">vous</span>' : '') + '</td>'
+      + '<td>' + escapeHtml(p.display_name || '—') + '</td>'
+      + '<td><span class="adm-badge ' + roleStyle + '">' + escapeHtml(p.role || 'user') + '</span></td>'
+      + '<td>' + _statusBadge(p.subscription_status) + '</td>'
+      + '<td class="adm-cell-mute">' + _formatDate(p.created_at) + '</td>'
+      + '</tr>';
+  }).join('');
+  return ''
+    + '<div class="adm-panel">'
+    +   '<div class="adm-panel-title">Tous les utilisateurs (' + profiles.length + ')</div>'
+    +   '<div class="adm-table-scroll"><table class="adm-table">'
+    +     '<thead><tr><th>Email</th><th>Nom</th><th>R&ocirc;le</th><th>Abonnement</th><th>Inscrit le</th></tr></thead>'
+    +     '<tbody>' + rows + '</tbody>'
+    +   '</table></div>'
+    +   '<div class="adm-table-footnote">Pour promouvoir un user en admin&nbsp;: Supabase &rarr; Table Editor &rarr; profiles &rarr; modifier <code>role</code>.</div>'
+    + '</div>';
+}
+
+// ─── Create-user form ───
+function _renderCreateUserCard() {
+  return ''
+    + '<div class="adm-panel">'
+    +   '<div class="adm-panel-title">Cr&eacute;er un compte utilisateur (manuel)</div>'
+    +   '<div class="adm-form">'
+    +     '<input type="email" id="adm-email" placeholder="utilisateur@exemple.com" autocomplete="off">'
+    +     '<input type="password" id="adm-pass" placeholder="Mot de passe (min 6 car.)" autocomplete="new-password">'
+    +     '<input type="text" id="adm-name" placeholder="Nom affich&eacute;">'
+    +     '<button id="adm-create-btn">Cr&eacute;er</button>'
+    +   '</div>'
+    + '</div>';
+}
+
+function _wireCreateUserBtn() {
+  var btn = document.getElementById('adm-create-btn');
+  if (btn) btn.onclick = adminCreateUser;
 }
 
 async function adminCreateUser() {
   var emailEl = document.getElementById('adm-email');
   var passEl  = document.getElementById('adm-pass');
   var nameEl  = document.getElementById('adm-name');
-
   var email = emailEl ? emailEl.value.trim() : '';
   var pass  = passEl  ? passEl.value : '';
   var name  = nameEl  ? nameEl.value.trim() : '';
@@ -153,7 +337,7 @@ async function adminCreateUser() {
   if (pass.length < 6) { showSync('⚠️ Mot de passe : 6 caractères minimum', 'rgba(245,158,11,.8)'); return; }
   if (!sb) return;
 
-  var btn = document.querySelector('[onclick="adminCreateUser()"]');
+  var btn = document.getElementById('adm-create-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'Création…'; }
 
   var result = await sb.auth.signUp({
@@ -162,21 +346,20 @@ async function adminCreateUser() {
     options: { data: { display_name: name } }
   });
 
-  if (btn) { btn.disabled = false; btn.textContent = 'Créer le compte'; }
+  if (btn) { btn.disabled = false; btn.textContent = 'Créer'; }
 
   if (result.error) {
     showSync('❌ ' + result.error.message, 'rgba(220,38,38,.8)');
     return;
   }
 
-  // Créer le profil manuellement (au cas où le trigger n'existe pas)
   if (result.data && result.data.user) {
     try {
       await sb.from('profiles').insert({
-        id:           result.data.user.id,
-        email:        email,
+        id: result.data.user.id,
+        email: email,
         display_name: name,
-        role:         'user'
+        role: 'user'
       });
     } catch (e) {}
   }
@@ -185,7 +368,5 @@ async function adminCreateUser() {
   if (emailEl) emailEl.value = '';
   if (passEl)  passEl.value  = '';
   if (nameEl)  nameEl.value  = '';
-
-  var profiles = await _adminLoadProfiles();
-  _renderAdminContent(profiles);
+  renderAdmin();
 }
