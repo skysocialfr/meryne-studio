@@ -46,6 +46,9 @@ function setAuthMode(mode) {
 }
 
 function submitAuth() {
+  if (typeof track === 'function') {
+    track(AUTH_MODE === 'signup' ? 'auth_signup_submitted' : 'auth_login_submitted');
+  }
   return AUTH_MODE === 'signup' ? doSignup() : doLogin();
 }
 
@@ -172,11 +175,13 @@ async function doSignup() {
 
   // If email confirmation is enabled, signUp does NOT return a session
   if (!result.data.session) {
+    if (typeof track === 'function') track('auth_signup_completed', { needs_email_confirm: true });
     showLoginSuccess('Compte créé ! Vérifie ta boîte mail pour confirmer.');
     if (btn) { btn.disabled = false; btn.textContent = 'Créer mon compte →'; }
     return;
   }
 
+  if (typeof track === 'function') track('auth_signup_completed', { needs_email_confirm: false });
   await _enterApp(result.data.user);
 }
 

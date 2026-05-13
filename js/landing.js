@@ -19,6 +19,9 @@ function hideLandingPage() {
 
 // Open the auth form (signup or login) from a landing CTA
 function goToAuth(mode) {
+  if (typeof track === 'function') {
+    track(mode === 'signup' ? 'landing_signup_clicked' : 'landing_login_clicked');
+  }
   hideLandingPage();
   if (typeof showLoginUI === 'function') {
     showLoginUI(mode === 'signup' ? 'signup' : 'login');
