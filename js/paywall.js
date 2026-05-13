@@ -60,6 +60,7 @@ var VEYRA_PLANS = [
 ];
 
 function showPaywall() {
+  if (typeof track === 'function') track('paywall_viewed');
   var p = window._USER_PROFILE || {};
   var page = document.getElementById('paywall-page');
   if (!page) {
@@ -185,6 +186,7 @@ function renderSubscriptionBadge() {
 
 // Kick off Stripe Checkout for a given plan price_id
 async function startCheckout(priceId) {
+  if (typeof track === 'function') track('checkout_started', { price_id: priceId });
   // Find the button that was clicked to disable it
   var btn = document.querySelector('[onclick*="' + priceId + '"]');
   var originalLabel = btn ? btn.textContent : '';
@@ -247,6 +249,7 @@ async function handleCheckoutReturn() {
     return;
   }
 
+  if (typeof track === 'function') track('checkout_completed');
   // success: poll the profile up to 10s until subscription_status flips
   showSync('🎉 Bienvenue dans Veyra Pro ! Activation en cours…', 'rgba(5,150,105,.8)');
   for (var i = 0; i < 10; i++) {
