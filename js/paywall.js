@@ -4,6 +4,61 @@
    Lets them start the 7-day trial via Stripe Checkout.
    ═══════════════════════════════════════════════ */
 
+var VEYRA_PLANS = [
+  {
+    id: 'solo',
+    price_id: 'price_1TWY5oAIFObJ3lA9b1ioqI8c',
+    tag: 'SOLO',
+    name: 'Pour créateur·rice solo',
+    price: '9,99 €',
+    period: '/ mois',
+    feats: [
+      '1 utilisateur',
+      '1 compte Instagram + 1 TikTok',
+      'Feed simulation',
+      'Production / Planning / Stats',
+      'IA Claude (50 générations / mois)',
+      'Sync cloud temps réel',
+      'Support par email'
+    ]
+  },
+  {
+    id: 'pro',
+    price_id: 'price_1TWjvS0wPb5M8Vv3ipQvWtU7',
+    tag: 'PRO',
+    name: 'Pour power creator',
+    price: '19,99 €',
+    period: '/ mois',
+    popular: true,
+    feats: [
+      '1 utilisateur',
+      '3 comptes Instagram + 3 TikTok',
+      'Tout Solo, plus :',
+      'IA Claude illimitée',
+      'Statistiques avancées',
+      'Support prioritaire',
+      'Accès anticipé aux nouvelles features'
+    ]
+  },
+  {
+    id: 'agency',
+    price_id: 'price_1TWjvl0wPb5M8Vv3887w92ru',
+    tag: 'AGENCY',
+    name: 'Pour agence / équipe',
+    price: '59,99 €',
+    period: '/ mois',
+    feats: [
+      '5 utilisateurs en équipe',
+      '10 comptes Instagram + 10 TikTok',
+      'Tout Pro, plus :',
+      "Gestion d'équipe (rôles)",
+      'Bibliothèque partagée',
+      'Support dédié',
+      'SLA réponse < 4h'
+    ]
+  }
+];
+
 function showPaywall() {
   var p = window._USER_PROFILE || {};
   var page = document.getElementById('paywall-page');
@@ -20,60 +75,67 @@ function showPaywall() {
     sub = 'Mets à jour ta carte pour reprendre l\'accès à ton studio.';
   } else if (status === 'canceled') {
     headline = 'Ton abonnement est terminé';
-    sub = 'Réactive Veyra Pro pour retrouver ton studio.';
+    sub = 'Réactive ton plan pour retrouver ton studio.';
   } else {
     headline = 'Bienvenue, ' + escapeHtml(p.display_name || 'créateur·rice') + ' ✨';
-    sub = 'Démarre ton essai gratuit pour accéder à ton studio.';
+    sub = 'Choisis ton plan pour démarrer ton essai gratuit de 7 jours.';
   }
 
   var hasCustomer = !!p.stripe_customer_id;
-  var primaryCta = (status === 'past_due' || status === 'unpaid' || status === 'canceled')
-    ? '<button class="pw-cta" onclick="openCustomerPortal()">Gérer mon abonnement →</button>'
-    : '<button class="pw-cta" onclick="startCheckout()">Démarrer mon essai 7 jours →</button>';
-
-  var secondaryCta = hasCustomer
+  var portalLink = hasCustomer
     ? '<button class="pw-secondary" onclick="openCustomerPortal()">Gérer ma facturation</button>'
     : '';
 
-  var feats = [
-    ['🖼️',  'Feed Instagram & TikTok',          'Simule ton feed et planifie tes visuels'],
-    ['🎬',  'Production',                         'Tâches, scripts, plans de tournage'],
-    ['📅',  'Planning multi-réseaux',             'Calendrier de publication unifié'],
-    ['📈',  'Stats & objectifs',                  'Suivi de croissance hebdomadaire'],
-    ['🤖',  'IA Claude intégrée',                 'Captions, hashtags, scripts à ta voix'],
-    ['☁️',  'Sync cloud temps réel',              'Tout synchronisé, sur tous tes devices']
-  ];
-  var featsHtml = feats.map(function(f) {
-    return '<div class="pw-feat">'
-      + '<div class="pw-feat-icon">' + f[0] + '</div>'
-      + '<div><div class="pw-feat-title">' + f[1] + '</div>'
-      + '<div class="pw-feat-desc">' + f[2] + '</div></div>'
+  // Recovery state (canceled / past_due) — show single CTA to portal, not 3 plans
+  if (status === 'past_due' || status === 'unpaid' || status === 'canceled') {
+    page.innerHTML =
+        '<div class="pw-wrap">'
+      +   '<div class="pw-brand">Veyra Studio</div>'
+      +   '<h1 class="pw-headline">' + headline + '</h1>'
+      +   '<p class="pw-sub">' + sub + '</p>'
+      +   '<div class="pw-card" style="text-align:center;padding:32px;">'
+      +     '<button class="pw-cta" onclick="openCustomerPortal()">Gérer mon abonnement →</button>'
+      +   '</div>'
+      +   '<div class="pw-foot">'
+      +     '<button class="pw-logout" onclick="doLogout()">Se déconnecter</button>'
+      +   '</div>'
+      + '</div>';
+    page.style.display = 'flex';
+    return;
+  }
+
+  var cardsHtml = VEYRA_PLANS.map(function(plan) {
+    var feats = plan.feats.map(function(f) {
+      return '<li>' + escapeHtml(f) + '</li>';
+    }).join('');
+    return ''
+      + '<div class="pw-plan' + (plan.popular ? ' pw-plan-popular' : '') + '">'
+      +   (plan.popular ? '<div class="pw-plan-badge">RECOMMANDÉ</div>' : '')
+      +   '<div class="pw-plan-tag">' + plan.tag + '</div>'
+      +   '<div class="pw-plan-name">' + plan.name + '</div>'
+      +   '<div class="pw-plan-price"><strong>' + plan.price + '</strong><span>' + plan.period + '</span></div>'
+      +   '<div class="pw-plan-trial">✨ 7 jours d\'essai gratuit</div>'
+      +   '<ul class="pw-plan-feats">' + feats + '</ul>'
+      +   '<button class="' + (plan.popular ? 'pw-cta' : 'pw-cta-ghost') + ' pw-plan-cta" '
+      +     'onclick="startCheckout(\'' + plan.price_id + '\')" data-plan="' + plan.id + '">'
+      +     'Démarrer ' + plan.tag.charAt(0) + plan.tag.slice(1).toLowerCase()
+      +   '</button>'
       + '</div>';
   }).join('');
 
   page.innerHTML =
-      '<div class="pw-wrap">'
+      '<div class="pw-wrap pw-wrap-wide">'
     +   '<div class="pw-brand">Veyra Studio</div>'
     +   '<h1 class="pw-headline">' + headline + '</h1>'
     +   '<p class="pw-sub">' + sub + '</p>'
-    +   '<div class="pw-card">'
-    +     '<div class="pw-card-top">'
-    +       '<div>'
-    +         '<div class="pw-card-tag">VEYRA PRO</div>'
-    +         '<div class="pw-card-price"><strong>9,99 €</strong><span>/ mois</span></div>'
-    +         '<div class="pw-card-trial">✨ 7 jours d\'essai gratuit — sans engagement</div>'
-    +       '</div>'
-    +     '</div>'
-    +     '<div class="pw-features">' + featsHtml + '</div>'
-    +     primaryCta
-    +     '<div class="pw-trust">'
-    +       '<span>🔒 Paiement sécurisé Stripe</span>'
-    +       '<span>·</span>'
-    +       '<span>Annulation 1 clic</span>'
-    +     '</div>'
+    +   '<div class="pw-plans">' + cardsHtml + '</div>'
+    +   '<div class="pw-trust">'
+    +     '<span>🔒 Paiement sécurisé Stripe</span>'
+    +     '<span>·</span>'
+    +     '<span>Annulation 1 clic depuis ton espace</span>'
     +   '</div>'
     +   '<div class="pw-foot">'
-    +     (secondaryCta || '')
+    +     portalLink
     +     '<button class="pw-logout" onclick="doLogout()">Se déconnecter</button>'
     +   '</div>'
     + '</div>';
@@ -121,13 +183,17 @@ function renderSubscriptionBadge() {
   el.style.display = 'none';
 }
 
-// Kick off Stripe Checkout
-async function startCheckout() {
-  var btn = document.querySelector('.pw-cta');
+// Kick off Stripe Checkout for a given plan price_id
+async function startCheckout(priceId) {
+  // Find the button that was clicked to disable it
+  var btn = document.querySelector('[onclick*="' + priceId + '"]');
+  var originalLabel = btn ? btn.textContent : '';
   if (btn) { btn.disabled = true; btn.textContent = 'Préparation…'; }
 
   try {
-    var res = await sb.functions.invoke('create-checkout', { body: {} });
+    var res = await sb.functions.invoke('create-checkout', {
+      body: { price_id: priceId }
+    });
     if (res.error) throw new Error(res.error.message || 'invoke_failed');
     var data = res.data || {};
     if (data.error === 'already_subscribed') {
@@ -135,11 +201,14 @@ async function startCheckout() {
       refreshProfileAndRoute();
       return;
     }
+    if (data.error === 'invalid_price_id') {
+      throw new Error('invalid_price_id');
+    }
     if (!data.url) throw new Error('no_session_url');
     window.location.href = data.url;
   } catch (err) {
     console.error('Checkout failed:', err);
-    if (btn) { btn.disabled = false; btn.textContent = 'Démarrer mon essai 7 jours →'; }
+    if (btn) { btn.disabled = false; btn.textContent = originalLabel || 'Démarrer'; }
     showSync('❌ Impossible de démarrer le paiement', 'rgba(220,38,38,.8)');
   }
 }

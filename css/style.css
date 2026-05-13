@@ -125,6 +125,34 @@ input[type="date"]::-webkit-calendar-picker-indicator{cursor:pointer;opacity:.5;
 .pw-secondary,.pw-logout{background:none;border:none;color:rgba(255,255,255,.45);font-size:12px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;padding:6px 8px;transition:color .15s;}
 .pw-secondary:hover,.pw-logout:hover{color:#fff;}
 
+/* Paywall 3-plan grid */
+.pw-wrap-wide{max-width:1080px;}
+.pw-plans{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:start;margin-bottom:18px;}
+.pw-plan{position:relative;padding:24px 22px;background:rgba(255,255,255,.03);border:1.5px solid rgba(255,255,255,.08);border-radius:18px;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 18px 44px rgba(0,0,0,.35);transition:transform .25s,border-color .25s;}
+.pw-plan:hover{transform:translateY(-3px);border-color:rgba(255,255,255,.16);}
+.pw-plan-popular{border-color:rgba(255,45,122,.5);background:linear-gradient(180deg,rgba(255,45,122,.08),rgba(255,255,255,.025) 30%);box-shadow:0 18px 44px rgba(255,45,122,.18),0 0 0 1px rgba(255,45,122,.25);transform:translateY(-6px);}
+.pw-plan-popular:hover{transform:translateY(-9px);}
+.pw-plan-badge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#FF2D7A,#7C3AED);color:#fff;font-size:9px;font-weight:800;letter-spacing:1.8px;padding:5px 12px;border-radius:99px;box-shadow:0 6px 18px rgba(255,45,122,.4);}
+.pw-plan-tag{display:inline-block;font-size:9px;font-weight:800;letter-spacing:2.2px;color:var(--rose);background:rgba(255,45,122,.12);padding:4px 9px;border-radius:6px;margin-bottom:10px;}
+.pw-plan-name{font-size:11px;color:rgba(255,255,255,.5);margin-bottom:14px;font-weight:500;}
+.pw-plan-price{font-family:'Cormorant Garamond',serif;color:#fff;display:flex;align-items:baseline;gap:5px;margin-bottom:8px;}
+.pw-plan-price strong{font-size:36px;font-weight:700;letter-spacing:-1px;}
+.pw-plan-price span{font-size:13px;color:rgba(255,255,255,.5);font-family:'DM Sans',sans-serif;}
+.pw-plan-trial{font-size:11px;color:#6EE7B7;font-weight:500;margin-bottom:18px;padding-bottom:18px;border-bottom:1.5px solid rgba(255,255,255,.06);}
+.pw-plan-feats{list-style:none;padding:0;margin:0 0 22px 0;}
+.pw-plan-feats li{font-size:12.5px;color:rgba(255,255,255,.78);padding:6px 0 6px 22px;position:relative;line-height:1.4;}
+.pw-plan-feats li::before{content:'';position:absolute;left:0;top:11px;width:11px;height:6px;border-left:1.8px solid var(--rose);border-bottom:1.8px solid var(--rose);transform:rotate(-45deg);}
+.pw-plan-cta{width:100%;}
+.pw-cta-ghost{padding:13px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.12);border-radius:10px;color:#fff;font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .18s;}
+.pw-cta-ghost:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);}
+.pw-cta-ghost:disabled{opacity:.5;cursor:not-allowed;}
+
+@media (max-width:900px){
+  .pw-plans{grid-template-columns:1fr;max-width:420px;margin:0 auto 18px;}
+  .pw-plan-popular{transform:none;}
+  .pw-plan-popular:hover{transform:translateY(-3px);}
+}
+
 /* ═══ HEADER SUB BADGE ═══ */
 .sub-badge{align-items:center;gap:5px;padding:4px 10px;border-radius:99px;font-size:10px;font-weight:800;font-family:'DM Mono',monospace;letter-spacing:1.2px;cursor:pointer;border:1.5px solid transparent;transition:transform .15s,opacity .15s;user-select:none;}
 .sub-badge:hover{transform:translateY(-1px);opacity:.92;}
@@ -214,9 +242,15 @@ body.on-landing{background:var(--dark);color:#F0F0F0;overflow-x:hidden;}
 .land-step-title{font-size:18px;font-weight:700;color:#fff;margin-bottom:10px;letter-spacing:-.2px;}
 .land-step-desc{font-size:13px;color:rgba(255,255,255,.55);line-height:1.55;}
 
-/* Pricing */
+/* Pricing — 3-tier grid (Solo / Pro / Agency) */
 .land-pricing{display:flex;justify-content:center;}
-.land-price-card{width:100%;max-width:440px;padding:34px;background:rgba(255,255,255,.03);border:1.5px solid rgba(255,255,255,.08);border-radius:22px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 24px 60px rgba(0,0,0,.4);}
+.land-pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;align-items:start;}
+.land-price-card{position:relative;width:100%;padding:30px 26px;background:rgba(255,255,255,.03);border:1.5px solid rgba(255,255,255,.08);border-radius:22px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 24px 60px rgba(0,0,0,.4);transition:transform .25s,border-color .25s;}
+.land-price-card:hover{transform:translateY(-4px);border-color:rgba(255,255,255,.16);}
+.land-price-card-popular{border-color:rgba(255,45,122,.5);background:linear-gradient(180deg,rgba(255,45,122,.08),rgba(255,255,255,.025) 30%);box-shadow:0 24px 60px rgba(255,45,122,.18),0 0 0 1px rgba(255,45,122,.25);transform:translateY(-8px);}
+.land-price-card-popular:hover{transform:translateY(-12px);border-color:rgba(255,45,122,.65);}
+.land-price-popular{position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#FF2D7A,#7C3AED);color:#fff;font-size:10px;font-weight:800;letter-spacing:2px;padding:6px 14px;border-radius:99px;box-shadow:0 6px 18px rgba(255,45,122,.4);}
+.land-price-name{font-size:12px;color:rgba(255,255,255,.5);margin-bottom:14px;font-weight:500;}
 .land-price-tag{display:inline-block;font-size:10px;font-weight:800;letter-spacing:2.5px;color:var(--rose);background:rgba(255,45,122,.12);padding:5px 11px;border-radius:6px;margin-bottom:18px;}
 .land-price-amount{font-family:'Cormorant Garamond',serif;color:#fff;display:flex;align-items:baseline;gap:6px;margin-bottom:10px;}
 .land-price-amount strong{font-size:48px;font-weight:700;letter-spacing:-1.5px;}
@@ -258,6 +292,9 @@ body.on-landing{background:var(--dark);color:#F0F0F0;overflow-x:hidden;}
   .land-h1{font-size:48px;}
   .land-h2,.land-cta-final-h2{font-size:34px;}
   .land-features,.land-steps{grid-template-columns:repeat(2,1fr);}
+  .land-pricing-grid{grid-template-columns:1fr;max-width:440px;margin:0 auto;}
+  .land-price-card-popular{transform:none;}
+  .land-price-card-popular:hover{transform:translateY(-4px);}
   .land-footer-grid{grid-template-columns:1fr 1fr;gap:32px;}
   .land-nav-links{display:none;}
 }

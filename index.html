@@ -291,27 +291,72 @@
         <h2 class="land-h2">Un plan, simple et complet.</h2>
         <p class="land-section-sub">Pas de plans &agrave; tiroirs. Tout est inclus &mdash; mensuel, sans engagement.</p>
       </div>
-      <div class="land-pricing">
+      <div class="land-pricing land-pricing-grid">
+
         <div class="land-price-card">
-          <div class="land-price-tag">VEYRA PRO</div>
+          <div class="land-price-tag">SOLO</div>
+          <div class="land-price-name">Pour cr&eacute;ateur&middot;rice solo</div>
           <div class="land-price-amount">
             <strong>9,99 &euro;</strong><span>/ mois</span>
           </div>
-          <div class="land-price-trial">&#x2728; 7 jours d'essai gratuit &mdash; sans engagement</div>
+          <div class="land-price-trial">&#x2728; 7 jours d'essai &mdash; sans engagement</div>
           <ul class="land-price-feats">
-            <li>Feed Instagram &amp; TikTok illimit&eacute;</li>
-            <li>Production : t&acirc;ches, scripts, plans de tournage</li>
-            <li>Planning multi-r&eacute;seaux unifi&eacute;</li>
-            <li>Statistiques &amp; objectifs hebdomadaires</li>
-            <li>IA Claude int&eacute;gr&eacute;e (captions, hashtags, scripts)</li>
-            <li>Sync cloud temps r&eacute;el sur tous tes devices</li>
+            <li>1 utilisateur</li>
+            <li>1 compte Instagram + 1 TikTok</li>
+            <li>Feed simulation</li>
+            <li>Production / Planning / Stats</li>
+            <li>IA Claude (50 g&eacute;n&eacute;rations / mois)</li>
+            <li>Sync cloud temps r&eacute;el</li>
             <li>Support par email</li>
           </ul>
-          <button class="land-btn-primary land-btn-lg land-price-cta" onclick="goToAuth('signup')">D&eacute;marrer mon essai 7 jours &rarr;</button>
+          <button class="land-btn-ghost land-btn-lg land-price-cta" data-price-id="price_1TWY5oAIFObJ3lA9b1ioqI8c" data-plan="solo" onclick="goToAuth('signup')">Commencer Solo</button>
           <div class="land-price-trust">
-            <span>&#x1F512; Paiement s&eacute;curis&eacute; Stripe</span>
-            <span>&middot;</span>
-            <span>Annulation 1 clic</span>
+            <span>&#x1F512; Stripe &middot; Annulation 1 clic</span>
+          </div>
+        </div>
+
+        <div class="land-price-card land-price-card-popular">
+          <div class="land-price-popular">RECOMMAND&Eacute;</div>
+          <div class="land-price-tag">PRO</div>
+          <div class="land-price-name">Pour power creator</div>
+          <div class="land-price-amount">
+            <strong>19,99 &euro;</strong><span>/ mois</span>
+          </div>
+          <div class="land-price-trial">&#x2728; 7 jours d'essai &mdash; sans engagement</div>
+          <ul class="land-price-feats">
+            <li>1 utilisateur</li>
+            <li>3 comptes Instagram + 3 TikTok</li>
+            <li>Tout Solo, plus :</li>
+            <li><strong>IA Claude illimit&eacute;e</strong></li>
+            <li><strong>Statistiques avanc&eacute;es</strong></li>
+            <li><strong>Support prioritaire</strong></li>
+            <li>Acc&egrave;s anticip&eacute; aux nouvelles features</li>
+          </ul>
+          <button class="land-btn-primary land-btn-lg land-price-cta" data-price-id="price_1TWjvS0wPb5M8Vv3ipQvWtU7" data-plan="pro" onclick="goToAuth('signup')">Commencer Pro &rarr;</button>
+          <div class="land-price-trust">
+            <span>&#x1F512; Stripe &middot; Annulation 1 clic</span>
+          </div>
+        </div>
+
+        <div class="land-price-card">
+          <div class="land-price-tag">AGENCY</div>
+          <div class="land-price-name">Pour agence / &eacute;quipe</div>
+          <div class="land-price-amount">
+            <strong>59,99 &euro;</strong><span>/ mois</span>
+          </div>
+          <div class="land-price-trial">&#x2728; 7 jours d'essai &mdash; sans engagement</div>
+          <ul class="land-price-feats">
+            <li>5 utilisateurs en &eacute;quipe</li>
+            <li>10 comptes Instagram + 10 TikTok</li>
+            <li>Tout Pro, plus :</li>
+            <li><strong>Gestion d'&eacute;quipe (r&ocirc;les)</strong></li>
+            <li><strong>Biblioth&egrave;que partag&eacute;e</strong></li>
+            <li><strong>Support d&eacute;di&eacute;</strong></li>
+            <li>SLA r&eacute;ponse &lt; 4h</li>
+          </ul>
+          <button class="land-btn-ghost land-btn-lg land-price-cta" data-price-id="price_1TWjvl0wPb5M8Vv3887w92ru" data-plan="agency" onclick="goToAuth('signup')">Commencer Agency</button>
+          <div class="land-price-trust">
+            <span>&#x1F512; Stripe &middot; Annulation 1 clic</span>
           </div>
         </div>
       </div>
@@ -774,7 +819,7 @@
 <script src="js/storage.js?v=7"></script>
 <script src="js/auth.js?v=11"></script>
 <script src="js/landing.js?v=1"></script>
-<script src="js/paywall.js?v=1"></script>
+<script src="js/paywall.js?v=2"></script>
 <script src="js/onboarding.js?v=2"></script>
 <script src="js/feed.js?v=13"></script>
 <script src="js/production.js?v=5"></script>

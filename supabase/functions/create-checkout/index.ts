@@ -71,7 +71,23 @@ Deno.serve(async (req: Request) => {
     }
 
     const appUrl = Deno.env.get("APP_URL") ?? "https://veyrastudio.fr";
-    const priceId = Deno.env.get("STRIPE_PRICE_ID")!;
+
+    // Whitelist of allowed Stripe price IDs (Solo / Pro / Agency)
+    const ALLOWED_PRICES = new Set([
+      "price_1TWY5oAIFObJ3lA9b1ioqI8c",  // Solo  — 9.99 EUR/mo
+      "price_1TWjvS0wPb5M8Vv3ipQvWtU7",  // Pro   — 19.99 EUR/mo
+      "price_1TWjvl0wPb5M8Vv3887w92ru",  // Agency — 59.99 EUR/mo
+    ]);
+    const DEFAULT_PRICE = Deno.env.get("STRIPE_PRICE_ID")
+      ?? "price_1TWY5oAIFObJ3lA9b1ioqI8c";
+
+    let body: { price_id?: string } = {};
+    try { body = await req.json(); } catch { /* no body, use default */ }
+
+    const priceId = body.price_id ?? DEFAULT_PRICE;
+    if (!ALLOWED_PRICES.has(priceId)) {
+      return json({ error: "invalid_price_id" }, 400);
+    }
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
