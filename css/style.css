@@ -132,6 +132,131 @@ input[type="date"]::-webkit-calendar-picker-indicator{cursor:pointer;opacity:.5;
 .sub-badge.active{background:rgba(255,45,122,.18);border-color:rgba(255,45,122,.35);color:#FFC1D8;}
 .sub-badge.admin{background:rgba(245,158,11,.18);border-color:rgba(245,158,11,.35);color:#FCD34D;}
 
+/* "Back to landing" link inside the auth card */
+.lbox-back{position:absolute;top:-32px;left:0;background:none;border:none;color:rgba(255,255,255,.5);font-size:12px;font-weight:500;font-family:'DM Sans',sans-serif;cursor:pointer;padding:6px 4px;transition:color .15s;}
+.lbox-back:hover{color:#fff;}
+
+/* ═══ PUBLIC LANDING ═══ */
+body.on-landing{background:var(--dark);color:#F0F0F0;overflow-x:hidden;}
+#landing-page{display:block;position:relative;background:var(--dark);color:#F0F0F0;min-height:100vh;font-family:'DM Sans',sans-serif;}
+#landing-page::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 70% 60% at 15% 25%,rgba(255,45,122,.14),transparent 50%),radial-gradient(ellipse 60% 55% at 85% 75%,rgba(124,58,237,.12),transparent 50%);pointer-events:none;z-index:0;}
+#landing-page > *{position:relative;z-index:1;}
+
+.land-wrap{width:100%;max-width:1100px;margin:0 auto;padding:0 24px;}
+.land-wrap-narrow{max-width:760px;}
+
+/* Top nav */
+.land-nav{position:sticky;top:0;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);background:rgba(10,10,20,.7);border-bottom:1px solid rgba(255,255,255,.05);z-index:10;}
+.land-nav-inner{display:flex;align-items:center;justify-content:space-between;padding-top:14px;padding-bottom:14px;gap:24px;}
+.land-logo{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;color:#fff;letter-spacing:-.2px;}
+.land-nav-links{display:flex;gap:28px;}
+.land-nav-link{color:rgba(255,255,255,.6);font-size:13px;font-weight:500;text-decoration:none;transition:color .15s;}
+.land-nav-link:hover{color:#fff;}
+.land-nav-cta{display:flex;align-items:center;gap:10px;}
+.land-link{background:none;border:none;color:rgba(255,255,255,.7);font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;padding:8px 10px;transition:color .15s;}
+.land-link:hover{color:#fff;}
+.land-btn-primary{padding:10px 18px;background:var(--rose);border:none;border-radius:9px;color:#fff;font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;letter-spacing:.2px;transition:opacity .18s,transform .15s,box-shadow .18s;}
+.land-btn-primary:hover{opacity:.94;transform:translateY(-1px);box-shadow:0 8px 22px rgba(255,45,122,.35);}
+.land-btn-lg{padding:14px 26px;font-size:14px;}
+.land-btn-xl{padding:17px 38px;font-size:15px;}
+.land-btn-ghost{padding:14px 26px;background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.12);border-radius:9px;color:#fff;font-size:14px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .15s;}
+.land-btn-ghost:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2);}
+
+/* Hero */
+.land-hero{padding:90px 0 100px;text-align:center;}
+.land-hero-tag{display:inline-block;font-family:'DM Mono',monospace;font-size:10px;font-weight:600;letter-spacing:2.5px;color:rgba(255,255,255,.5);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);padding:6px 14px;border-radius:99px;margin-bottom:28px;}
+.land-h1{font-family:'Cormorant Garamond',serif;font-size:64px;font-weight:700;line-height:1.05;letter-spacing:-1.5px;color:#fff;margin-bottom:22px;}
+.land-h1 em{color:var(--rose);font-style:italic;}
+.land-sub{font-size:17px;color:rgba(255,255,255,.6);max-width:620px;margin:0 auto 36px;line-height:1.6;}
+.land-hero-ctas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:24px;}
+.land-trust-line{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;font-size:12px;color:rgba(255,255,255,.4);}
+
+/* Generic section */
+.land-section{padding:90px 0;}
+.land-section-alt{background:rgba(255,255,255,.012);border-top:1px solid rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.04);}
+.land-section-head{text-align:center;max-width:680px;margin:0 auto 56px;}
+.land-eyebrow{font-family:'DM Mono',monospace;font-size:10px;font-weight:600;letter-spacing:2.5px;color:var(--rose);margin-bottom:16px;}
+.land-h2{font-family:'Cormorant Garamond',serif;font-size:42px;font-weight:700;line-height:1.1;letter-spacing:-.8px;color:#fff;margin-bottom:14px;}
+.land-section-sub{font-size:15px;color:rgba(255,255,255,.55);line-height:1.6;}
+
+/* Features grid */
+.land-features{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+.land-feat{padding:28px 24px;background:rgba(255,255,255,.025);border:1.5px solid rgba(255,255,255,.06);border-radius:18px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);transition:transform .25s,border-color .25s;}
+.land-feat:hover{transform:translateY(-3px);border-color:rgba(255,255,255,.12);}
+.land-feat-icon{font-size:28px;margin-bottom:14px;}
+.land-feat-title{font-size:16px;font-weight:700;color:#fff;margin-bottom:8px;letter-spacing:-.2px;}
+.land-feat-desc{font-size:13px;color:rgba(255,255,255,.55);line-height:1.55;}
+.land-feat em{color:var(--rose);font-style:normal;font-weight:600;}
+
+/* Steps */
+.land-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+.land-step{padding:32px 26px;background:rgba(255,255,255,.025);border:1.5px solid rgba(255,255,255,.06);border-radius:18px;}
+.land-step-num{font-family:'Cormorant Garamond',serif;font-size:46px;font-weight:700;color:var(--rose);line-height:1;margin-bottom:18px;letter-spacing:-2px;}
+.land-step-title{font-size:18px;font-weight:700;color:#fff;margin-bottom:10px;letter-spacing:-.2px;}
+.land-step-desc{font-size:13px;color:rgba(255,255,255,.55);line-height:1.55;}
+
+/* Pricing */
+.land-pricing{display:flex;justify-content:center;}
+.land-price-card{width:100%;max-width:440px;padding:34px;background:rgba(255,255,255,.03);border:1.5px solid rgba(255,255,255,.08);border-radius:22px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 24px 60px rgba(0,0,0,.4);}
+.land-price-tag{display:inline-block;font-size:10px;font-weight:800;letter-spacing:2.5px;color:var(--rose);background:rgba(255,45,122,.12);padding:5px 11px;border-radius:6px;margin-bottom:18px;}
+.land-price-amount{font-family:'Cormorant Garamond',serif;color:#fff;display:flex;align-items:baseline;gap:6px;margin-bottom:10px;}
+.land-price-amount strong{font-size:48px;font-weight:700;letter-spacing:-1.5px;}
+.land-price-amount span{font-size:14px;color:rgba(255,255,255,.5);font-family:'DM Sans',sans-serif;}
+.land-price-trial{font-size:13px;color:#6EE7B7;font-weight:500;margin-bottom:24px;padding-bottom:24px;border-bottom:1.5px solid rgba(255,255,255,.06);}
+.land-price-feats{list-style:none;margin-bottom:24px;}
+.land-price-feats li{font-size:13.5px;color:rgba(255,255,255,.75);padding:8px 0 8px 26px;position:relative;line-height:1.45;}
+.land-price-feats li::before{content:'';position:absolute;left:0;top:13px;width:14px;height:8px;border-left:2px solid var(--rose);border-bottom:2px solid var(--rose);transform:rotate(-45deg);}
+.land-price-cta{width:100%;}
+.land-price-trust{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px;font-size:11px;color:rgba(255,255,255,.4);}
+
+/* FAQ */
+.land-faq{display:flex;flex-direction:column;gap:10px;}
+.land-faq-item{background:rgba(255,255,255,.025);border:1.5px solid rgba(255,255,255,.06);border-radius:14px;padding:0;overflow:hidden;transition:border-color .2s;}
+.land-faq-item[open]{border-color:rgba(255,255,255,.12);}
+.land-faq-q{cursor:pointer;padding:20px 22px;font-size:15px;font-weight:600;color:#fff;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:16px;}
+.land-faq-q::-webkit-details-marker{display:none;}
+.land-faq-q::after{content:'+';font-size:20px;font-weight:300;color:rgba(255,255,255,.4);transition:transform .25s;flex-shrink:0;}
+.land-faq-item[open] .land-faq-q::after{transform:rotate(45deg);color:var(--rose);}
+.land-faq-a{padding:0 22px 20px;font-size:14px;color:rgba(255,255,255,.6);line-height:1.65;}
+
+/* Final CTA banner */
+.land-cta-final{padding:90px 0 100px;text-align:center;background:linear-gradient(135deg,rgba(255,45,122,.12) 0%,rgba(124,58,237,.12) 100%);border-top:1px solid rgba(255,255,255,.05);border-bottom:1px solid rgba(255,255,255,.05);}
+.land-cta-final-h2{font-family:'Cormorant Garamond',serif;font-size:42px;font-weight:700;line-height:1.1;letter-spacing:-.8px;color:#fff;margin-bottom:14px;}
+.land-cta-final-sub{font-size:15px;color:rgba(255,255,255,.6);margin-bottom:32px;}
+
+/* Footer */
+.land-footer{padding:60px 0 40px;border-top:1px solid rgba(255,255,255,.05);background:rgba(0,0,0,.25);}
+.land-footer-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:40px;margin-bottom:40px;}
+.land-footer-brand .land-logo{margin-bottom:8px;}
+.land-footer-tag{font-size:13px;color:rgba(255,255,255,.45);max-width:240px;line-height:1.5;}
+.land-footer-col-title{font-family:'DM Mono',monospace;font-size:10px;font-weight:600;letter-spacing:2px;color:rgba(255,255,255,.4);margin-bottom:14px;text-transform:uppercase;}
+.land-footer-link{display:block;color:rgba(255,255,255,.6);font-size:13px;text-decoration:none;padding:5px 0;transition:color .15s;}
+.land-footer-link:hover{color:#fff;}
+.land-footer-bottom{padding-top:24px;border-top:1px solid rgba(255,255,255,.04);font-size:12px;color:rgba(255,255,255,.35);}
+
+/* Responsive */
+@media (max-width:900px){
+  .land-h1{font-size:48px;}
+  .land-h2,.land-cta-final-h2{font-size:34px;}
+  .land-features,.land-steps{grid-template-columns:repeat(2,1fr);}
+  .land-footer-grid{grid-template-columns:1fr 1fr;gap:32px;}
+  .land-nav-links{display:none;}
+}
+@media (max-width:560px){
+  .land-wrap{padding:0 18px;}
+  .land-hero{padding:60px 0 70px;}
+  .land-h1{font-size:38px;letter-spacing:-1px;}
+  .land-sub{font-size:15px;}
+  .land-h2,.land-cta-final-h2{font-size:28px;}
+  .land-section{padding:60px 0;}
+  .land-features,.land-steps{grid-template-columns:1fr;}
+  .land-footer-grid{grid-template-columns:1fr;gap:28px;}
+  .land-nav-cta .land-link{display:none;}
+  .land-btn-lg{padding:13px 22px;font-size:13px;}
+  .land-btn-xl{padding:15px 28px;font-size:14px;}
+  .land-hero-ctas{flex-direction:column;align-items:stretch;}
+}
+
 /* ═══ HEADER ═══ */
 .hdr{background:var(--dark);position:relative;overflow:hidden;}
 .hdr::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 55% 90% at 15% 60%,rgba(255,45,122,.16),transparent 55%),radial-gradient(ellipse 45% 70% at 85% 25%,rgba(124,58,237,.13),transparent 50%);pointer-events:none;}

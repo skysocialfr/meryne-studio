@@ -3,20 +3,253 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Veyra Studio</title>
+<title>Veyra Studio &mdash; Le studio de contenu pour cr&eacute;ateurs Instagram &amp; TikTok</title>
+<meta name="description" content="Veyra Studio &mdash; Simule ton feed, planifie tes posts, mesure ta croissance et g&eacute;n&egrave;re du contenu &agrave; ta voix avec l'IA. Essai gratuit 7 jours.">
+<meta name="theme-color" content="#0A0A14">
+<meta property="og:title" content="Veyra Studio &mdash; Le studio des cr&eacute;ateurs">
+<meta property="og:description" content="Simule ton feed, planifie tes posts, mesure ta croissance et g&eacute;n&egrave;re du contenu &agrave; ta voix avec l'IA. Essai gratuit 7 jours.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://veyrastudio.fr">
+<meta property="og:image" content="https://veyrastudio.fr/og-image.png">
+<meta property="og:locale" content="fr_FR">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Veyra Studio &mdash; Le studio des cr&eacute;ateurs">
+<meta name="twitter:description" content="Simule ton feed, planifie tes posts, mesure ta croissance et g&eacute;n&egrave;re du contenu &agrave; ta voix avec l'IA.">
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="preconnect" href="https://uqyprtitkuqkdrrzckbc.supabase.co">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=3">
+<link rel="stylesheet" href="css/style.css?v=4">
 </head>
-<body>
+<body class="on-landing">
+
+<!-- ═══ PUBLIC LANDING PAGE ═══ -->
+<div id="landing-page">
+
+  <!-- Top nav -->
+  <header class="land-nav">
+    <div class="land-wrap land-nav-inner">
+      <div class="land-logo">Veyra Studio</div>
+      <nav class="land-nav-links">
+        <a href="#features" class="land-nav-link">Features</a>
+        <a href="#how" class="land-nav-link">Comment &ccedil;a marche</a>
+        <a href="#pricing" class="land-nav-link">Tarif</a>
+        <a href="#faq" class="land-nav-link">FAQ</a>
+      </nav>
+      <div class="land-nav-cta">
+        <button class="land-link" onclick="goToAuth('login')">Se connecter</button>
+        <button class="land-btn-primary" onclick="goToAuth('signup')">Essai gratuit</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="land-hero">
+    <div class="land-wrap">
+      <div class="land-hero-tag">PROPULS&Eacute; PAR L'IA CLAUDE</div>
+      <h1 class="land-h1">Le studio de contenu<br>pour cr&eacute;ateurs <em>ambitieux</em>.</h1>
+      <p class="land-sub">Simule ton feed, planifie tes posts, mesure ta croissance et g&eacute;n&egrave;re du contenu &agrave; ta voix avec l'IA &mdash; tout dans un seul outil.</p>
+      <div class="land-hero-ctas">
+        <button class="land-btn-primary land-btn-lg" onclick="goToAuth('signup')">D&eacute;marrer mon essai gratuit &rarr;</button>
+        <button class="land-btn-ghost land-btn-lg" onclick="goToAuth('login')">Se connecter</button>
+      </div>
+      <div class="land-trust-line">
+        <span>&#10003; 7 jours gratuits</span>
+        <span>&middot;</span>
+        <span>&#10003; Annulation 1 clic</span>
+        <span>&middot;</span>
+        <span>&#10003; Paiement s&eacute;curis&eacute; Stripe</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features grid -->
+  <section class="land-section" id="features">
+    <div class="land-wrap">
+      <div class="land-section-head">
+        <div class="land-eyebrow">FEATURES</div>
+        <h2 class="land-h2">Tout ce qu'il te faut, au m&ecirc;me endroit.</h2>
+        <p class="land-section-sub">Six outils pens&eacute;s pour les cr&eacute;ateurs de contenu Instagram et TikTok. Plus de jongler entre 10 apps.</p>
+      </div>
+      <div class="land-features">
+        <div class="land-feat">
+          <div class="land-feat-icon">&#x1F5BC;&#xFE0F;</div>
+          <h3 class="land-feat-title">Feed Instagram &amp; TikTok</h3>
+          <p class="land-feat-desc">Simule ton feed avant de poster. Visualise comment ton prochain post s'int&egrave;gre &agrave; ton univers visuel.</p>
+        </div>
+        <div class="land-feat">
+          <div class="land-feat-icon">&#x1F3AC;</div>
+          <h3 class="land-feat-title">Production</h3>
+          <p class="land-feat-desc">Centralise tes t&acirc;ches, scripts et plans de tournage. Plus rien ne tra&icirc;ne dans tes notes.</p>
+        </div>
+        <div class="land-feat">
+          <div class="land-feat-icon">&#x1F4C5;</div>
+          <h3 class="land-feat-title">Planning multi-r&eacute;seaux</h3>
+          <p class="land-feat-desc">Un calendrier unifi&eacute; Instagram + TikTok. Vois ta semaine en un coup d'&oelig;il.</p>
+        </div>
+        <div class="land-feat">
+          <div class="land-feat-icon">&#x1F4C8;</div>
+          <h3 class="land-feat-title">Stats &amp; objectifs</h3>
+          <p class="land-feat-desc">Suivi hebdomadaire de tes followers, vues et engagement. Sais o&ugrave; tu en es vis-&agrave;-vis de tes objectifs.</p>
+        </div>
+        <div class="land-feat">
+          <div class="land-feat-icon">&#x1F916;</div>
+          <h3 class="land-feat-title">IA Claude int&eacute;gr&eacute;e</h3>
+          <p class="land-feat-desc">Captions, hashtags, scripts &mdash; tout &eacute;crit dans <em>ta voix</em>. L'IA apprend ta personnalit&eacute; lors de l'onboarding.</p>
+        </div>
+        <div class="land-feat">
+          <div class="land-feat-icon">&#x2601;&#xFE0F;</div>
+          <h3 class="land-feat-title">Sync cloud temps r&eacute;el</h3>
+          <p class="land-feat-desc">Tout est synchronis&eacute; sur tous tes devices. Tu commences sur ton t&eacute;l&eacute;phone, tu finis sur ton ordi.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section class="land-section land-section-alt" id="how">
+    <div class="land-wrap">
+      <div class="land-section-head">
+        <div class="land-eyebrow">COMMENT &Ccedil;A MARCHE</div>
+        <h2 class="land-h2">Lance ton studio en 3 minutes.</h2>
+      </div>
+      <div class="land-steps">
+        <div class="land-step">
+          <div class="land-step-num">01</div>
+          <h3 class="land-step-title">Inscris-toi</h3>
+          <p class="land-step-desc">Ton compte est cr&eacute;&eacute; en 30 secondes. Email + mot de passe, c'est tout.</p>
+        </div>
+        <div class="land-step">
+          <div class="land-step-num">02</div>
+          <h3 class="land-step-title">Configure ton studio</h3>
+          <p class="land-step-desc">R&eacute;ponds &agrave; 4 questions sur ton univers (niche, handles, objectifs, voix) pour personnaliser ton studio et l'IA.</p>
+        </div>
+        <div class="land-step">
+          <div class="land-step-num">03</div>
+          <h3 class="land-step-title">Cr&eacute;e &amp; publie</h3>
+          <p class="land-step-desc">Ton studio te suit partout, synchronis&eacute; en temps r&eacute;el. Cr&eacute;e, planifie, mesure &mdash; tout au m&ecirc;me endroit.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing -->
+  <section class="land-section" id="pricing">
+    <div class="land-wrap">
+      <div class="land-section-head">
+        <div class="land-eyebrow">TARIF</div>
+        <h2 class="land-h2">Un plan, simple et complet.</h2>
+        <p class="land-section-sub">Pas de plans &agrave; tiroirs. Tout est inclus &mdash; mensuel, sans engagement.</p>
+      </div>
+      <div class="land-pricing">
+        <div class="land-price-card">
+          <div class="land-price-tag">VEYRA PRO</div>
+          <div class="land-price-amount">
+            <strong>9,99 &euro;</strong><span>/ mois</span>
+          </div>
+          <div class="land-price-trial">&#x2728; 7 jours d'essai gratuit &mdash; sans engagement</div>
+          <ul class="land-price-feats">
+            <li>Feed Instagram &amp; TikTok illimit&eacute;</li>
+            <li>Production : t&acirc;ches, scripts, plans de tournage</li>
+            <li>Planning multi-r&eacute;seaux unifi&eacute;</li>
+            <li>Statistiques &amp; objectifs hebdomadaires</li>
+            <li>IA Claude int&eacute;gr&eacute;e (captions, hashtags, scripts)</li>
+            <li>Sync cloud temps r&eacute;el sur tous tes devices</li>
+            <li>Support par email</li>
+          </ul>
+          <button class="land-btn-primary land-btn-lg land-price-cta" onclick="goToAuth('signup')">D&eacute;marrer mon essai 7 jours &rarr;</button>
+          <div class="land-price-trust">
+            <span>&#x1F512; Paiement s&eacute;curis&eacute; Stripe</span>
+            <span>&middot;</span>
+            <span>Annulation 1 clic</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="land-section land-section-alt" id="faq">
+    <div class="land-wrap land-wrap-narrow">
+      <div class="land-section-head">
+        <div class="land-eyebrow">FAQ</div>
+        <h2 class="land-h2">Les questions qu'on nous pose.</h2>
+      </div>
+      <div class="land-faq">
+        <details class="land-faq-item">
+          <summary class="land-faq-q">Comment fonctionne l'essai gratuit de 7 jours&nbsp;?</summary>
+          <div class="land-faq-a">Tu entres ta carte au moment de l'inscription mais aucun d&eacute;bit n'est effectu&eacute; pendant les 7 premiers jours. Si tu annules avant la fin de l'essai, tu ne payes rien. Le premier d&eacute;bit (9,99&nbsp;&euro;) intervient au 8&egrave;me jour si tu n'as pas annul&eacute;.</div>
+        </details>
+        <details class="land-faq-item">
+          <summary class="land-faq-q">Puis-je annuler &agrave; tout moment&nbsp;?</summary>
+          <div class="land-faq-a">Oui, en 1 clic depuis ton espace de facturation. Tu gardes l'acc&egrave;s jusqu'&agrave; la fin du mois d&eacute;j&agrave; pay&eacute;, puis l'abonnement s'arr&ecirc;te automatiquement. Aucune question, aucun formulaire de r&eacute;tention.</div>
+        </details>
+        <details class="land-faq-item">
+          <summary class="land-faq-q">Mes donn&eacute;es sont-elles s&eacute;curis&eacute;es&nbsp;?</summary>
+          <div class="land-faq-a">Toutes tes donn&eacute;es sont stock&eacute;es chiffr&eacute;es sur Supabase (PostgreSQL h&eacute;berg&eacute; en Europe). Aucun autre utilisateur n'y a acc&egrave;s gr&acirc;ce &agrave; un syst&egrave;me de permissions strict (Row-Level Security). Tu peux exporter ou supprimer tes donn&eacute;es &agrave; tout moment.</div>
+        </details>
+        <details class="land-faq-item">
+          <summary class="land-faq-q">L'IA est-elle vraiment utile&nbsp;?</summary>
+          <div class="land-faq-a">Veyra utilise Claude (Anthropic), une des meilleures IA du march&eacute;. Tu configures ta &laquo;&nbsp;personnalit&eacute; cr&eacute;ateur&nbsp;&raquo; lors de l'onboarding et l'IA g&eacute;n&egrave;re des captions, hashtags et scripts qui te ressemblent vraiment &mdash; pas du texte g&eacute;n&eacute;rique.</div>
+        </details>
+        <details class="land-faq-item">
+          <summary class="land-faq-q">Sur quels r&eacute;seaux &ccedil;a marche&nbsp;?</summary>
+          <div class="land-faq-a">Veyra Studio est sp&eacute;cialis&eacute; pour Instagram et TikTok. La simulation de feed, le planning, les stats et l'IA sont optimis&eacute;s pour ces deux plateformes. D'autres r&eacute;seaux pourront &ecirc;tre ajout&eacute;s selon la demande.</div>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- Final CTA banner -->
+  <section class="land-cta-final">
+    <div class="land-wrap">
+      <h2 class="land-cta-final-h2">Pr&ecirc;t&middot;e &agrave; transformer ta cr&eacute;ation de contenu&nbsp;?</h2>
+      <p class="land-cta-final-sub">Rejoins Veyra Studio aujourd'hui. 7 jours gratuits, sans engagement.</p>
+      <button class="land-btn-primary land-btn-xl" onclick="goToAuth('signup')">D&eacute;marrer mon essai gratuit &rarr;</button>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="land-footer">
+    <div class="land-wrap">
+      <div class="land-footer-grid">
+        <div class="land-footer-brand">
+          <div class="land-logo">Veyra Studio</div>
+          <p class="land-footer-tag">Le studio des cr&eacute;ateurs ambitieux.</p>
+        </div>
+        <div class="land-footer-col">
+          <div class="land-footer-col-title">Produit</div>
+          <a href="#features" class="land-footer-link">Features</a>
+          <a href="#pricing" class="land-footer-link">Tarif</a>
+          <a href="#faq" class="land-footer-link">FAQ</a>
+          <a href="#" class="land-footer-link" onclick="goToAuth('login');return false;">Connexion</a>
+        </div>
+        <div class="land-footer-col">
+          <div class="land-footer-col-title">L&eacute;gal</div>
+          <a href="#" class="land-footer-link">Mentions l&eacute;gales</a>
+          <a href="#" class="land-footer-link">CGU</a>
+          <a href="#" class="land-footer-link">Confidentialit&eacute;</a>
+        </div>
+        <div class="land-footer-col">
+          <div class="land-footer-col-title">Contact</div>
+          <a href="mailto:hello@veyrastudio.fr" class="land-footer-link">hello@veyrastudio.fr</a>
+        </div>
+      </div>
+      <div class="land-footer-bottom">
+        <span>&copy; 2026 Veyra Studio &middot; Tous droits r&eacute;serv&eacute;s</span>
+      </div>
+    </div>
+  </footer>
+
+</div>
+<!-- ═══ /LANDING ═══ -->
 
 <!-- LOGIN / SIGNUP -->
-<div id="login-page">
+<div id="login-page" style="display:none;">
   <div class="lbox">
+    <button type="button" class="lbox-back" onclick="backToLanding()" aria-label="Retour &agrave; l'accueil">&larr; Retour</button>
     <div class="llogo">Veyra Studio</div>
     <div class="lsub" id="auth-sub">Le studio des cr&eacute;ateurs ambitieux</div>
 
@@ -391,7 +624,8 @@
 <!-- JS Modules (order matters: utils > storage > auth > modules > app) -->
 <script src="js/utils.js?v=3"></script>
 <script src="js/storage.js?v=7"></script>
-<script src="js/auth.js?v=10"></script>
+<script src="js/auth.js?v=11"></script>
+<script src="js/landing.js?v=1"></script>
 <script src="js/paywall.js?v=1"></script>
 <script src="js/onboarding.js?v=2"></script>
 <script src="js/feed.js?v=13"></script>
