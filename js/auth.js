@@ -198,9 +198,22 @@ async function autoLogin() {
   _showLoginPage();
 }
 
+// No active session: show the marketing landing page (login form opens on CTA click).
 function _showLoginPage() {
+  if (typeof showLandingPage === 'function') {
+    showLandingPage();
+  } else {
+    // Fallback if landing.js failed to load: jump straight to login form
+    showLoginUI('login');
+  }
+}
+
+// Show the auth form (called from landing.js goToAuth or as fallback)
+function showLoginUI(mode) {
+  if (typeof hideLandingPage === 'function') hideLandingPage();
   var lp = document.getElementById('login-page');
   if (lp) lp.style.display = 'flex';
+  if (typeof setAuthMode === 'function') setAuthMode(mode === 'signup' ? 'signup' : 'login');
 }
 
 // ─── Entrer dans l'app ───
@@ -210,6 +223,7 @@ var PROFILE_COLUMNS = 'id, email, role, display_name, niche, location, tagline, 
   + 'current_period_end, trial_end, cancel_at_period_end';
 
 async function _enterApp(user) {
+  if (typeof hideLandingPage === 'function') hideLandingPage();
   var lp  = document.getElementById('login-page');
   if (lp)  lp.style.display  = 'none';
 
