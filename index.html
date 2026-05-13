@@ -21,7 +21,97 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=4">
+<link rel="stylesheet" href="css/style.css?v=5">
+<link rel="canonical" href="https://veyrastudio.fr/">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      "name": "Veyra Studio",
+      "url": "https://veyrastudio.fr/",
+      "applicationCategory": "BusinessApplication",
+      "applicationSubCategory": "Content Creation",
+      "operatingSystem": "Web",
+      "description": "Le studio de contenu pour créateurs Instagram et TikTok. Simule ton feed, planifie tes posts, mesure ta croissance et génère du contenu à ta voix avec l'IA.",
+      "inLanguage": "fr-FR",
+      "offers": {
+        "@type": "Offer",
+        "price": "9.99",
+        "priceCurrency": "EUR",
+        "availability": "https://schema.org/InStock",
+        "url": "https://veyrastudio.fr/"
+      },
+      "featureList": [
+        "Simulation de feed Instagram et TikTok",
+        "Planning de publication multi-réseaux",
+        "Gestion de production (tâches, scripts, plans de tournage)",
+        "Statistiques de croissance hebdomadaires",
+        "IA Claude intégrée pour captions, hashtags et scripts",
+        "Synchronisation cloud temps réel"
+      ]
+    },
+    {
+      "@type": "Organization",
+      "name": "Veyra Studio",
+      "url": "https://veyrastudio.fr/",
+      "email": "hello@veyrastudio.fr"
+    },
+    {
+      "@type": "WebSite",
+      "name": "Veyra Studio",
+      "url": "https://veyrastudio.fr/",
+      "inLanguage": "fr-FR"
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Comment fonctionne l'essai gratuit de 7 jours ?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Tu entres ta carte au moment de l'inscription mais aucun débit n'est effectué pendant les 7 premiers jours. Si tu annules avant la fin de l'essai, tu ne payes rien. Le premier débit (9,99 €) intervient au 8ème jour si tu n'as pas annulé."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Puis-je annuler à tout moment ?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Oui, en 1 clic depuis ton espace de facturation. Tu gardes l'accès jusqu'à la fin du mois déjà payé, puis l'abonnement s'arrête automatiquement."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Mes données sont-elles sécurisées ?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Toutes tes données sont stockées chiffrées sur Supabase (PostgreSQL hébergé en Europe). Aucun autre utilisateur n'y a accès grâce à un système de permissions strict."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "L'IA est-elle vraiment utile ?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Veyra utilise Claude (Anthropic), une des meilleures IA du marché. Tu configures ta personnalité créateur lors de l'onboarding et l'IA génère des captions, hashtags et scripts qui te ressemblent."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Sur quels réseaux ça marche ?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Veyra Studio est spécialisé pour Instagram et TikTok. La simulation de feed, le planning, les stats et l'IA sont optimisés pour ces deux plateformes."
+          }
+        }
+      ]
+    }
+  ]
+}
+</script>
 </head>
 <body class="on-landing">
 
@@ -48,7 +138,6 @@
   <!-- Hero -->
   <section class="land-hero">
     <div class="land-wrap">
-      <div class="land-hero-tag">PROPULS&Eacute; PAR L'IA CLAUDE</div>
       <h1 class="land-h1">Le studio de contenu<br>pour cr&eacute;ateurs <em>ambitieux</em>.</h1>
       <p class="land-sub">Simule ton feed, planifie tes posts, mesure ta croissance et g&eacute;n&egrave;re du contenu &agrave; ta voix avec l'IA &mdash; tout dans un seul outil.</p>
       <div class="land-hero-ctas">
@@ -74,36 +163,90 @@
         <p class="land-section-sub">Six outils pens&eacute;s pour les cr&eacute;ateurs de contenu Instagram et TikTok. Plus de jongler entre 10 apps.</p>
       </div>
       <div class="land-features">
-        <div class="land-feat">
-          <div class="land-feat-icon">&#x1F5BC;&#xFE0F;</div>
+
+        <article class="land-feat">
+          <div class="land-feat-visual lfv-feed">
+            <div class="lfv-feed-grid">
+              <div class="lfv-cell"></div><div class="lfv-cell"></div><div class="lfv-cell"></div>
+              <div class="lfv-cell"></div><div class="lfv-cell"></div><div class="lfv-cell"></div>
+              <div class="lfv-cell"></div><div class="lfv-cell"></div><div class="lfv-cell"></div>
+            </div>
+          </div>
           <h3 class="land-feat-title">Feed Instagram &amp; TikTok</h3>
           <p class="land-feat-desc">Simule ton feed avant de poster. Visualise comment ton prochain post s'int&egrave;gre &agrave; ton univers visuel.</p>
-        </div>
-        <div class="land-feat">
-          <div class="land-feat-icon">&#x1F3AC;</div>
+        </article>
+
+        <article class="land-feat">
+          <div class="land-feat-visual lfv-prod">
+            <div class="lfv-task lfv-task-done"><span class="lfv-check"></span><span class="lfv-line"></span></div>
+            <div class="lfv-task lfv-task-done"><span class="lfv-check"></span><span class="lfv-line"></span></div>
+            <div class="lfv-task"><span class="lfv-check"></span><span class="lfv-line lfv-line-short"></span></div>
+          </div>
           <h3 class="land-feat-title">Production</h3>
           <p class="land-feat-desc">Centralise tes t&acirc;ches, scripts et plans de tournage. Plus rien ne tra&icirc;ne dans tes notes.</p>
-        </div>
-        <div class="land-feat">
-          <div class="land-feat-icon">&#x1F4C5;</div>
+        </article>
+
+        <article class="land-feat">
+          <div class="land-feat-visual lfv-plan">
+            <div class="lfv-week">
+              <div class="lfv-day"><span class="lfv-day-l">L</span><span class="lfv-day-dot lfv-dot-rose"></span></div>
+              <div class="lfv-day"><span class="lfv-day-l">M</span></div>
+              <div class="lfv-day"><span class="lfv-day-l">M</span><span class="lfv-day-dot lfv-dot-violet"></span></div>
+              <div class="lfv-day"><span class="lfv-day-l">J</span><span class="lfv-day-dot lfv-dot-rose"></span></div>
+              <div class="lfv-day lfv-day-today"><span class="lfv-day-l">V</span></div>
+              <div class="lfv-day"><span class="lfv-day-l">S</span><span class="lfv-day-dot lfv-dot-violet"></span></div>
+              <div class="lfv-day"><span class="lfv-day-l">D</span><span class="lfv-day-dot lfv-dot-rose"></span></div>
+            </div>
+          </div>
           <h3 class="land-feat-title">Planning multi-r&eacute;seaux</h3>
           <p class="land-feat-desc">Un calendrier unifi&eacute; Instagram + TikTok. Vois ta semaine en un coup d'&oelig;il.</p>
-        </div>
-        <div class="land-feat">
-          <div class="land-feat-icon">&#x1F4C8;</div>
+        </article>
+
+        <article class="land-feat">
+          <div class="land-feat-visual lfv-stats">
+            <div class="lfv-bars">
+              <div class="lfv-bar" style="height:30%"></div>
+              <div class="lfv-bar" style="height:48%"></div>
+              <div class="lfv-bar" style="height:38%"></div>
+              <div class="lfv-bar" style="height:62%"></div>
+              <div class="lfv-bar" style="height:55%"></div>
+              <div class="lfv-bar" style="height:78%"></div>
+              <div class="lfv-bar" style="height:92%"></div>
+            </div>
+            <div class="lfv-trend"></div>
+          </div>
           <h3 class="land-feat-title">Stats &amp; objectifs</h3>
           <p class="land-feat-desc">Suivi hebdomadaire de tes followers, vues et engagement. Sais o&ugrave; tu en es vis-&agrave;-vis de tes objectifs.</p>
-        </div>
-        <div class="land-feat">
-          <div class="land-feat-icon">&#x1F916;</div>
+        </article>
+
+        <article class="land-feat">
+          <div class="land-feat-visual lfv-ai">
+            <div class="lfv-bubble lfv-bubble-in">
+              <span class="lfv-text-line"></span>
+              <span class="lfv-text-line lfv-text-line-short"></span>
+            </div>
+            <div class="lfv-bubble lfv-bubble-out">
+              <span class="lfv-dot-typing"></span>
+              <span class="lfv-dot-typing"></span>
+              <span class="lfv-dot-typing"></span>
+            </div>
+          </div>
           <h3 class="land-feat-title">IA Claude int&eacute;gr&eacute;e</h3>
           <p class="land-feat-desc">Captions, hashtags, scripts &mdash; tout &eacute;crit dans <em>ta voix</em>. L'IA apprend ta personnalit&eacute; lors de l'onboarding.</p>
-        </div>
-        <div class="land-feat">
-          <div class="land-feat-icon">&#x2601;&#xFE0F;</div>
+        </article>
+
+        <article class="land-feat">
+          <div class="land-feat-visual lfv-sync">
+            <svg class="lfv-cloud-svg" viewBox="0 0 64 48" fill="none" aria-hidden="true">
+              <path d="M50 32a10 10 0 0 0-1.5-19.9 16 16 0 0 0-31 0A12 12 0 0 0 18 36h32a4 4 0 0 0 0-4z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>
+            </svg>
+            <div class="lfv-sync-ring lfv-sync-ring-1"></div>
+            <div class="lfv-sync-ring lfv-sync-ring-2"></div>
+          </div>
           <h3 class="land-feat-title">Sync cloud temps r&eacute;el</h3>
           <p class="land-feat-desc">Tout est synchronis&eacute; sur tous tes devices. Tu commences sur ton t&eacute;l&eacute;phone, tu finis sur ton ordi.</p>
-        </div>
+        </article>
+
       </div>
     </div>
   </section>
