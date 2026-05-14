@@ -217,7 +217,9 @@ function renderFeedGrid(plat) {
       + '<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.7));padding:8px 8px 6px;z-index:1;">'
       + (overlayTitle ? '<div style="font-size:11px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + overlayTitle + '</div>' : '')
       + '<div style="display:flex;gap:4px;align-items:center;margin-top:2px;flex-wrap:wrap;">'
-      + '<span style="font-size:8px;color:#fff;background:rgba(124,58,237,.85);border-radius:4px;padding:1px 5px;font-weight:700;">✎ Brouillon</span>'
+      + (p.scheduledFor
+          ? '<span style="font-size:8px;color:#fff;background:rgba(6,182,212,.9);border-radius:4px;padding:1px 5px;font-weight:700;">🗓️ Programmé</span>'
+          : '<span style="font-size:8px;color:#fff;background:rgba(124,58,237,.85);border-radius:4px;padding:1px 5px;font-weight:700;">✎ Brouillon</span>')
       + (overlayDate ? '<span style="font-size:9px;color:rgba(255,255,255,.75);">' + overlayDate + '</span>' : '')
       + (overlayFormat ? '<span style="font-size:8px;color:#fff;background:rgba(255,255,255,.2);border-radius:4px;padding:1px 5px;">' + overlayFormat + '</span>' : '')
       + (p.pubId ? '<span style="font-size:8px;color:#fff;background:rgba(139,92,246,.6);border-radius:4px;padding:1px 5px;">📋 Planning</span>' : '')
@@ -336,6 +338,7 @@ function addFeedPost() {
 function openFeedModal(idx, plat) {
   if (_feedDragging) return;
   feedEditIdx = idx;
+  window._feedPubMode = 'draft';
   var isEdit = idx !== null && idx !== undefined;
   var post = isEdit ? (FEED_DATA[plat] || [])[idx] || {} : {};
 
@@ -462,11 +465,28 @@ function openFeedModal(idx, plat) {
           + '</div>';
       })()
 
+    // Publication mode (Instagram feed only)
+    + (plat === 'insta' ? (
+        '<div style="margin-bottom:18px;border-top:1px solid #F3F4F6;padding-top:14px;">'
+        + '<label style="font-size:12px;font-weight:600;color:#6B7280;display:block;margin-bottom:8px;">Publication</label>'
+        + '<div style="display:flex;gap:6px;">'
+        + '<button type="button" id="feed-pubmode-draft" onclick="setFeedPubMode(\'draft\')" class="feed-pubmode-btn feed-pubmode-active" style="flex:1;padding:8px 6px;border-radius:8px;border:1.5px solid #E5E7EB;background:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">📝 Brouillon</button>'
+        + '<button type="button" id="feed-pubmode-now" onclick="setFeedPubMode(\'now\')" class="feed-pubmode-btn" style="flex:1;padding:8px 6px;border-radius:8px;border:1.5px solid #E5E7EB;background:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">🚀 Publier</button>'
+        + '<button type="button" id="feed-pubmode-schedule" onclick="setFeedPubMode(\'schedule\')" class="feed-pubmode-btn" style="flex:1;padding:8px 6px;border-radius:8px;border:1.5px solid #E5E7EB;background:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">🗓️ Programmer</button>'
+        + '</div>'
+        + '<div id="feed-schedule-row" style="display:none;margin-top:10px;">'
+        + '<label style="font-size:11px;font-weight:600;color:#6B7280;display:block;margin-bottom:4px;">Date et heure de publication</label>'
+        + '<input type="datetime-local" id="feed-schedule-at" style="width:100%;padding:8px 10px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box;">'
+        + '</div>'
+        + '<div id="feed-pubmode-hint" style="font-size:10px;color:#9CA3AF;margin-top:6px;">Le post est enregistré localement pour prévisualiser ton feed — rien n\'est publié sur Instagram.</div>'
+        + '</div>'
+      ) : '')
+
     // Action buttons
     + '<div style="display:flex;gap:8px;justify-content:flex-end;">'
     + (isEdit ? '<button onclick="deleteFeedPost()" style="padding:8px 16px;border-radius:8px;border:1.5px solid #FCA5A5;background:#FEF2F2;color:#EF4444;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;margin-right:auto;">Supprimer</button>' : '')
     + '<button onclick="closeFeedModal()" style="padding:8px 16px;border-radius:8px;border:1.5px solid #E5E7EB;background:#F9FAFB;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Annuler</button>'
-    + '<button onclick="saveFeedPost()" class="feed-save-btn" style="padding:8px 16px;border-radius:8px;border:none;background:#8B5CF6;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Enregistrer</button>'
+    + '<button onclick="saveFeedPost()" class="feed-save-btn" id="feed-save-btn" style="padding:8px 16px;border-radius:8px;border:none;background:#8B5CF6;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Enregistrer</button>'
     + '</div>';
 
   // Render into dedicated feed-modal
@@ -526,6 +546,54 @@ function closeFeedModal() {
   var modal = document.getElementById('feed-modal');
   if (modal) modal.style.display = 'none';
   document.body.style.overflow = '';
+}
+
+// ─── Publication mode toggle (draft / publish now / schedule) ───
+function setFeedPubMode(mode) {
+  window._feedPubMode = mode;
+  ['draft', 'now', 'schedule'].forEach(function (m) {
+    var btn = document.getElementById('feed-pubmode-' + m);
+    if (btn) btn.classList.toggle('feed-pubmode-active', m === mode);
+  });
+  var schedRow = document.getElementById('feed-schedule-row');
+  if (schedRow) schedRow.style.display = mode === 'schedule' ? '' : 'none';
+  var hint = document.getElementById('feed-pubmode-hint');
+  if (hint) {
+    if (mode === 'now') {
+      hint.textContent = 'Le post sera publié immédiatement sur ton compte Instagram connecté.';
+    } else if (mode === 'schedule') {
+      hint.textContent = 'Le post sera publié automatiquement à la date et l\'heure choisies.';
+    } else {
+      hint.textContent = 'Le post est enregistré localement pour prévisualiser ton feed — rien n\'est publié sur Instagram.';
+    }
+  }
+  var saveBtn = document.getElementById('feed-save-btn');
+  if (saveBtn) {
+    saveBtn.textContent = mode === 'now' ? 'Publier maintenant'
+      : mode === 'schedule' ? 'Programmer' : 'Enregistrer';
+    saveBtn.style.background = mode === 'draft' ? '#8B5CF6' : '#FF2D7A';
+  }
+}
+
+// Uploads the carousel photos (base64 data URLs) to the public
+// `post-media` Storage bucket and returns their public HTTPS URLs.
+async function uploadFeedMedia(photos) {
+  var urls = [];
+  for (var i = 0; i < photos.length; i++) {
+    var dataUrl = photos[i];
+    var res = await fetch(dataUrl);
+    var blob = await res.blob();
+    var ext = blob.type.indexOf('video') === 0 ? 'mp4' : 'jpg';
+    var path = window._VEYRA_UID + '/' + Date.now() + '_' + i + '_'
+      + Math.random().toString(36).slice(2, 7) + '.' + ext;
+    var up = await sb.storage.from('post-media').upload(path, blob, {
+      contentType: blob.type, upsert: false
+    });
+    if (up.error) throw new Error('upload_failed: ' + up.error.message);
+    var pub = sb.storage.from('post-media').getPublicUrl(path);
+    urls.push(pub.data.publicUrl);
+  }
+  return urls;
 }
 
 // ═══════════════════════════════════════════════
@@ -655,7 +723,7 @@ function renderCarouselStrip() {
 //  Save / Delete Feed Post
 // ═══════════════════════════════════════════════
 
-function saveFeedPost() {
+async function saveFeedPost() {
   var title = (document.getElementById('feed-title') || {}).value || '';
   var date = (document.getElementById('feed-date') || {}).value || '';
   var format = (document.getElementById('feed-format') || {}).value || '';
@@ -668,39 +736,97 @@ function saveFeedPost() {
   var photos = window._carouselPhotos || [];
   var media = photos.length > 0 ? photos[0] : null;
 
-  // Preserve existing id or generate new one
-  var existingPost = (feedEditIdx !== null && FEED_DATA[feedPlat]) ? (FEED_DATA[feedPlat][feedEditIdx] || {}) : {};
-  var postId = existingPost.id || ('fp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7));
+  var pubMode = (feedPlat === 'insta' && window._feedPubMode) || 'draft';
 
-  var post = {
-    id: postId,
-    title: title,
-    date: date,
-    format: format,
-    description: desc,
-    hashtags: hashtags,
-    done: done,
-    media: media,
-    photos: photos,
-    cover: window._carouselCover || null,
-    pubId: pubId || null
-  };
+  // ─── Publish now / Schedule: push to Instagram via the edge function ───
+  if (pubMode === 'now' || pubMode === 'schedule') {
+    if (photos.length === 0) {
+      showSync('Ajoute au moins une photo pour publier', null);
+      return;
+    }
+    var scheduledFor = null;
+    if (pubMode === 'schedule') {
+      var schedVal = (document.getElementById('feed-schedule-at') || {}).value || '';
+      if (!schedVal) { showSync('Choisis une date et une heure', null); return; }
+      var schedDate = new Date(schedVal);
+      if (schedDate.getTime() <= Date.now() + 60000) {
+        showSync('La date de programmation doit être dans le futur', null);
+        return;
+      }
+      scheduledFor = schedDate.toISOString();
+    }
 
-  if (!FEED_DATA[feedPlat]) FEED_DATA[feedPlat] = [];
+    var caption = desc;
+    if (hashtags.trim()) caption += '\n\n' + hashtags.trim();
 
-  if (feedEditIdx !== null && feedEditIdx < FEED_DATA[feedPlat].length) {
-    // Update existing
-    FEED_DATA[feedPlat][feedEditIdx] = post;
-  } else {
-    // Add new
-    FEED_DATA[feedPlat].push(post);
+    var postType = ['Reel', 'IGTV', 'Short'].indexOf(format) !== -1 ? 'reel'
+      : (photos.length > 1 ? 'carousel' : 'image');
+
+    var saveBtn = document.getElementById('feed-save-btn');
+    if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Envoi en cours…'; }
+
+    try {
+      var mediaUrls = await uploadFeedMedia(photos);
+      var resp = await sb.functions.invoke('publish-post', {
+        body: { caption: caption, media_urls: mediaUrls, post_type: postType, scheduled_for: scheduledFor }
+      });
+      if (resp.error || (resp.data && resp.data.error)) {
+        var detail = (resp.data && resp.data.error) || (resp.error && resp.error.message) || 'erreur';
+        showSync('Échec de la publication : ' + detail, null);
+        if (saveBtn) { saveBtn.disabled = false; setFeedPubMode(pubMode); }
+        return;
+      }
+      if (pubMode === 'now') {
+        closeFeedModal();
+        showSync('Post publié sur Instagram !', null);
+        renderFeed(); // re-sync so the published post appears in the grid
+      } else {
+        // Keep a local draft so the scheduled post stays visible in the feed preview
+        _appendOrUpdateFeedPost({
+          title: title, date: date, format: format, description: desc,
+          hashtags: hashtags, done: false, media: media, photos: photos,
+          cover: window._carouselCover || null, pubId: pubId || null,
+          scheduledFor: scheduledFor
+        });
+        saveFeedData();
+        renderFeedGrid('insta');
+        closeFeedModal();
+        showSync('Post programmé pour le ' + new Date(scheduledFor).toLocaleString('fr-FR'), null);
+      }
+    } catch (e) {
+      console.error('publish failed:', e);
+      showSync('Échec : ' + (e.message || 'erreur réseau'), null);
+      if (saveBtn) { saveBtn.disabled = false; setFeedPubMode(pubMode); }
+    }
+    return;
   }
 
+  // ─── Draft: save locally for feed preview only ───
+  _appendOrUpdateFeedPost({
+    title: title, date: date, format: format, description: desc,
+    hashtags: hashtags, done: done, media: media, photos: photos,
+    cover: window._carouselCover || null, pubId: pubId || null
+  });
   saveFeedData();
   renderFeedGrid(feedPlat);
   updateFeedCount();
   closeFeedModal();
   showSync('Post enregistre', null);
+}
+
+// Inserts a new feed post (or updates the one currently being edited),
+// preserving its id. `fields` is the post payload minus id.
+function _appendOrUpdateFeedPost(fields) {
+  var existingPost = (feedEditIdx !== null && FEED_DATA[feedPlat]) ? (FEED_DATA[feedPlat][feedEditIdx] || {}) : {};
+  var postId = existingPost.id || ('fp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7));
+  var post = Object.assign({ id: postId }, fields);
+
+  if (!FEED_DATA[feedPlat]) FEED_DATA[feedPlat] = [];
+  if (feedEditIdx !== null && feedEditIdx < FEED_DATA[feedPlat].length) {
+    FEED_DATA[feedPlat][feedEditIdx] = post;
+  } else {
+    FEED_DATA[feedPlat].push(post);
+  }
 }
 
 // ═══════════════════════════════════════════════

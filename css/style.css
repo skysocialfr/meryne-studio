@@ -882,6 +882,9 @@ body.dark .ob-dot.done{background:rgba(255,45,122,.55);}
 .feed-badge-draft{background:#7C3AED;}
 .feed-cell-real{transition:transform .15s,box-shadow .15s;}
 .feed-cell-real:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.14);border-color:#10B981 !important;}
+.feed-pubmode-btn{transition:all .15s;}
+.feed-pubmode-btn:hover{border-color:#C4B5FD !important;}
+.feed-pubmode-active{border-color:#8B5CF6 !important;background:#F5F3FF !important;color:#7C3AED;}
 
 /* ═══ FOLLOWERS ═══ */
 .fw-tip{background:rgba(255,45,122,.04);border:1px solid rgba(255,45,122,.12);border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:12px;color:var(--muted);line-height:1.6;}
