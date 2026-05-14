@@ -42,15 +42,40 @@ function renderCoachNewsletters() {
     return;
   }
   el.innerHTML = items.map(function (nl, i) {
-    return '<article class="coach-nl reveal" style="animation-delay:' + (i * 70) + 'ms;">'
+    var preview = (nl.body || '').replace(/\s+/g, ' ').trim();
+    if (preview.length > 130) preview = preview.slice(0, 130) + '…';
+    return '<article class="coach-nl reveal" style="animation-delay:' + (i * 70) + 'ms;" onclick="openNewsletter(\'' + nl.id + '\')">'
       + '<div class="coach-nl-top">'
       + '<span class="coach-nl-emoji">' + escapeHtml(nl.emoji || '📬') + '</span>'
       + (nl.event_date ? '<span class="coach-nl-tag">' + escapeHtml(nl.event_date) + '</span>' : '')
       + '</div>'
       + '<h3 class="coach-nl-title">' + escapeHtml(nl.title || '') + '</h3>'
-      + (nl.body ? '<p class="coach-nl-body">' + escapeHtml(nl.body) + '</p>' : '')
+      + (preview ? '<p class="coach-nl-body">' + escapeHtml(preview) + '</p>' : '')
+      + '<span class="coach-nl-cta">Lire la newsletter →</span>'
       + '</article>';
   }).join('');
+}
+
+// Opens the full newsletter in a modal, formatted like a real article.
+function openNewsletter(id) {
+  var nl = (COACH_RESOURCES.newsletter || []).find(function (x) { return x.id === id; });
+  if (!nl || typeof openModal !== 'function') return;
+
+  var paragraphs = (nl.body || '').split(/\n+/).filter(function (p) { return p.trim(); });
+  var bodyHtml = paragraphs.length
+    ? paragraphs.map(function (p) { return '<p class="nl-modal-p">' + escapeHtml(p.trim()) + '</p>'; }).join('')
+    : '<p class="nl-modal-p" style="color:var(--muted);">Cette newsletter est vide pour le moment.</p>';
+
+  var html = '<button class="modal-x" onclick="closeModal()">&times;</button>'
+    + '<div class="nl-modal">'
+    + '<div class="nl-modal-head">'
+    + '<span class="nl-modal-emoji">' + escapeHtml(nl.emoji || '📬') + '</span>'
+    + (nl.event_date ? '<span class="coach-nl-tag">' + escapeHtml(nl.event_date) + '</span>' : '')
+    + '</div>'
+    + '<h2 class="nl-modal-title">' + escapeHtml(nl.title || '') + '</h2>'
+    + '<div class="nl-modal-body">' + bodyHtml + '</div>'
+    + '</div>';
+  openModal(html);
 }
 
 function renderCoachTrends() {
