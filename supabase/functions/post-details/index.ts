@@ -87,7 +87,8 @@ Deno.serve(async (req: Request) => {
     await Promise.all([...metricJobs, ...breakdownJobs]);
 
     // 3. Comments — try with nested replies, fall back to a flat fetch.
-    const { comments, error: commentsError } = await fetchComments(mediaId, token);
+    const { comments, error: commentsError, debug: commentsDebug } =
+      await fetchComments(mediaId, token);
 
     return json({
       media: {
@@ -105,6 +106,7 @@ Deno.serve(async (req: Request) => {
       breakdowns,
       comments,
       comments_error: commentsError,
+      comments_debug: commentsDebug,
     });
   } catch (err) {
     console.error("post-details error:", err);
@@ -152,29 +154,40 @@ async function fetchMetric(
 }
 
 // Fetches comments, degrading gracefully if the replies expansion isn't allowed.
+// Tries several endpoints/field sets; `debug` carries the raw responses so an
+// unexpected API shape can be diagnosed from the client.
 async function fetchComments(
   mediaId: string,
   token: string,
-): Promise<{ comments: unknown[]; error: string | null }> {
-  const fieldSets = [
-    "id,text,username,timestamp,like_count,replies{id,text,username,timestamp,like_count}",
-    "id,text,username,timestamp,like_count",
-    "id,text,timestamp",
+): Promise<{ comments: unknown[]; error: string | null; debug: unknown }> {
+  const attempts = [
+    `${GRAPH}/${mediaId}/comments?fields=id,text,username,timestamp,like_count,replies{id,text,username,timestamp,like_count}&limit=50&access_token=${token}`,
+    `${GRAPH}/${mediaId}/comments?fields=id,text,username,timestamp,like_count&limit=50&access_token=${token}`,
+    `${GRAPH}/${mediaId}/comments?fields=id,text,timestamp&limit=50&access_token=${token}`,
+    `${GRAPH}/${mediaId}/comments?limit=50&access_token=${token}`,
+    `${GRAPH}/${mediaId}?fields=comments{id,text,username,timestamp,like_count}&access_token=${token}`,
   ];
+  const debug: { url: string; status: number; body: unknown }[] = [];
   let lastError: string | null = null;
 
-  for (const fields of fieldSets) {
+  for (const url of attempts) {
     try {
-      const r = await fetch(
-        `${GRAPH}/${mediaId}/comments?fields=${fields}&limit=50&access_token=${token}`,
-      );
+      const r = await fetch(url);
       const j = await r.json();
+      // Mask the token before recording the URL for debug output
+      debug.push({ url: url.replace(/access_token=[^&]+/, "access_token=***"), status: r.status, body: j });
+
+      // Comments can come back as a top-level `data` array or nested under `comments.data`
+      const arr = Array.isArray(j.data)
+        ? j.data
+        : (Array.isArray(j.comments?.data) ? j.comments.data : null);
+
       if (j.error) {
         lastError = typeof j.error === "object" ? JSON.stringify(j.error) : String(j.error);
         continue;
       }
-      if (Array.isArray(j.data)) {
-        const comments = j.data.map((c: Record<string, any>) => ({
+      if (arr) {
+        const comments = arr.map((c: Record<string, any>) => ({
           id: c.id,
           text: c.text ?? "",
           username: c.username ?? "",
@@ -190,13 +203,14 @@ async function fetchComments(
               }))
             : [],
         }));
-        return { comments, error: null };
+        return { comments, error: null, debug };
       }
     } catch (e) {
       lastError = (e as Error).message;
+      debug.push({ url: url.replace(/access_token=[^&]+/, "access_token=***"), status: -1, body: String(e) });
     }
   }
-  return { comments: [], error: lastError };
+  return { comments: [], error: lastError, debug };
 }
 
 function json(body: unknown, status = 200): Response {
