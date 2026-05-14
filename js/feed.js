@@ -228,16 +228,6 @@ function renderFeedGrid(plat) {
       + '</div>';
   }
 
-  // Add new post slot
-  html += '<div class="feed-cell feed-cell-add" onclick="addFeedPost()"'
-    + ' style="aspect-ratio:1;border-radius:8px;border:2px dashed #D1D5DB;display:flex;align-items:center;justify-content:center;cursor:pointer;background:#FAFAFA;transition:border-color .2s,background .2s;"'
-    + ' onmouseenter="this.style.borderColor=\'#8B5CF6\';this.style.background=\'#F5F3FF\'"'
-    + ' onmouseleave="this.style.borderColor=\'#D1D5DB\';this.style.background=\'#FAFAFA\'">'
-    + '<div style="text-align:center;color:#9CA3AF;">'
-    + '<div style="font-size:28px;line-height:1;">+</div>'
-    + '<div style="font-size:10px;margin-top:2px;">Ajouter</div>'
-    + '</div></div>';
-
   // Real published Instagram posts (only on the insta feed, when connected)
   var realCount = 0;
   if (plat === 'insta' && window._IG_LIVE && window._IG_LIVE.media && window._IG_LIVE.media.length) {
@@ -271,7 +261,7 @@ function renderFeedGrid(plat) {
   }
 
   // Fill to 9 cells minimum with empty placeholders
-  var total = posts.length + 1 + realCount; // +1 for the add slot
+  var total = posts.length + realCount;
   for (var j = total; j < 9; j++) {
     html += '<div class="feed-cell feed-cell-empty" style="aspect-ratio:1;border-radius:8px;background:#F9FAFB;border:1px solid #F3F4F6;"></div>';
   }
