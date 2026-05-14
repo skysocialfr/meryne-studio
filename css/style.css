@@ -1312,3 +1312,99 @@ body.dark .prod-archive-hdr{background:#1A1A2E;border-color:#2A2A3A;}
   .cwrap{padding:0!important;}
   .week-hdr{background:#f5f5f5!important;padding:8px!important;margin-bottom:6px!important;}
 }
+
+/* ═══════════════════════════════════════════════
+   DESIGN POLISH — global UI/UX refinement pass
+   (additive overrides; layout-safe properties only)
+   ═══════════════════════════════════════════════ */
+
+/* Selection + smoother scrollbar */
+::selection{background:rgba(255,45,122,.18);color:var(--ink);}
+::-webkit-scrollbar{width:9px;height:9px;}
+::-webkit-scrollbar-thumb{background:#d4d4d8;border-radius:99px;border:2px solid transparent;background-clip:padding-box;}
+::-webkit-scrollbar-thumb:hover{background:#b4b4bc;background-clip:padding-box;}
+body.dark ::-webkit-scrollbar-thumb{background:#33334a;background-clip:padding-box;}
+
+/* Layered, softer card elevation + consistent hover lift */
+.pub-card,.prod-card,.chart-block,.ana-kpi,.adm-panel,.coach-block,
+.ps-card,.fw-ps,.plat-split>div,.adm-kpi{
+  border-radius:16px;
+  box-shadow:0 1px 2px rgba(16,16,40,.04),0 4px 14px -6px rgba(16,16,40,.08);
+  transition:transform .2s cubic-bezier(.21,.6,.35,1),box-shadow .2s ease,border-color .2s ease;
+}
+.pub-card:hover,.prod-card:hover,.chart-block:hover,.ana-kpi:hover,.ps-card:hover{
+  transform:translateY(-3px);
+  box-shadow:0 2px 4px rgba(16,16,40,.05),0 14px 30px -10px rgba(124,58,237,.22);
+  border-color:rgba(124,58,237,.22);
+}
+
+/* KPI cards — crisper numerals + lively accent on hover */
+.ana-kpi,.adm-kpi{position:relative;overflow:hidden;}
+.ana-kpi::before,.adm-kpi::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:linear-gradient(180deg,var(--rose),var(--violet));
+  opacity:0;transition:opacity .2s ease;
+}
+.ana-kpi:hover::before,.adm-kpi:hover::before{opacity:1;}
+
+/* Buttons — unified micro-interactions */
+.btn-p,.btn-s,.lbtn,.land-btn-primary,.adm-refresh{
+  transition:transform .12s cubic-bezier(.21,.6,.35,1),box-shadow .18s ease,
+             background .18s ease,opacity .18s ease,border-color .18s ease;
+}
+.btn-p:hover,.lbtn:hover,.land-btn-primary:hover{
+  transform:translateY(-1.5px);box-shadow:0 8px 20px -6px rgba(255,45,122,.45);opacity:1;
+}
+.btn-p:active,.btn-s:active,.lbtn:active{transform:scale(.96);}
+.btn-s:hover{transform:translateY(-1.5px);box-shadow:0 6px 16px -8px rgba(16,16,40,.3);}
+
+/* Inputs — soft focus ring */
+input:focus,textarea:focus,select:focus{
+  border-color:var(--rose)!important;
+  box-shadow:0 0 0 3px rgba(255,45,122,.12);
+}
+input,textarea,select{transition:border-color .15s ease,box-shadow .15s ease,background .15s ease;}
+
+/* Bottom nav — active pill + spring on the icon */
+.bnav{box-shadow:0 -6px 30px -8px rgba(16,16,40,.14);}
+.bnt{position:relative;border-radius:12px;transition:color .18s ease,background .18s ease;}
+.bnt:hover{background:rgba(124,58,237,.05);}
+.bnt.active{background:rgba(255,45,122,.07);}
+.bnt.active::after{
+  content:'';position:absolute;top:3px;left:50%;transform:translateX(-50%);
+  width:16px;height:3px;border-radius:99px;
+  background:linear-gradient(90deg,var(--rose),var(--violet));
+}
+.bnt svg{transition:transform .25s cubic-bezier(.34,1.56,.64,1);}
+.bnt.active svg{transform:translateY(-2px) scale(1.08);}
+body.dark .bnt:hover{background:rgba(255,255,255,.04);}
+body.dark .bnt.active{background:rgba(255,45,122,.12);}
+
+/* Modals — deeper backdrop blur + smoother entrance */
+.modal-overlay,#modal-overlay{backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);}
+.modal-box{border-radius:20px;box-shadow:0 30px 80px -20px rgba(16,16,40,.45);
+  animation:modalPop .26s cubic-bezier(.21,.7,.3,1);}
+@keyframes modalPop{from{opacity:0;transform:translateY(14px) scale(.97);}to{opacity:1;transform:translateY(0) scale(1);}}
+
+/* Section / panel titles — subtle accent */
+.chart-title,.adm-panel-title,.coach-block-title{letter-spacing:-.2px;}
+
+/* Tables — gentler rows */
+.adm-table tbody tr,.ana-tbl tbody tr{transition:background .12s ease;}
+.adm-table tbody tr:hover,.ana-tbl tbody tr:hover{background:rgba(124,58,237,.04);}
+
+/* Staggered reveal for grids of cards */
+@keyframes polishIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+.ana-kpis>.ana-kpi,.adm-kpis>.adm-kpi{animation:polishIn .4s cubic-bezier(.21,.6,.35,1) both;}
+.ana-kpis>.ana-kpi:nth-child(2){animation-delay:.04s}
+.ana-kpis>.ana-kpi:nth-child(3){animation-delay:.08s}
+.ana-kpis>.ana-kpi:nth-child(4){animation-delay:.12s}
+.ana-kpis>.ana-kpi:nth-child(5){animation-delay:.16s}
+.ana-kpis>.ana-kpi:nth-child(6){animation-delay:.2s}
+.ana-kpis>.ana-kpi:nth-child(7){animation-delay:.24s}
+.ana-kpis>.ana-kpi:nth-child(8){animation-delay:.28s}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;}
+}
