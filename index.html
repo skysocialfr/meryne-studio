@@ -21,7 +21,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=12">
+<link rel="stylesheet" href="css/style.css?v=13">
 <link rel="canonical" href="https://veyrastudio.fr/">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -542,8 +542,8 @@
         <span>Planning</span>
       </button>
       <button class="bnt" onclick="setTab('followers',this)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
-        <span>Objectifs</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 7.4H22l-6 4.5 2.3 7.1L12 16.5 5.7 21l2.3-7.1-6-4.5h7.6z"/></svg>
+        <span>Coaching</span>
       </button>
       <button class="bnt" onclick="setTab('analytics',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
@@ -683,13 +683,25 @@
       </div>
     </div>
 
-    <!-- TAB FOLLOWERS — Objectifs de croissance -->
+    <!-- TAB COACHING — Espace IA + Tendances + Calendrier marketing -->
     <div id="tab-followers" class="tab-panel">
-      <div class="fw-tip">
-        <strong style="font-size:9px;font-weight:700;color:var(--rose);letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px;">Objectifs de croissance</strong>
-        Fixe ta cible d'abonn&eacute;s. Pour Instagram, ta progression et l'estimation sont calcul&eacute;es en temps r&eacute;el depuis ton compte connect&eacute;.
+      <div class="coach-block">
+        <div class="coach-block-title">&#x2728; Espace IA &mdash; id&eacute;es &amp; scripts</div>
+        <div class="coach-block-sub">D&eacute;cris un th&egrave;me ou laisse vide&nbsp;: l'IA s'inspire de ta niche pour te proposer des id&eacute;es de contenu, puis g&eacute;n&egrave;re le script complet.</div>
+        <div class="coach-ai-row">
+          <input id="coach-ai-topic" type="text" placeholder="Un th&egrave;me, une envie, une saison&hellip; (optionnel)">
+          <button id="coach-ai-btn" onclick="coachGenerateIdeas()">G&eacute;n&eacute;rer des id&eacute;es</button>
+        </div>
+        <div id="coach-ai-results"></div>
       </div>
-      <div id="fw-prog" class="fw-ps"></div>
+      <div class="coach-block">
+        <div class="coach-block-title">&#x1F525; Tendances du moment</div>
+        <div id="coach-trends"></div>
+      </div>
+      <div class="coach-block">
+        <div class="coach-block-title">&#x1F5D3;&#xFE0F; Calendrier marketing</div>
+        <div id="coach-calendar"></div>
+      </div>
     </div>
 
 <!-- TAB ANALYTICS -->
@@ -722,9 +734,10 @@
       <div id="ch-eng" class="chart-block"><div class="chart-title">Engagement par post</div></div>
       <div class="ana-tw"><div class="ana-tt">Tous les posts publi&eacute;s</div><div id="ana-tbl" class="ana-tbl"></div></div>
       <div style="background:#fff;border:1.5px solid var(--bord);border-radius:12px;padding:14px;margin-bottom:12px;">
-        <div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:4px;">Suivi des abonn&eacute;s</div>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:12px;" id="ana-goals-line">Progression hebdomadaire</div>
+        <div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:4px;">Abonn&eacute;s &amp; objectifs</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:12px;" id="ana-goals-line">Ta croissance et ta progression vers tes objectifs</div>
         <div id="fw-ana-kpis" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;"></div>
+        <div id="ana-goal-prog" class="fw-ps" style="margin-bottom:12px;"></div>
         <div id="ch-followers" class="chart-block" style="margin-bottom:0;"><div class="chart-title">Croissance abonn&eacute;s</div></div>
       </div>
     </div>
@@ -838,8 +851,8 @@
 <script src="js/production.js?v=5"></script>
 <script src="js/planning.js?v=5"></script>
 <script src="js/calendar.js?v=4"></script>
-<script src="js/followers.js?v=4"></script>
-<script src="js/analytics.js?v=5"></script>
+<script src="js/coaching.js?v=1"></script>
+<script src="js/analytics.js?v=6"></script>
 <script src="js/tags.js?v=3"></script>
 <!-- STORY VIEWER -->
 <div id="story-viewer" style="position:fixed;inset:0;z-index:2000;background:#000;display:none;flex-direction:column;align-items:center;justify-content:center;">
@@ -872,7 +885,7 @@
 <script src="js/hashtags.js?v=2"></script>
 <script src="js/ai.js?v=2"></script>
 <script src="js/milestones.js?v=3"></script>
-<script src="js/admin.js?v=2"></script>
+<script src="js/admin.js?v=3"></script>
 <script src="js/connexions.js?v=4"></script>
 <script src="js/app.js?v=8"></script>
 

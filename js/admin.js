@@ -91,6 +91,7 @@ function _renderAdminContent(profiles) {
     + '</div>'
     + _renderFunnel(total, onboarded, trialing + active + canceled, active)
     + _renderRecentUsers(profiles.slice(0, 10))
+    + '<div id="adm-coaching" class="adm-panel"><div class="adm-panel-title">Contenu Coaching</div><div class="adm-loading">Chargement&hellip;</div></div>'
     + _renderCreateUserCard()
     + _renderAllUsersTable(profiles);
 
@@ -99,7 +100,167 @@ function _renderAdminContent(profiles) {
     _renderSignupsChart(profiles);
     _renderStatusDonut(trialing, active, canceled, pastDue, none);
     _wireCreateUserBtn();
+    _loadAndRenderCoaching();
   }, 0);
+}
+
+// ═══════════════════════════════════════════════
+//  Coaching content management (table coaching_resources)
+//  Admin-only — feeds the Coaching tab seen by every user.
+// ═══════════════════════════════════════════════
+
+async function _loadAndRenderCoaching() {
+  var panel = document.getElementById('adm-coaching');
+  if (!panel || !sb) return;
+  var items = [];
+  try {
+    var res = await sb.from('coaching_resources')
+      .select('id, kind, title, body, event_date, emoji, sort')
+      .order('sort', { ascending: true })
+      .order('created_at', { ascending: true });
+    if (res.error) throw res.error;
+    items = res.data || [];
+  } catch (e) {
+    panel.innerHTML = '<div class="adm-panel-title">Contenu Coaching</div>'
+      + '<div class="adm-error">Impossible de charger le contenu coaching.</div>';
+    return;
+  }
+  window._ADM_COACHING = items;
+  _renderCoachingPanel();
+}
+
+function _renderCoachingPanel() {
+  var panel = document.getElementById('adm-coaching');
+  if (!panel) return;
+  var items = window._ADM_COACHING || [];
+  var trends = items.filter(function(i){ return i.kind === 'trend'; });
+  var cal = items.filter(function(i){ return i.kind === 'calendar'; });
+
+  panel.innerHTML = '<div class="adm-panel-title">Contenu Coaching</div>'
+    + '<div class="adm-coach-sub">Ce que tu publies ici est visible par tous les utilisateurs dans l\'onglet Coaching.</div>'
+    + '<div class="adm-coach-group">'
+    +   '<div class="adm-coach-group-title">&#x1F525; Tendances du moment</div>'
+    +   trends.map(_coachItemRow).join('')
+    +   _coachAddForm('trend')
+    + '</div>'
+    + '<div class="adm-coach-group">'
+    +   '<div class="adm-coach-group-title">&#x1F5D3;&#xFE0F; Calendrier marketing</div>'
+    +   cal.map(_coachItemRow).join('')
+    +   _coachAddForm('calendar')
+    + '</div>';
+}
+
+function _coachItemRow(it) {
+  return '<div class="adm-coach-item" id="adm-coach-' + it.id + '">'
+    + '<div class="adm-coach-item-view">'
+    +   '<span class="adm-coach-emoji">' + escapeHtml(it.emoji || '') + '</span>'
+    +   '<div class="adm-coach-item-text">'
+    +     (it.kind === 'calendar' && it.event_date ? '<span class="adm-coach-date">' + escapeHtml(it.event_date) + '</span>' : '')
+    +     '<strong>' + escapeHtml(it.title || '') + '</strong>'
+    +     (it.body ? '<span class="adm-coach-body">' + escapeHtml(it.body) + '</span>' : '')
+    +   '</div>'
+    +   '<div class="adm-coach-actions">'
+    +     '<button onclick="adminEditCoaching(\'' + it.id + '\')">Modifier</button>'
+    +     '<button class="adm-coach-del" onclick="adminDeleteCoaching(\'' + it.id + '\')">Suppr.</button>'
+    +   '</div>'
+    + '</div>'
+    + '</div>';
+}
+
+function _coachFields(kind, prefix, it) {
+  it = it || {};
+  return ''
+    + '<input type="text" id="' + prefix + '-emoji" placeholder="Emoji" maxlength="4" value="' + escapeHtml(it.emoji || '') + '" style="width:54px;">'
+    + (kind === 'calendar'
+        ? '<input type="text" id="' + prefix + '-date" placeholder="Date (ex: 14 février)" value="' + escapeHtml(it.event_date || '') + '">'
+        : '')
+    + '<input type="text" id="' + prefix + '-title" placeholder="Titre" value="' + escapeHtml(it.title || '') + '">'
+    + '<textarea id="' + prefix + '-body" rows="2" placeholder="Description / conseil">' + escapeHtml(it.body || '') + '</textarea>';
+}
+
+function _coachAddForm(kind) {
+  return '<div class="adm-coach-form">'
+    + _coachFields(kind, 'adm-new-' + kind)
+    + '<button onclick="adminAddCoaching(\'' + kind + '\')">Ajouter</button>'
+    + '</div>';
+}
+
+function _coachVal(id) {
+  var el = document.getElementById(id);
+  return el ? el.value.trim() : '';
+}
+
+async function adminAddCoaching(kind) {
+  var title = _coachVal('adm-new-' + kind + '-title');
+  if (!title) { showSync('⚠️ Titre requis', 'rgba(245,158,11,.8)'); return; }
+  var row = {
+    kind: kind,
+    title: title,
+    body: _coachVal('adm-new-' + kind + '-body'),
+    emoji: _coachVal('adm-new-' + kind + '-emoji'),
+    event_date: kind === 'calendar' ? _coachVal('adm-new-' + kind + '-date') : '',
+    sort: (window._ADM_COACHING || []).filter(function(i){ return i.kind === kind; }).length + 1
+  };
+  try {
+    var res = await sb.from('coaching_resources').insert(row);
+    if (res.error) throw res.error;
+    showSync('✅ Ajouté', 'rgba(5,150,105,.8)');
+    _loadAndRenderCoaching();
+  } catch (e) {
+    showSync('❌ ' + (e.message || 'Erreur'), 'rgba(220,38,38,.8)');
+  }
+}
+
+async function adminDeleteCoaching(id) {
+  if (typeof askConfirm === 'function') {
+    askConfirm('Supprimer cet élément ?', function() { _doDeleteCoaching(id); });
+  } else {
+    _doDeleteCoaching(id);
+  }
+}
+
+async function _doDeleteCoaching(id) {
+  try {
+    var res = await sb.from('coaching_resources').delete().eq('id', id);
+    if (res.error) throw res.error;
+    showSync('🗑️ Supprimé', 'rgba(124,58,237,.8)');
+    _loadAndRenderCoaching();
+  } catch (e) {
+    showSync('❌ ' + (e.message || 'Erreur'), 'rgba(220,38,38,.8)');
+  }
+}
+
+function adminEditCoaching(id) {
+  var it = (window._ADM_COACHING || []).find(function(x){ return x.id === id; });
+  var row = document.getElementById('adm-coach-' + id);
+  if (!it || !row) return;
+  row.innerHTML = '<div class="adm-coach-form">'
+    + _coachFields(it.kind, 'adm-edit-' + id, it)
+    + '<button onclick="adminSaveCoaching(\'' + id + '\')">Enregistrer</button>'
+    + '<button class="adm-coach-cancel" onclick="_renderCoachingPanel()">Annuler</button>'
+    + '</div>';
+}
+
+async function adminSaveCoaching(id) {
+  var it = (window._ADM_COACHING || []).find(function(x){ return x.id === id; });
+  if (!it) return;
+  var title = _coachVal('adm-edit-' + id + '-title');
+  if (!title) { showSync('⚠️ Titre requis', 'rgba(245,158,11,.8)'); return; }
+  var patch = {
+    title: title,
+    body: _coachVal('adm-edit-' + id + '-body'),
+    emoji: _coachVal('adm-edit-' + id + '-emoji'),
+    event_date: it.kind === 'calendar' ? _coachVal('adm-edit-' + id + '-date') : '',
+    updated_at: new Date().toISOString()
+  };
+  try {
+    var res = await sb.from('coaching_resources').update(patch).eq('id', id);
+    if (res.error) throw res.error;
+    showSync('✅ Mis à jour', 'rgba(5,150,105,.8)');
+    _loadAndRenderCoaching();
+  } catch (e) {
+    showSync('❌ ' + (e.message || 'Erreur'), 'rgba(220,38,38,.8)');
+  }
 }
 
 // ─── KPI cards ───
