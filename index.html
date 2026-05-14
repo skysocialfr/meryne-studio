@@ -3,6 +3,24 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
+<!-- Auto-update: force a fresh load when a new version is deployed -->
+<script>
+(function(){
+  var APP_VERSION = '21';
+  try {
+    fetch('/version.json?_=' + Date.now(), { cache: 'no-store' })
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        if (!j || !j.v || j.v === APP_VERSION) return;
+        var u = new URL(location.href);
+        if (u.searchParams.get('_cb') === j.v) return; // already tried
+        u.searchParams.set('_cb', j.v);
+        location.replace(u.toString());
+      })
+      .catch(function(){});
+  } catch(e){}
+})();
+</script>
 <title>Veyra Studio &mdash; Le studio de contenu pour cr&eacute;ateurs Instagram &amp; TikTok</title>
 <meta name="description" content="Veyra Studio &mdash; Simule ton feed, planifie tes posts, mesure ta croissance et g&eacute;n&egrave;re du contenu &agrave; ta voix avec l'IA. Essai gratuit 7 jours.">
 <meta name="theme-color" content="#0A0A14">
