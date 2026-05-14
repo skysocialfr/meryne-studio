@@ -133,11 +133,17 @@ function _renderCoachingPanel() {
   var panel = document.getElementById('adm-coaching');
   if (!panel) return;
   var items = window._ADM_COACHING || [];
+  var newsletters = items.filter(function(i){ return i.kind === 'newsletter'; });
   var trends = items.filter(function(i){ return i.kind === 'trend'; });
   var cal = items.filter(function(i){ return i.kind === 'calendar'; });
 
   panel.innerHTML = '<div class="adm-panel-title">Contenu Coaching</div>'
     + '<div class="adm-coach-sub">Ce que tu publies ici est visible par tous les utilisateurs dans l\'onglet Coaching.</div>'
+    + '<div class="adm-coach-group">'
+    +   '<div class="adm-coach-group-title">&#x1F4EC; Newsletters</div>'
+    +   newsletters.map(_coachItemRow).join('')
+    +   _coachAddForm('newsletter')
+    + '</div>'
     + '<div class="adm-coach-group">'
     +   '<div class="adm-coach-group-title">&#x1F525; Tendances du moment</div>'
     +   trends.map(_coachItemRow).join('')
@@ -150,12 +156,17 @@ function _renderCoachingPanel() {
     + '</div>';
 }
 
+// kinds that carry a free-text date/tag field
+function _coachHasDate(kind) {
+  return kind === 'calendar' || kind === 'newsletter';
+}
+
 function _coachItemRow(it) {
   return '<div class="adm-coach-item" id="adm-coach-' + it.id + '">'
     + '<div class="adm-coach-item-view">'
     +   '<span class="adm-coach-emoji">' + escapeHtml(it.emoji || '') + '</span>'
     +   '<div class="adm-coach-item-text">'
-    +     (it.kind === 'calendar' && it.event_date ? '<span class="adm-coach-date">' + escapeHtml(it.event_date) + '</span>' : '')
+    +     (_coachHasDate(it.kind) && it.event_date ? '<span class="adm-coach-date">' + escapeHtml(it.event_date) + '</span>' : '')
     +     '<strong>' + escapeHtml(it.title || '') + '</strong>'
     +     (it.body ? '<span class="adm-coach-body">' + escapeHtml(it.body) + '</span>' : '')
     +   '</div>'
@@ -171,7 +182,7 @@ function _coachFields(kind, prefix, it) {
   it = it || {};
   return ''
     + '<input type="text" id="' + prefix + '-emoji" placeholder="Emoji" maxlength="4" value="' + escapeHtml(it.emoji || '') + '" style="width:54px;">'
-    + (kind === 'calendar'
+    + (_coachHasDate(kind)
         ? '<input type="text" id="' + prefix + '-date" placeholder="Date (ex: 14 février)" value="' + escapeHtml(it.event_date || '') + '">'
         : '')
     + '<input type="text" id="' + prefix + '-title" placeholder="Titre" value="' + escapeHtml(it.title || '') + '">'
@@ -198,7 +209,7 @@ async function adminAddCoaching(kind) {
     title: title,
     body: _coachVal('adm-new-' + kind + '-body'),
     emoji: _coachVal('adm-new-' + kind + '-emoji'),
-    event_date: kind === 'calendar' ? _coachVal('adm-new-' + kind + '-date') : '',
+    event_date: _coachHasDate(kind) ? _coachVal('adm-new-' + kind + '-date') : '',
     sort: (window._ADM_COACHING || []).filter(function(i){ return i.kind === kind; }).length + 1
   };
   try {
@@ -250,7 +261,7 @@ async function adminSaveCoaching(id) {
     title: title,
     body: _coachVal('adm-edit-' + id + '-body'),
     emoji: _coachVal('adm-edit-' + id + '-emoji'),
-    event_date: it.kind === 'calendar' ? _coachVal('adm-edit-' + id + '-date') : '',
+    event_date: _coachHasDate(it.kind) ? _coachVal('adm-edit-' + id + '-date') : '',
     updated_at: new Date().toISOString()
   };
   try {

@@ -567,8 +567,8 @@ body.on-landing{background:var(--dark);color:#F0F0F0;overflow-x:hidden;}
 
 /* ═══ CONTENT ═══ */
 .cwrap{max-width:1020px;margin:0 auto;padding:18px 16px;}
-.tab-panel{display:none;animation:fadeUp .22s ease;}
-.tab-panel.active{display:block;}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;animation:fadeUp .28s cubic-bezier(.21,.6,.35,1);}
 
 /* ═══ MODAL SYSTEM ═══ */
 #modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:none;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);}
@@ -909,38 +909,37 @@ body.dark .ob-dot.done{background:rgba(255,45,122,.55);}
 .fw-prog-text strong{color:var(--ink);}
 
 /* ═══ COACHING HUB ═══ */
+@keyframes coachReveal{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.reveal{animation:coachReveal .45s cubic-bezier(.21,.6,.35,1) both;}
+.coach-hero{position:relative;overflow:hidden;border-radius:16px;padding:22px 20px;margin-bottom:14px;color:#fff;background:linear-gradient(125deg,#FF2D7A 0%,#9333EA 55%,#6366F1 100%);box-shadow:0 10px 30px -10px rgba(147,51,234,.5);}
+.coach-hero::after{content:'';position:absolute;right:-30px;top:-30px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.12);}
+.coach-hero-title{font-size:18px;font-weight:800;letter-spacing:-.3px;margin-bottom:4px;position:relative;}
+.coach-hero-sub{font-size:12px;line-height:1.6;opacity:.92;position:relative;max-width:440px;}
 .coach-block{background:#fff;border:1.5px solid var(--bord);border-radius:14px;padding:16px;margin-bottom:12px;}
-.coach-block-title{font-size:13px;font-weight:800;color:var(--ink);margin-bottom:4px;}
-.coach-block-sub{font-size:11px;color:var(--muted);line-height:1.6;margin-bottom:12px;}
-.coach-ai-row{display:flex;gap:8px;margin-bottom:12px;}
-.coach-ai-row input{flex:1;padding:9px 12px;border:1.5px solid var(--bord);border-radius:9px;font-size:12px;font-family:inherit;box-sizing:border-box;}
-.coach-ai-row button{padding:9px 16px;border-radius:9px;border:none;background:var(--rose);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;}
-.coach-ai-row button:disabled{opacity:.6;cursor:default;}
+.coach-block-title{font-size:13px;font-weight:800;color:var(--ink);margin-bottom:12px;}
 .coach-empty{font-size:12px;color:var(--muted);padding:8px 0;}
-.coach-card{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--bord);}
-.coach-card:last-child{border-bottom:none;}
-.coach-card-emoji{font-size:20px;line-height:1.2;flex-shrink:0;}
+.coach-nl{border:1.5px solid var(--bord);border-radius:13px;padding:14px 16px;margin-bottom:10px;background:linear-gradient(180deg,rgba(255,45,122,.03),transparent);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;}
+.coach-nl:last-child{margin-bottom:0;}
+.coach-nl:hover{transform:translateY(-2px);box-shadow:0 8px 22px -10px rgba(147,51,234,.35);border-color:rgba(147,51,234,.3);}
+.coach-nl-top{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.coach-nl-emoji{font-size:22px;line-height:1;}
+.coach-nl-tag{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--violet);background:rgba(124,58,237,.1);border-radius:99px;padding:3px 9px;}
+.coach-nl-title{font-size:14px;font-weight:800;color:var(--ink);margin:0 0 6px;letter-spacing:-.2px;}
+.coach-nl-body{font-size:12px;color:var(--muted);line-height:1.7;margin:0;}
+.coach-card{display:flex;gap:11px;padding:11px;border-radius:11px;margin-bottom:6px;border:1px solid transparent;transition:background .15s ease,border-color .15s ease,transform .15s ease;}
+.coach-card:last-child{margin-bottom:0;}
+.coach-card:hover{background:rgba(255,45,122,.035);border-color:rgba(255,45,122,.15);transform:translateX(2px);}
+.coach-card-emoji{font-size:22px;line-height:1.1;flex-shrink:0;}
 .coach-card-title{font-size:12px;font-weight:700;color:var(--ink);}
 .coach-card-text{font-size:11px;color:var(--muted);line-height:1.6;margin-top:2px;}
-.coach-cal-row{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--bord);}
-.coach-cal-row:last-child{border-bottom:none;}
-.coach-cal-date{font-size:11px;font-weight:700;color:var(--rose);min-width:96px;flex-shrink:0;}
+.coach-cal-row{display:flex;gap:11px;padding:11px;border-radius:11px;margin-bottom:6px;border:1px solid transparent;transition:background .15s ease,border-color .15s ease,transform .15s ease;}
+.coach-cal-row:last-child{margin-bottom:0;}
+.coach-cal-row:hover{background:rgba(99,102,241,.04);border-color:rgba(99,102,241,.15);transform:translateX(2px);}
+.coach-cal-date{font-size:11px;font-weight:800;color:var(--rose);min-width:104px;flex-shrink:0;}
 .coach-cal-title{font-size:12px;font-weight:700;color:var(--ink);}
 .coach-cal-text{font-size:11px;color:var(--muted);line-height:1.6;margin-top:2px;}
-.coach-idea{border:1.5px solid var(--bord);border-radius:11px;padding:12px;margin-bottom:8px;}
-.coach-idea-head{display:flex;gap:8px;align-items:baseline;margin-bottom:6px;}
-.coach-idea-fmt{font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#fff;background:var(--violet);border-radius:5px;padding:2px 6px;flex-shrink:0;}
-.coach-idea-title{font-size:12px;font-weight:800;color:var(--ink);}
-.coach-idea-hook,.coach-idea-angle{font-size:11px;color:var(--muted);line-height:1.6;margin-bottom:3px;}
-.coach-idea-btn{margin-top:6px;padding:6px 12px;border-radius:8px;border:1.5px solid var(--violet);background:rgba(124,58,237,.06);color:var(--violet);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;}
-.coach-idea-btn:disabled{opacity:.6;cursor:default;}
-.coach-idea-script{margin-top:8px;}
-.coach-shot{display:flex;gap:8px;padding:5px 0;border-top:1px solid var(--bord);font-size:11px;}
-.coach-shot-n{font-weight:800;color:var(--violet);font-family:'DM Mono',monospace;flex-shrink:0;}
-.coach-shot-d{color:var(--ink);line-height:1.5;}
-body.dark .coach-block,body.dark .coach-idea{background:#1A1A2E;border-color:#2A2A3A;}
-body.dark .coach-card,body.dark .coach-cal-row,body.dark .coach-shot{border-color:#2A2A3A;}
-body.dark .coach-ai-row input{background:#13131F;border-color:#2A2A3A;color:#F0F0F0;}
+body.dark .coach-block,body.dark .coach-nl{background:#1A1A2E;border-color:#2A2A3A;}
+body.dark .coach-card:hover,body.dark .coach-cal-row:hover{background:#13131F;}
 
 /* ═══ ADMIN — coaching content ═══ */
 .adm-coach-sub{font-size:11px;color:var(--muted);margin-bottom:12px;line-height:1.5;}
