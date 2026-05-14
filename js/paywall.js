@@ -159,7 +159,8 @@ function renderSubscriptionBadge() {
     el.className = 'sub-badge admin';
     el.innerHTML = '<span>👑 ADMIN</span>';
     el.style.display = 'inline-flex';
-    el.onclick = openCustomerPortal;
+    el.title = 'Ouvrir le mode administrateur';
+    el.onclick = goToAdmin;
     return;
   }
 
