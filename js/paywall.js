@@ -156,11 +156,8 @@ function renderSubscriptionBadge() {
   var p = window._USER_PROFILE || {};
 
   if (p.role === 'admin') {
-    el.className = 'sub-badge admin';
-    el.innerHTML = '<span>👑 ADMIN</span>';
-    el.style.display = 'inline-flex';
-    el.title = 'Ouvrir le mode administrateur';
-    el.onclick = goToAdmin;
+    // Admins use the dedicated header admin button instead of this badge
+    el.style.display = 'none';
     return;
   }
 

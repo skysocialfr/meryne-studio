@@ -293,6 +293,9 @@ function _routeAfterAuth() {
     badge.style.display = 'flex';
   }
 
+  var adminBtn = document.getElementById('hdr-admin-btn');
+  if (adminBtn) adminBtn.style.display = window._IS_ADMIN ? 'inline-flex' : 'none';
+
   applyProfileToUI();
   renderSubscriptionBadge();
   initApp();
