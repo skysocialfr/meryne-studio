@@ -1422,7 +1422,7 @@ function saveIgProfileModal() {
 }
 
 // ═══════════════════════════════════════════════
-//  Post Detail — stats + comments + inline reply
+//  Post Detail — per-post Instagram stats
 // ═══════════════════════════════════════════════
 
 var _postDetailMedia = null;
@@ -1432,20 +1432,6 @@ function _pdDate(ts) {
   var d = new Date(ts);
   if (isNaN(d.getTime())) return '';
   return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
-}
-
-function _pdRelative(ts) {
-  if (!ts) return '';
-  var diff = Date.now() - new Date(ts).getTime();
-  if (isNaN(diff)) return '';
-  var mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'à l\'instant';
-  if (mins < 60) return 'il y a ' + mins + ' min';
-  var hrs = Math.floor(mins / 60);
-  if (hrs < 24) return 'il y a ' + hrs + ' h';
-  var days = Math.floor(hrs / 24);
-  if (days < 7) return 'il y a ' + days + ' j';
-  return _pdDate(ts);
 }
 
 async function openPostDetail(mediaIdx) {
@@ -1540,7 +1526,6 @@ function renderPostDetail(data) {
   var media = data.media || {};
   var insights = data.insights || {};
   var breakdowns = data.breakdowns || {};
-  var comments = data.comments || [];
 
   var isVid = media.type === 'VIDEO';
   var imgSrc = (isVid && media.thumbnail) ? media.thumbnail : (media.url || media.thumbnail);
@@ -1568,28 +1553,6 @@ function renderPostDetail(data) {
       + 'depuis un compte professionnel/créateur, et certaines métriques manquent sur les posts anciens.</div>';
   }
 
-  // Comments
-  var commentsHtml = '';
-  if (!comments.length) {
-    commentsHtml = '<div style="color:#9CA3AF;font-size:12px;padding:10px 0;">'
-      + (data.comments_error
-          ? 'Impossible de charger les commentaires pour le moment.'
-          : 'Aucun commentaire pour l\'instant.')
-      + '</div>';
-    // Diagnostic: show the raw Instagram API responses so the failure can be traced
-    if (data.comments_debug) {
-      commentsHtml += '<details style="margin-top:6px;">'
-        + '<summary style="font-size:10px;color:#C4C4C4;cursor:pointer;">Détails techniques</summary>'
-        + '<pre style="font-size:9px;color:#9CA3AF;background:#F9FAFB;border:1px solid #F3F4F6;border-radius:6px;padding:8px;overflow:auto;max-height:200px;white-space:pre-wrap;word-break:break-all;">'
-        + escapeHtml(JSON.stringify(data.comments_debug, null, 2))
-        + '</pre></details>';
-    }
-  } else {
-    for (var c = 0; c < comments.length; c++) {
-      commentsHtml += _renderComment(comments[c]);
-    }
-  }
-
   body.innerHTML = ''
     // Media preview
     + '<div style="display:flex;gap:12px;margin-bottom:16px;">'
@@ -1604,72 +1567,5 @@ function renderPostDetail(data) {
     + '</div>'
     // Stats grid
     + '<div style="font-size:12px;font-weight:700;color:#6B7280;margin-bottom:8px;">📊 Statistiques <span style="font-weight:400;color:#9CA3AF;">· en temps réel depuis Instagram</span></div>'
-    + '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:20px;">' + statsHtml + '</div>'
-    // Comments
-    + '<div style="font-size:12px;font-weight:700;color:#6B7280;margin-bottom:8px;">💬 Commentaires (' + comments.length + ')</div>'
-    + '<div id="pd-comments">' + commentsHtml + '</div>';
-}
-
-function _renderComment(c) {
-  var repliesHtml = '';
-  if (c.replies && c.replies.length) {
-    for (var r = 0; r < c.replies.length; r++) {
-      var rep = c.replies[r];
-      repliesHtml += '<div style="display:flex;gap:8px;margin-top:8px;padding-left:14px;border-left:2px solid #F3F4F6;">'
-        + '<div style="flex:1;min-width:0;">'
-        + '<span style="font-size:12px;font-weight:700;color:#111;">@' + escapeHtml(rep.username || '') + '</span> '
-        + '<span style="font-size:12px;color:#374151;">' + escapeHtml(rep.text || '') + '</span>'
-        + '<div style="font-size:10px;color:#9CA3AF;margin-top:2px;">' + _pdRelative(rep.timestamp) + '</div>'
-        + '</div></div>';
-    }
-  }
-  var cid = escapeHtml(c.id);
-  return '<div style="padding:12px 0;border-bottom:1px solid #F3F4F6;">'
-    + '<div style="display:flex;gap:8px;">'
-    + '<div style="flex:1;min-width:0;">'
-    + '<span style="font-size:12px;font-weight:700;color:#111;">@' + escapeHtml(c.username || '') + '</span> '
-    + '<span style="font-size:12px;color:#374151;">' + escapeHtml(c.text || '') + '</span>'
-    + '<div style="font-size:10px;color:#9CA3AF;margin-top:2px;">' + _pdRelative(c.timestamp)
-    + (c.like_count ? ' · ' + _feedNum(c.like_count) + ' j\'aime' : '') + '</div>'
-    + repliesHtml
-    + '<div style="display:flex;gap:6px;margin-top:8px;">'
-    + '<input type="text" id="pd-reply-' + cid + '" placeholder="Répondre…" '
-    + 'style="flex:1;padding:6px 10px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:12px;font-family:inherit;box-sizing:border-box;" '
-    + 'onkeydown="if(event.key===\'Enter\')submitCommentReply(\'' + cid + '\')">'
-    + '<button onclick="submitCommentReply(\'' + cid + '\')" '
-    + 'style="padding:6px 12px;border-radius:8px;border:none;background:#FF2D7A;color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">Envoyer</button>'
-    + '</div>'
-    + '</div></div></div>';
-}
-
-async function submitCommentReply(commentId) {
-  var input = document.getElementById('pd-reply-' + commentId);
-  if (!input) return;
-  var message = input.value.trim();
-  if (!message) return;
-  input.disabled = true;
-
-  try {
-    var res = await sb.functions.invoke('reply-comment', {
-      body: { comment_id: commentId, message: message }
-    });
-    if (res.error || (res.data && res.data.error)) {
-      var detail = (res.data && res.data.error) || (res.error && res.error.message) || 'erreur';
-      showSync('Échec de la réponse : ' + detail, null);
-      input.disabled = false;
-      return;
-    }
-    input.value = '';
-    input.disabled = false;
-    showSync('Réponse envoyée !', null);
-    // Reload the post detail so the new reply appears
-    if (_postDetailMedia) {
-      var idx = (window._IG_LIVE.media || []).indexOf(_postDetailMedia);
-      if (idx !== -1) openPostDetail(idx);
-    }
-  } catch (e) {
-    console.error('submitCommentReply failed:', e);
-    showSync('Erreur réseau', null);
-    input.disabled = false;
-  }
+    + '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;">' + statsHtml + '</div>';
 }
