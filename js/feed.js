@@ -244,8 +244,8 @@ function renderFeedGrid(plat) {
         realMediaHtml = '<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:#F3F4F6;color:#D1D5DB;font-size:32px;">▦</div>';
       }
       var cap = rm.caption ? escapeHtml(rm.caption.split('\n')[0].slice(0, 60)) : '';
-      html += '<a class="feed-cell feed-cell-real" href="' + escapeHtml(rm.permalink || '#') + '" target="_blank" rel="noopener"'
-        + ' style="position:relative;display:block;aspect-ratio:1;border-radius:8px;overflow:hidden;border:1.5px solid #E5E7EB;background:#fff;text-decoration:none;">'
+      html += '<div class="feed-cell feed-cell-real" onclick="openPostDetail(' + m + ')"'
+        + ' style="position:relative;display:block;aspect-ratio:1;border-radius:8px;overflow:hidden;border:1.5px solid #E5E7EB;background:#fff;cursor:pointer;">'
         + '<div class="feed-badge feed-badge-pub">✓ Publié</div>'
         + (isVid ? '<div style="position:absolute;top:6px;right:6px;z-index:2;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;"><svg width="9" height="11" viewBox="0 0 10 13" fill="#fff"><path d="M1 1l8 5.5-8 5.5z"/></svg></div>' : '')
         + '<div style="width:100%;height:100%;">' + realMediaHtml + '</div>'
@@ -256,7 +256,7 @@ function renderFeedGrid(plat) {
         + '<span>💬 ' + _feedNum(rm.comments) + '</span>'
         + '</div>'
         + '</div>'
-        + '</a>';
+        + '</div>';
     }
   }
 
@@ -747,7 +747,8 @@ async function saveFeedPost() {
     }
 
     var caption = desc;
-    if (hashtags.trim()) caption += '\n\n' + hashtags.trim();
+    var normalizedTags = _normalizeHashtags(hashtags);
+    if (normalizedTags) caption += '\n\n' + normalizedTags;
 
     var postType = ['Reel', 'IGTV', 'Short'].indexOf(format) !== -1 ? 'reel'
       : (photos.length > 1 ? 'carousel' : 'image');
@@ -802,6 +803,16 @@ async function saveFeedPost() {
   updateFeedCount();
   closeFeedModal();
   showSync('Post enregistre', null);
+}
+
+// Normalises a hashtag string so every tag is "#word", space-separated.
+// Accepts "#a #b", "a, b", "a b" — all become "#a #b".
+function _normalizeHashtags(str) {
+  if (!str) return '';
+  var tags = str.split(/[\s,]+/).filter(function (t) { return t; });
+  return tags.map(function (t) {
+    return t.charAt(0) === '#' ? t : '#' + t;
+  }).join(' ');
 }
 
 // Inserts a new feed post (or updates the one currently being edited),
@@ -1408,4 +1419,194 @@ function saveIgProfileModal() {
   renderHighlights();
   closeModal();
   showSync('Profil mis a jour', null);
+}
+
+// ═══════════════════════════════════════════════
+//  Post Detail — stats + comments + inline reply
+// ═══════════════════════════════════════════════
+
+var _postDetailMedia = null;
+
+function _pdDate(ts) {
+  if (!ts) return '';
+  var d = new Date(ts);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function _pdRelative(ts) {
+  if (!ts) return '';
+  var diff = Date.now() - new Date(ts).getTime();
+  if (isNaN(diff)) return '';
+  var mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'à l\'instant';
+  if (mins < 60) return 'il y a ' + mins + ' min';
+  var hrs = Math.floor(mins / 60);
+  if (hrs < 24) return 'il y a ' + hrs + ' h';
+  var days = Math.floor(hrs / 24);
+  if (days < 7) return 'il y a ' + days + ' j';
+  return _pdDate(ts);
+}
+
+async function openPostDetail(mediaIdx) {
+  var media = window._IG_LIVE && window._IG_LIVE.media && window._IG_LIVE.media[mediaIdx];
+  if (!media) return;
+  _postDetailMedia = media;
+
+  var modal = document.getElementById('post-detail-modal');
+  var body = document.getElementById('post-detail-body');
+  if (!modal || !body) return;
+  body.innerHTML = '<div style="padding:40px 0;text-align:center;color:#9CA3AF;font-size:13px;">Chargement des statistiques…</div>';
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+
+  try {
+    var res = await sb.functions.invoke('post-details', { body: { media_id: media.id } });
+    if (res.error || (res.data && res.data.error)) {
+      var detail = (res.data && res.data.error) || (res.error && res.error.message) || 'erreur';
+      body.innerHTML = '<div style="padding:30px 0;text-align:center;color:#EF4444;font-size:13px;">Impossible de charger ce post<br><span style="color:#9CA3AF;font-size:11px;">' + escapeHtml(String(detail)) + '</span></div>';
+      return;
+    }
+    renderPostDetail(res.data);
+  } catch (e) {
+    console.error('openPostDetail failed:', e);
+    body.innerHTML = '<div style="padding:30px 0;text-align:center;color:#EF4444;font-size:13px;">Erreur réseau</div>';
+  }
+}
+
+function closePostDetail() {
+  var modal = document.getElementById('post-detail-modal');
+  if (modal) modal.style.display = 'none';
+  document.body.style.overflow = '';
+  _postDetailMedia = null;
+}
+
+function renderPostDetail(data) {
+  var body = document.getElementById('post-detail-body');
+  if (!body) return;
+  var media = data.media || {};
+  var insights = data.insights || {};
+  var comments = data.comments || [];
+
+  var isVid = media.type === 'VIDEO';
+  var imgSrc = (isVid && media.thumbnail) ? media.thumbnail : (media.url || media.thumbnail);
+
+  // Stat cards — only show the metrics Instagram returned
+  var statDefs = [
+    { key: 'reach', label: 'Couverture', icon: '👁️' },
+    { key: 'views', label: 'Vues', icon: '▶️' },
+    { key: 'likes', label: 'J\'aime', icon: '❤️' },
+    { key: 'comments', label: 'Commentaires', icon: '💬' },
+    { key: 'saved', label: 'Enregistrements', icon: '🔖' },
+    { key: 'shares', label: 'Partages', icon: '🔁' },
+    { key: 'total_interactions', label: 'Interactions', icon: '✨' }
+  ];
+  var statsHtml = '';
+  for (var s = 0; s < statDefs.length; s++) {
+    var d = statDefs[s];
+    var val = insights[d.key];
+    if (val == null && d.key === 'likes') val = media.likes;
+    if (val == null && d.key === 'comments') val = media.comments;
+    if (val == null) continue;
+    statsHtml += '<div style="background:#F9FAFB;border:1px solid #F3F4F6;border-radius:10px;padding:10px 12px;">'
+      + '<div style="font-size:10px;color:#9CA3AF;font-weight:600;margin-bottom:3px;">' + d.icon + ' ' + d.label + '</div>'
+      + '<div style="font-size:18px;font-weight:800;color:#111;">' + _feedNum(val) + '</div>'
+      + '</div>';
+  }
+  if (!statsHtml) {
+    statsHtml = '<div style="grid-column:1/-1;color:#9CA3AF;font-size:12px;padding:6px 0;">Statistiques détaillées indisponibles pour ce post.</div>';
+  }
+
+  // Comments
+  var commentsHtml = '';
+  if (!comments.length) {
+    commentsHtml = '<div style="color:#9CA3AF;font-size:12px;padding:10px 0;">Aucun commentaire pour l\'instant.</div>';
+  } else {
+    for (var c = 0; c < comments.length; c++) {
+      commentsHtml += _renderComment(comments[c]);
+    }
+  }
+
+  body.innerHTML = ''
+    // Media preview
+    + '<div style="display:flex;gap:12px;margin-bottom:16px;">'
+    + '<div style="width:96px;height:96px;border-radius:10px;overflow:hidden;flex-shrink:0;background:#F3F4F6;">'
+    + (imgSrc ? '<img src="' + escapeHtml(imgSrc) + '" style="width:100%;height:100%;object-fit:cover;" alt="">' : '')
+    + '</div>'
+    + '<div style="flex:1;min-width:0;">'
+    + '<div style="font-size:11px;color:#9CA3AF;margin-bottom:4px;">Publié le ' + _pdDate(media.timestamp) + '</div>'
+    + '<div style="font-size:12px;color:#374151;line-height:1.5;max-height:66px;overflow:hidden;">' + (media.caption ? escapeHtml(media.caption) : '<span style="color:#9CA3AF;">Sans légende</span>') + '</div>'
+    + (media.permalink ? '<a href="' + escapeHtml(media.permalink) + '" target="_blank" rel="noopener" style="font-size:11px;color:#FF2D7A;font-weight:600;text-decoration:none;display:inline-block;margin-top:6px;">Voir sur Instagram ↗</a>' : '')
+    + '</div>'
+    + '</div>'
+    // Stats grid
+    + '<div style="font-size:12px;font-weight:700;color:#6B7280;margin-bottom:8px;">📊 Statistiques</div>'
+    + '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-bottom:20px;">' + statsHtml + '</div>'
+    // Comments
+    + '<div style="font-size:12px;font-weight:700;color:#6B7280;margin-bottom:8px;">💬 Commentaires (' + comments.length + ')</div>'
+    + '<div id="pd-comments">' + commentsHtml + '</div>';
+}
+
+function _renderComment(c) {
+  var repliesHtml = '';
+  if (c.replies && c.replies.length) {
+    for (var r = 0; r < c.replies.length; r++) {
+      var rep = c.replies[r];
+      repliesHtml += '<div style="display:flex;gap:8px;margin-top:8px;padding-left:14px;border-left:2px solid #F3F4F6;">'
+        + '<div style="flex:1;min-width:0;">'
+        + '<span style="font-size:12px;font-weight:700;color:#111;">@' + escapeHtml(rep.username || '') + '</span> '
+        + '<span style="font-size:12px;color:#374151;">' + escapeHtml(rep.text || '') + '</span>'
+        + '<div style="font-size:10px;color:#9CA3AF;margin-top:2px;">' + _pdRelative(rep.timestamp) + '</div>'
+        + '</div></div>';
+    }
+  }
+  var cid = escapeHtml(c.id);
+  return '<div style="padding:12px 0;border-bottom:1px solid #F3F4F6;">'
+    + '<div style="display:flex;gap:8px;">'
+    + '<div style="flex:1;min-width:0;">'
+    + '<span style="font-size:12px;font-weight:700;color:#111;">@' + escapeHtml(c.username || '') + '</span> '
+    + '<span style="font-size:12px;color:#374151;">' + escapeHtml(c.text || '') + '</span>'
+    + '<div style="font-size:10px;color:#9CA3AF;margin-top:2px;">' + _pdRelative(c.timestamp)
+    + (c.like_count ? ' · ' + _feedNum(c.like_count) + ' j\'aime' : '') + '</div>'
+    + repliesHtml
+    + '<div style="display:flex;gap:6px;margin-top:8px;">'
+    + '<input type="text" id="pd-reply-' + cid + '" placeholder="Répondre…" '
+    + 'style="flex:1;padding:6px 10px;border:1.5px solid #E5E7EB;border-radius:8px;font-size:12px;font-family:inherit;box-sizing:border-box;" '
+    + 'onkeydown="if(event.key===\'Enter\')submitCommentReply(\'' + cid + '\')">'
+    + '<button onclick="submitCommentReply(\'' + cid + '\')" '
+    + 'style="padding:6px 12px;border-radius:8px;border:none;background:#FF2D7A;color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">Envoyer</button>'
+    + '</div>'
+    + '</div></div></div>';
+}
+
+async function submitCommentReply(commentId) {
+  var input = document.getElementById('pd-reply-' + commentId);
+  if (!input) return;
+  var message = input.value.trim();
+  if (!message) return;
+  input.disabled = true;
+
+  try {
+    var res = await sb.functions.invoke('reply-comment', {
+      body: { comment_id: commentId, message: message }
+    });
+    if (res.error || (res.data && res.data.error)) {
+      var detail = (res.data && res.data.error) || (res.error && res.error.message) || 'erreur';
+      showSync('Échec de la réponse : ' + detail, null);
+      input.disabled = false;
+      return;
+    }
+    input.value = '';
+    input.disabled = false;
+    showSync('Réponse envoyée !', null);
+    // Reload the post detail so the new reply appears
+    if (_postDetailMedia) {
+      var idx = (window._IG_LIVE.media || []).indexOf(_postDetailMedia);
+      if (idx !== -1) openPostDetail(idx);
+    }
+  } catch (e) {
+    console.error('submitCommentReply failed:', e);
+    showSync('Erreur réseau', null);
+    input.disabled = false;
+  }
 }
