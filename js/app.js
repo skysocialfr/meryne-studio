@@ -157,6 +157,7 @@ function setTab(id, btn) {
   if (id === 'followers') renderFollowers();
   if (id === 'tags') renderTags();
   if (id === 'admin' && typeof renderAdmin === 'function') renderAdmin();
+  if (id === 'connexions' && typeof renderConnexions === 'function') renderConnexions();
 }
 
 // ─── KPIs ───

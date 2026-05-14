@@ -249,6 +249,46 @@ body.dark .adm-badge-mute  {background:rgba(107,114,128,.25);color:#D1D5DB;}
   .adm-form{grid-template-columns:1fr;}
 }
 
+/* ═══ CONNEXIONS ═══ */
+.cx-wrap{max-width:680px;margin:0 auto;padding:18px 18px 100px;}
+.cx-head{margin-bottom:22px;}
+.cx-title{font-size:22px;font-weight:800;color:var(--ink);letter-spacing:-.4px;}
+.cx-sub{font-size:13px;color:var(--muted);margin-top:4px;line-height:1.5;}
+.cx-loading{padding:36px;text-align:center;font-size:13px;color:var(--muted);}
+.cx-card{background:#fff;border:1.5px solid var(--bord);border-radius:14px;padding:18px;margin-bottom:14px;}
+.cx-card-soon{opacity:.65;}
+.cx-card-head{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+.cx-card-icon{width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;}
+.cx-icon-instagram{background:linear-gradient(135deg,#FF2D7A,#7C3AED);}
+.cx-icon-tiktok{background:#0A0A14;}
+.cx-card-title{font-size:15px;font-weight:800;color:var(--ink);}
+.cx-card-desc{font-size:11.5px;color:var(--muted);margin-top:1px;}
+.cx-empty{font-size:13px;color:var(--muted);line-height:1.6;margin:0 0 14px;}
+.cx-empty strong{color:var(--ink);}
+.cx-btn-connect{display:inline-flex;align-items:center;gap:8px;padding:11px 18px;border:none;border-radius:10px;font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;color:#fff;transition:opacity .18s,transform .15s;}
+.cx-btn-connect:hover{opacity:.92;transform:translateY(-1px);}
+.cx-btn-instagram{background:linear-gradient(135deg,#FF2D7A,#7C3AED);}
+.cx-account{display:flex;align-items:center;gap:12px;padding:12px;background:var(--surf);border-radius:11px;margin-bottom:8px;}
+.cx-avatar{width:42px;height:42px;border-radius:50%;object-fit:cover;flex-shrink:0;}
+.cx-avatar-ph{background:linear-gradient(135deg,#FF2D7A,#7C3AED);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;}
+.cx-account-info{flex:1;min-width:0;}
+.cx-account-name{font-size:14px;font-weight:700;color:var(--ink);}
+.cx-account-meta{margin-top:3px;}
+.cx-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;letter-spacing:.3px;}
+.cx-badge-ok{background:rgba(5,150,105,.12);color:#059669;}
+.cx-badge-warn{background:rgba(245,158,11,.14);color:#B45309;}
+.cx-badge-soon{background:rgba(107,114,128,.14);color:#6B7280;margin-left:auto;}
+.cx-btn-disconnect{background:none;border:1.5px solid var(--bord);color:var(--muted);font-size:11.5px;font-weight:600;padding:7px 12px;border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;flex-shrink:0;}
+.cx-btn-disconnect:hover{border-color:#EF4444;color:#EF4444;}
+.cx-btn-add{background:none;border:1.5px dashed var(--bord);color:var(--muted);font-size:12.5px;font-weight:600;padding:9px 14px;border-radius:9px;cursor:pointer;font-family:'DM Sans',sans-serif;width:100%;transition:all .15s;}
+.cx-btn-add:hover{border-color:var(--rose);color:var(--rose);}
+.cx-note{font-size:11.5px;color:var(--muted);line-height:1.6;background:var(--surf);border-radius:10px;padding:12px 14px;margin-top:6px;}
+
+body.dark .cx-title,body.dark .cx-card-title,body.dark .cx-account-name,body.dark .cx-empty strong{color:#F0F0F0;}
+body.dark .cx-card{background:#1A1A2E;border-color:#2A2A3A;}
+body.dark .cx-account,body.dark .cx-note{background:#13131F;}
+body.dark .cx-btn-disconnect,body.dark .cx-btn-add{border-color:#2A2A3A;}
+
 /* ═══ LEGAL PAGES (mentions / CGU / privacy) ═══ */
 body.legal-body{background:var(--dark);color:#F0F0F0;font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased;}
 .legal-wrap{width:100%;max-width:780px;margin:0 auto;padding:0 24px;}

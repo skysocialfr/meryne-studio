@@ -194,8 +194,9 @@ async function autoLogin() {
     var session = result.data && result.data.session;
     if (session && session.user) {
       await _enterApp(session.user);
-      // After we've loaded the profile, react to ?checkout=success|cancel from Stripe
+      // After we've loaded the profile, react to ?checkout= and ?connected= returns
       if (typeof handleCheckoutReturn === 'function') handleCheckoutReturn();
+      if (typeof handleConnectionReturn === 'function') handleConnectionReturn();
       return;
     }
   } catch (e) {}
