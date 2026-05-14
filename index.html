@@ -6,7 +6,7 @@
 <!-- Auto-update: force a fresh load when a new version is deployed -->
 <script>
 (function(){
-  var APP_VERSION = '21';
+  var APP_VERSION = '22';
   try {
     fetch('/version.json?_=' + Date.now(), { cache: 'no-store' })
       .then(function(r){ return r.json(); })
@@ -39,7 +39,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=20">
+<link rel="stylesheet" href="css/style.css?v=21">
 <link rel="canonical" href="https://veyrastudio.fr/">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -532,14 +532,34 @@
             </div>
           </div>
 <button class="hdr-admin-btn" id="hdr-admin-btn" onclick="goToAdmin()" style="display:none;" title="Mode administrateur">&#x1F451; ADMIN</button>
-<button class="dark-toggle" id="dark-toggle" onclick="toggleDark()" title="Mode sombre">🌙</button>
-<button class="dark-toggle hdr-btn-extra" id="hdr-ai-btn" onclick="showAiKeyModal()" title="Clé API Claude" style="font-size:13px;">🤖</button>
-<button class="dark-toggle hdr-btn-extra" id="hdr-sync-btn" onclick="syncFromCloud()" title="Synchroniser avec le cloud" style="font-size:15px;">🔄</button>
-          <div class="sub-badge" id="sub-badge" style="display:none;" title="G&eacute;rer mon abonnement"></div>
-          <div class="hdr-user-badge" id="user-badge" style="display:none;"></div>
-          <button class="logout-btn" onclick="doLogout()" title="D&eacute;connexion">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <button class="hdr-settings-btn" id="hdr-settings-btn" onclick="toggleSettingsMenu(event)" title="Param&egrave;tres" aria-label="Param&egrave;tres">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           </button>
+          <div class="settings-menu" id="settings-menu">
+            <div class="settings-user" id="settings-user"></div>
+            <button class="settings-row" onclick="toggleDark()">
+              <span class="settings-row-ic">&#x1F319;</span>
+              <span class="settings-row-label" id="settings-dark-label">Mode sombre</span>
+            </button>
+            <button class="settings-row" id="settings-sub-row" onclick="openCustomerPortal();closeSettingsMenu()">
+              <span class="settings-row-ic">&#x1F4B3;</span>
+              <span class="settings-row-label">Mon abonnement</span>
+              <span class="settings-row-extra" id="settings-sub-status"></span>
+            </button>
+            <button class="settings-row" onclick="syncFromCloud();closeSettingsMenu()">
+              <span class="settings-row-ic">&#x1F504;</span>
+              <span class="settings-row-label">Synchroniser mes donn&eacute;es</span>
+            </button>
+            <button class="settings-row" onclick="showAiKeyModal();closeSettingsMenu()">
+              <span class="settings-row-ic">&#x1F916;</span>
+              <span class="settings-row-label">Cl&eacute; API Claude</span>
+            </button>
+            <div class="settings-sep"></div>
+            <button class="settings-row settings-row-danger" onclick="doLogout()">
+              <span class="settings-row-ic">&#x1F6AA;</span>
+              <span class="settings-row-label">Se d&eacute;connecter</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -869,9 +889,9 @@
 <script src="js/utils.js?v=3"></script>
 <script src="js/storage.js?v=7"></script>
 <script src="js/tracking.js?v=2"></script>
-<script src="js/auth.js?v=14"></script>
+<script src="js/auth.js?v=15"></script>
 <script src="js/landing.js?v=2"></script>
-<script src="js/paywall.js?v=4"></script>
+<script src="js/paywall.js?v=5"></script>
 <script src="js/onboarding.js?v=2"></script>
 <script src="js/feed.js?v=21"></script>
 <script src="js/production.js?v=5"></script>
@@ -913,7 +933,7 @@
 <script src="js/milestones.js?v=3"></script>
 <script src="js/admin.js?v=5"></script>
 <script src="js/connexions.js?v=5"></script>
-<script src="js/app.js?v=9"></script>
+<script src="js/app.js?v=10"></script>
 
 </body>
 </html>

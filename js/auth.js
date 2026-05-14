@@ -287,10 +287,9 @@ function _routeAfterAuth() {
   if (app) app.style.display = 'block';
 
   var displayName = p.display_name || (window._USER_EMAIL || '').split('@')[0];
-  var badge = document.getElementById('user-badge');
+  var badge = document.getElementById('settings-user');
   if (badge) {
     badge.innerHTML = '<span class="user-dot"></span>' + escapeHtml(displayName);
-    badge.style.display = 'flex';
   }
 
   var adminBtn = document.getElementById('hdr-admin-btn');

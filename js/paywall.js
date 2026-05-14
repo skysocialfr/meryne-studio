@@ -149,37 +149,33 @@ function hidePaywall() {
   if (page) page.style.display = 'none';
 }
 
-// Subscription status badge in the app header
+// Subscription status — shown in the Settings menu's "Mon abonnement" row
 function renderSubscriptionBadge() {
-  var el = document.getElementById('sub-badge');
-  if (!el) return;
+  var row = document.getElementById('settings-sub-row');
+  var statusEl = document.getElementById('settings-sub-status');
+  if (!row) return;
   var p = window._USER_PROFILE || {};
 
+  // Admins have no subscription — hide the row entirely
   if (p.role === 'admin') {
-    // Admins use the dedicated header admin button instead of this badge
-    el.style.display = 'none';
+    row.style.display = 'none';
     return;
   }
+  row.style.display = '';
+  if (!statusEl) return;
 
   if (p.subscription_status === 'trialing') {
     var trialEnd = p.trial_end ? new Date(p.trial_end) : null;
     var daysLeft = trialEnd ? Math.max(0, Math.ceil((trialEnd.getTime() - Date.now()) / 86400000)) : null;
-    el.className = 'sub-badge trial';
-    el.innerHTML = '<span>✨ ESSAI' + (daysLeft != null ? ' · ' + daysLeft + 'j' : '') + '</span>';
-    el.style.display = 'inline-flex';
-    el.onclick = openCustomerPortal;
-    return;
+    statusEl.textContent = 'Essai' + (daysLeft != null ? ' · ' + daysLeft + 'j' : '');
+    statusEl.className = 'settings-row-extra st-trial';
+  } else if (p.subscription_status === 'active') {
+    statusEl.textContent = 'Pro';
+    statusEl.className = 'settings-row-extra st-active';
+  } else {
+    statusEl.textContent = '';
+    statusEl.className = 'settings-row-extra';
   }
-
-  if (p.subscription_status === 'active') {
-    el.className = 'sub-badge active';
-    el.innerHTML = '<span>PRO</span>';
-    el.style.display = 'inline-flex';
-    el.onclick = openCustomerPortal;
-    return;
-  }
-
-  el.style.display = 'none';
 }
 
 // Kick off Stripe Checkout for a given plan price_id
