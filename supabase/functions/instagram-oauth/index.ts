@@ -20,19 +20,21 @@ const SCOPES =
 
 Deno.serve(async (req: Request) => {
   const url = new URL(req.url);
-  const code  = url.searchParams.get("code");
+  let   code  = url.searchParams.get("code");
   const state = url.searchParams.get("state");
   const oauthError = url.searchParams.get("error");
 
-  // User declined the authorization, or Instagram returned an error
   if (oauthError || !code) {
-    return redirect(`${APP_URL}/?connected=error&reason=${oauthError ?? "no_code"}`);
+    return fail(oauthError ?? "no_code");
   }
+
+  // Instagram sometimes appends "#_" to the code — strip it defensively
+  code = code.replace(/#_$/, "");
 
   try {
     const appSecret   = Deno.env.get("INSTAGRAM_APP_SECRET");
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    if (!appSecret) throw new Error("missing_INSTAGRAM_APP_SECRET");
+    if (!appSecret) throw new Error("missing_app_secret");
     if (!state)     throw new Error("missing_state");
 
     // 1. Identify the Veyra user from the state JWT
@@ -40,7 +42,7 @@ Deno.serve(async (req: Request) => {
       global: { headers: { Authorization: `Bearer ${state}` } },
     });
     const { data: userData, error: userErr } = await supabaseAuth.auth.getUser();
-    if (userErr || !userData?.user) throw new Error("invalid_state_jwt");
+    if (userErr || !userData?.user) throw new Error("invalid_state_jwt:" + (userErr?.message ?? "no_user"));
     const veyraUserId = userData.user.id;
 
     // 2. Exchange the code for a short-lived token
@@ -55,12 +57,21 @@ Deno.serve(async (req: Request) => {
       method: "POST",
       body: form,
     });
-    const shortData = await shortRes.json();
-    if (!shortData.access_token) {
-      throw new Error("short_token_failed: " + JSON.stringify(shortData));
+    const shortRaw = await shortRes.text();
+    let shortData: Record<string, unknown>;
+    try { shortData = JSON.parse(shortRaw); }
+    catch { throw new Error("short_token_not_json:" + shortRaw.slice(0, 160)); }
+
+    // The response may be flat {access_token,user_id} or wrapped {data:[{...}]}
+    const tokenObj = (Array.isArray((shortData as { data?: unknown[] }).data)
+      ? (shortData as { data: Record<string, unknown>[] }).data[0]
+      : shortData) ?? {};
+
+    const shortToken = tokenObj.access_token as string | undefined;
+    if (!shortToken) {
+      throw new Error("short_token_failed:" + JSON.stringify(shortData).slice(0, 200));
     }
-    const shortToken = shortData.access_token as string;
-    const igUserId = String(shortData.user_id ?? shortData.permissions ?? "");
+    const igUserId = String(tokenObj.user_id ?? "");
 
     // 3. Exchange the short-lived token for a long-lived one (~60 days)
     const longRes = await fetch(
@@ -68,7 +79,7 @@ Deno.serve(async (req: Request) => {
       `?grant_type=ig_exchange_token&client_secret=${appSecret}` +
       `&access_token=${shortToken}`
     );
-    const longData = await longRes.json();
+    const longData = await longRes.json().catch(() => ({}));
     const longToken = (longData.access_token as string) ?? shortToken;
     const expiresIn = (longData.expires_in as number) ?? 3600;
     const expiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
@@ -78,8 +89,11 @@ Deno.serve(async (req: Request) => {
       "https://graph.instagram.com/me" +
       `?fields=user_id,username,name,profile_picture_url&access_token=${longToken}`
     );
-    const me = await meRes.json();
-    const accountId = String(me.user_id ?? igUserId);
+    const me = await meRes.json().catch(() => ({}));
+    const accountId = String(me.user_id ?? igUserId ?? "");
+    if (!accountId) {
+      throw new Error("no_account_id:" + JSON.stringify(me).slice(0, 200));
+    }
 
     // 5. Persist the connection (service role bypasses RLS)
     const admin = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -100,7 +114,7 @@ Deno.serve(async (req: Request) => {
       }, { onConflict: "user_id,platform,account_id" })
       .select()
       .single();
-    if (connErr) throw new Error("db_connection_failed: " + connErr.message);
+    if (connErr) throw new Error("db_connection_failed:" + connErr.message);
 
     // 6. Store the token in the service-role-only table
     const { error: tokErr } = await admin
@@ -110,14 +124,19 @@ Deno.serve(async (req: Request) => {
         access_token: longToken,
         updated_at: new Date().toISOString(),
       });
-    if (tokErr) throw new Error("db_token_failed: " + tokErr.message);
+    if (tokErr) throw new Error("db_token_failed:" + tokErr.message);
 
     return redirect(`${APP_URL}/?connected=instagram`);
   } catch (err) {
-    console.error("instagram-oauth error:", err);
-    return redirect(`${APP_URL}/?connected=error`);
+    const msg = (err as Error)?.message ?? "unknown";
+    console.error("instagram-oauth error:", msg);
+    return fail(msg);
   }
 });
+
+function fail(detail: string): Response {
+  return redirect(`${APP_URL}/?connected=error&detail=${encodeURIComponent(detail.slice(0, 200))}`);
+}
 
 function redirect(to: string): Response {
   return new Response(null, { status: 302, headers: { Location: to } });

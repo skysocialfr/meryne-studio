@@ -153,17 +153,20 @@ function handleConnectionReturn() {
   var connected = url.searchParams.get('connected');
   if (!connected) return;
 
+  var detail = url.searchParams.get('detail') || url.searchParams.get('reason') || '';
+
   url.searchParams.delete('connected');
+  url.searchParams.delete('detail');
   url.searchParams.delete('reason');
   history.replaceState({}, '', url.toString());
 
   if (connected === 'instagram') {
     showSync('🎉 Instagram connecté !', 'rgba(5,150,105,.8)');
     if (typeof track === 'function') track('connexion_instagram_completed');
-    // If the Connexions tab is open, refresh it
     var panel = document.getElementById('tab-connexions');
     if (panel && panel.classList.contains('active')) renderConnexions();
   } else if (connected === 'error') {
-    showSync('❌ Échec de la connexion Instagram — réessaie', 'rgba(220,38,38,.8)');
+    console.error('Instagram connect error:', detail);
+    showSync('❌ Échec connexion Instagram' + (detail ? ' — ' + detail : ''), 'rgba(220,38,38,.85)');
   }
 }
