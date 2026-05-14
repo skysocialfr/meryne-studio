@@ -491,6 +491,11 @@ function _renderAnalyticsManual() {
       + '</div>';
   }
 
+  // ─── Goal progress bars ───
+  _ANA_IG_COUNT = igC > 0 ? igC : null;
+  _ANA_FOLLOWER_SERIES = [];
+  _renderGoalBars();
+
   // ─── Table ───
   var tbl = document.getElementById('ana-tbl');
   if (tbl) {
@@ -734,6 +739,12 @@ function _renderAnalyticsReal(data) {
       + '</div>';
   }
 
+  // ─── Goal progress (moved here from the old Abonnés tab) ───
+  _ANA_IG_COUNT = (profile.followers != null) ? profile.followers : null;
+  _ANA_FOLLOWER_SERIES = account.followers || [];
+  _renderGoalBars();
+
+
   // ─── Follower growth chart (real account series) ───
   var fSeries = account.followers || [];
   _setChartTitle('ch-followers', 'Croissance des abonnés · 30 jours');
@@ -808,4 +819,93 @@ function _renderRealHeatmap(posts) {
   }
   html += '</div>';
   el.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════
+//  Follower goal bars (moved from the old Abonnés tab)
+// ═══════════════════════════════════════════════
+
+var _ANA_IG_COUNT = null;
+var _ANA_FOLLOWER_SERIES = [];
+
+// Projects the goal-reach date from the real 30-day follower series.
+function _anaProjectGoal(series, goal, current) {
+  if (current != null && current >= goal) return '🎉 Objectif atteint !';
+  if (!series || series.length < 2 || current == null) return null;
+  var first = series[0].value || 0;
+  var last = series[series.length - 1].value || 0;
+  var perDay = (last - first) / (series.length - 1);
+  if (perDay <= 0) return null;
+  var days = Math.ceil((goal - current) / perDay);
+  var d = new Date();
+  d.setDate(d.getDate() + days);
+  var mo = ['jan.', 'fév.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+  return '~' + Math.round(days / 7) + ' sem. → ' + d.getDate() + ' ' + mo[d.getMonth()] + ' ' + d.getFullYear();
+}
+
+function _renderGoalBars() {
+  var el = document.getElementById('ana-goal-prog');
+  if (!el) return;
+  var igGoal = (typeof GOALS !== 'undefined' && GOALS.ig) || 0;
+  var ttGoal = (typeof GOALS !== 'undefined' && GOALS.tt) || 0;
+  var igCount = _ANA_IG_COUNT;
+
+  var igHtml;
+  if (igCount != null && igGoal > 0) {
+    var igPct = Math.min(100, Math.round(igCount / igGoal * 100));
+    var proj = _anaProjectGoal(_ANA_FOLLOWER_SERIES, igGoal, igCount);
+    var alert = igPct >= 90 ? '<span class="goal-alert">🎉 Presque !</span>' : '';
+    igHtml = '<div class="fw-prog-item">'
+      + '<div class="fw-prog-label">Instagram — Objectif <span id="ig-goal-display">' + igGoal.toLocaleString('fr-FR') + '</span>'
+      + ' <button class="goal-edit-btn" onclick="editGoal(\'ig\')" title="Modifier l\'objectif">✏️</button>' + alert + '</div>'
+      + '<div class="fw-prog-bar"><div class="fw-prog-fill" style="width:' + igPct + '%;background:var(--ig)"></div></div>'
+      + '<div class="fw-prog-text"><strong>' + igCount.toLocaleString('fr-FR') + '</strong> / ' + igGoal.toLocaleString('fr-FR') + ' abonnés (' + igPct + '%)'
+      + (proj ? '<span class="fw-proj"> — ' + proj + '</span>' : '') + '</div>'
+      + '</div>';
+  } else {
+    igHtml = '<div class="fw-prog-item">'
+      + '<div class="fw-prog-label">Instagram — Objectif <span id="ig-goal-display">' + igGoal.toLocaleString('fr-FR') + '</span>'
+      + ' <button class="goal-edit-btn" onclick="editGoal(\'ig\')" title="Modifier l\'objectif">✏️</button></div>'
+      + '<div class="fw-prog-bar"><div class="fw-prog-fill" style="width:0%;background:var(--ig)"></div></div>'
+      + '<div class="fw-prog-text">Connecte ton compte Instagram pour suivre ta progression.</div>'
+      + '</div>';
+  }
+
+  var ttHtml = '<div class="fw-prog-item">'
+    + '<div class="fw-prog-label">TikTok — Objectif <span id="tt-goal-display">' + ttGoal.toLocaleString('fr-FR') + '</span>'
+    + ' <button class="goal-edit-btn" onclick="editGoal(\'tt\')" title="Modifier l\'objectif">✏️</button></div>'
+    + '<div class="fw-prog-bar"><div class="fw-prog-fill" style="width:0%;background:var(--tt)"></div></div>'
+    + '<div class="fw-prog-text">L\'intégration TikTok arrive bientôt.</div>'
+    + '</div>';
+
+  el.innerHTML = igHtml + ttHtml;
+}
+
+function editGoal(plat) {
+  var span = document.getElementById(plat + '-goal-display');
+  if (!span) return;
+  span.innerHTML = '<input type="number" id="goal-inp-' + plat + '" value="' + GOALS[plat]
+    + '" style="width:80px;font-size:11px;font-weight:700;border:1.5px solid var(--rose);border-radius:6px;padding:2px 6px;font-family:\'DM Mono\',monospace;"'
+    + ' onblur="saveGoal(\'' + plat + '\')" onkeydown="if(event.key===\'Enter\')saveGoal(\'' + plat + '\')">';
+  var inp = document.getElementById('goal-inp-' + plat);
+  if (inp) { inp.focus(); inp.select(); }
+}
+
+function saveGoal(plat) {
+  var inp = document.getElementById('goal-inp-' + plat);
+  if (!inp) return;
+  var val = parseInt(inp.value);
+  if (val > 0) {
+    GOALS[plat] = val;
+    save();
+    if (sb && window._VEYRA_UID && window._USER_PROFILE) {
+      var col = plat === 'ig' ? 'ig_goal' : 'tt_goal';
+      window._USER_PROFILE[col] = val;
+      var patch = {};
+      patch[col] = val;
+      sb.from('profiles').update(patch).eq('id', window._VEYRA_UID).then(function(){}, function(){});
+    }
+    if (typeof applyProfileToUI === 'function') applyProfileToUI();
+  }
+  _renderGoalBars();
 }

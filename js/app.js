@@ -154,7 +154,7 @@ function setTab(id, btn) {
   btn.classList.add('active');
   if (id === 'analytics') renderAnalytics();
   if (id === 'planning') { renderCalendar(); if (typeof checkTodayReminders === 'function') checkTodayReminders(); }
-  if (id === 'followers') renderFollowers();
+  if (id === 'followers') renderCoaching();
   if (id === 'tags') renderTags();
   if (id === 'admin' && typeof renderAdmin === 'function') renderAdmin();
   if (id === 'connexions' && typeof renderConnexions === 'function') renderConnexions();
