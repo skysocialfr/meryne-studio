@@ -21,7 +21,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=17">
+<link rel="stylesheet" href="css/style.css?v=18">
 <link rel="canonical" href="https://veyrastudio.fr/">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -549,10 +549,6 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
         <span>Stats</span>
       </button>
-      <button class="bnt" onclick="setTab('connexions',this)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-        <span>Connexions</span>
-      </button>
       <button class="bnt" id="admin-nav-btn" onclick="setTab('admin',this)" style="display:none;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         <span>Admin</span>
@@ -564,6 +560,16 @@
 
     <!-- TAB FEED -->
     <div id="tab-feed" class="tab-panel active">
+      <div id="feed-connect-banner" class="cx-banner" style="display:none;" onclick="openConnexionsModal()">
+        <div class="cx-banner-ic">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+        </div>
+        <div class="cx-banner-txt">
+          <strong>Connecte ton compte Instagram</strong>
+          <span>Pour voir ton vrai feed, tes stats r&eacute;elles et publier automatiquement.</span>
+        </div>
+        <span class="cx-banner-cta">Connecter &rarr;</span>
+      </div>
       <div class="ig-profile-wrap">
         <div class="ig-profile-top">
           <div class="ig-avatar-wrap">
@@ -742,8 +748,6 @@
     </div>
 
     <!-- TAB ADMIN -->
-    <div id="tab-connexions" class="tab-panel"></div>
-
     <div id="tab-admin" class="tab-panel"></div>
 
   </div><!-- /cwrap -->
@@ -775,6 +779,14 @@
   <div class="modal-box" style="max-width:560px;max-height:90vh;overflow-y:auto;">
     <div class="modal-hdr"><div class="modal-title">Analyse du post</div><button class="modal-close" onclick="closePostDetail()">&#10005;</button></div>
     <div id="post-detail-body"></div>
+  </div>
+</div>
+
+<!-- CONNEXIONS MODAL (link Instagram / TikTok) -->
+<div id="cx-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeCxModal()">
+  <div class="modal-box" style="max-width:480px;max-height:90vh;overflow-y:auto;">
+    <div class="modal-hdr"><div class="modal-title">Connexions</div><button class="modal-close" onclick="closeCxModal()">&#10005;</button></div>
+    <div id="cx-modal-body"></div>
   </div>
 </div>
 
@@ -846,7 +858,7 @@
 <script src="js/landing.js?v=2"></script>
 <script src="js/paywall.js?v=2"></script>
 <script src="js/onboarding.js?v=2"></script>
-<script src="js/feed.js?v=20"></script>
+<script src="js/feed.js?v=21"></script>
 <script src="js/production.js?v=5"></script>
 <script src="js/planning.js?v=5"></script>
 <script src="js/calendar.js?v=4"></script>
@@ -885,8 +897,8 @@
 <script src="js/ai.js?v=2"></script>
 <script src="js/milestones.js?v=3"></script>
 <script src="js/admin.js?v=4"></script>
-<script src="js/connexions.js?v=4"></script>
-<script src="js/app.js?v=8"></script>
+<script src="js/connexions.js?v=5"></script>
+<script src="js/app.js?v=9"></script>
 
 </body>
 </html>
