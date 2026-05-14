@@ -125,8 +125,8 @@ function renderAll() {
   // Restore dark mode + theme color
   if (localStorage.getItem('darkMode') === '1') {
     document.body.classList.add('dark');
-    var dtBtn = document.getElementById('dark-toggle');
-    if (dtBtn) dtBtn.textContent = '\u2600\uFE0F';
+    var dtLbl = document.getElementById('settings-dark-label');
+    if (dtLbl) dtLbl.textContent = 'Mode clair';
   }
   var savedColor = localStorage.getItem('themeColor');
   if (savedColor) {
@@ -189,7 +189,33 @@ function renderKPIs() {
 function toggleDark() {
   var d = document.body.classList.toggle('dark');
   localStorage.setItem('darkMode', d ? '1' : '0');
-  document.getElementById('dark-toggle').textContent = d ? '\u2600\uFE0F' : '\uD83C\uDF19';
+  var lbl = document.getElementById('settings-dark-label');
+  if (lbl) lbl.textContent = d ? 'Mode clair' : 'Mode sombre';
+}
+
+// \u2500\u2500\u2500 Settings dropdown menu \u2500\u2500\u2500
+function toggleSettingsMenu(e) {
+  if (e) e.stopPropagation();
+  var menu = document.getElementById('settings-menu');
+  if (!menu) return;
+  var open = menu.classList.toggle('open');
+  if (open) {
+    setTimeout(function() { document.addEventListener('click', _closeSettingsOnOutside); }, 0);
+  } else {
+    document.removeEventListener('click', _closeSettingsOnOutside);
+  }
+}
+function _closeSettingsOnOutside(e) {
+  var menu = document.getElementById('settings-menu');
+  var btn = document.getElementById('hdr-settings-btn');
+  if (menu && !menu.contains(e.target) && btn && !btn.contains(e.target)) {
+    closeSettingsMenu();
+  }
+}
+function closeSettingsMenu() {
+  var menu = document.getElementById('settings-menu');
+  if (menu) menu.classList.remove('open');
+  document.removeEventListener('click', _closeSettingsOnOutside);
 }
 
 // ─── Theme Color ───
