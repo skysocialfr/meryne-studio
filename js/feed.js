@@ -1576,6 +1576,14 @@ function renderPostDetail(data) {
           ? 'Impossible de charger les commentaires pour le moment.'
           : 'Aucun commentaire pour l\'instant.')
       + '</div>';
+    // Diagnostic: show the raw Instagram API responses so the failure can be traced
+    if (data.comments_debug) {
+      commentsHtml += '<details style="margin-top:6px;">'
+        + '<summary style="font-size:10px;color:#C4C4C4;cursor:pointer;">Détails techniques</summary>'
+        + '<pre style="font-size:9px;color:#9CA3AF;background:#F9FAFB;border:1px solid #F3F4F6;border-radius:6px;padding:8px;overflow:auto;max-height:200px;white-space:pre-wrap;word-break:break-all;">'
+        + escapeHtml(JSON.stringify(data.comments_debug, null, 2))
+        + '</pre></details>';
+    }
   } else {
     for (var c = 0; c < comments.length; c++) {
       commentsHtml += _renderComment(comments[c]);
