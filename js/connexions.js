@@ -5,18 +5,20 @@
    ═══════════════════════════════════════════════ */
 
 // OAuth start URL for "Instagram API with Instagram Login".
-// The Veyra user's Supabase JWT is appended as `state` so the
-// instagram-oauth edge function knows who is connecting.
+// IMPORTANT: this must match Meta's generated "URL d'intégration" byte-for-byte
+// — in particular redirect_uri is NOT url-encoded and the scope commas are %2C.
+// Instagram compares the redirect_uri of the authorize step against the one
+// sent in the token exchange; any encoding difference => "Error validating
+// verification code".
 var INSTAGRAM_AUTH_BASE =
   'https://www.instagram.com/oauth/authorize'
   + '?force_reauth=true'
   + '&client_id=1271135391865752'
-  + '&redirect_uri=' + encodeURIComponent('https://uqyprtitkuqkdrrzckbc.supabase.co/functions/v1/instagram-oauth')
+  + '&redirect_uri=https://uqyprtitkuqkdrrzckbc.supabase.co/functions/v1/instagram-oauth'
   + '&response_type=code'
-  + '&scope=' + encodeURIComponent(
-      'instagram_business_basic,instagram_business_manage_messages,'
-      + 'instagram_business_manage_comments,instagram_business_content_publish,'
-      + 'instagram_business_manage_insights');
+  + '&scope=instagram_business_basic%2Cinstagram_business_manage_messages'
+  + '%2Cinstagram_business_manage_comments%2Cinstagram_business_content_publish'
+  + '%2Cinstagram_business_manage_insights';
 
 async function renderConnexions() {
   var c = document.getElementById('tab-connexions');
