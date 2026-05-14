@@ -299,8 +299,6 @@ function _routeAfterAuth() {
   applyProfileToUI();
   renderSubscriptionBadge();
   initApp();
-  // Feed tab is active by default — load the real Instagram feed if connected
-  if (typeof renderInstagramLive === 'function') renderInstagramLive();
 }
 
 // Is the user currently entitled to use the app?
