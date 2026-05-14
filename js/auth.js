@@ -293,9 +293,6 @@ function _routeAfterAuth() {
     badge.style.display = 'flex';
   }
 
-  var adminBtn = document.getElementById('admin-nav-btn');
-  if (adminBtn && window._IS_ADMIN) adminBtn.style.display = 'flex';
-
   applyProfileToUI();
   renderSubscriptionBadge();
   initApp();

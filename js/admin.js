@@ -50,6 +50,17 @@ async function _adminLoadProfiles() {
   }
 }
 
+// Switch to the admin tab from the header badge.
+function goToAdmin() {
+  if (!window._IS_ADMIN) return;
+  var panel = document.getElementById('tab-admin');
+  if (!panel) return;
+  document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+  document.querySelectorAll('.bnt').forEach(function(b) { b.classList.remove('active'); });
+  panel.classList.add('active');
+  renderAdmin();
+}
+
 function _renderAdminContent(profiles) {
   var c = document.getElementById('admin-content');
   if (!c) return;
@@ -59,7 +70,7 @@ function _renderAdminContent(profiles) {
     return;
   }
 
-  // ─── Compute KPIs ───
+  // ─── Compute KPIs once, cache for the sub-sections ───
   var total      = profiles.length;
   var trialing   = profiles.filter(function(p){ return p.subscription_status === 'trialing'; }).length;
   var active     = profiles.filter(function(p){ return p.subscription_status === 'active'; }).length;
@@ -68,7 +79,7 @@ function _renderAdminContent(profiles) {
   var none       = profiles.filter(function(p){ return !p.subscription_status || p.subscription_status === 'none' || p.subscription_status === 'incomplete' || p.subscription_status === 'incomplete_expired'; }).length;
   var onboarded  = profiles.filter(function(p){ return p.onboarded; }).length;
 
-  // MRR = sum of active subscriptions × monthly price (trialing not counted, will become active later)
+  // MRR = sum of active subscriptions × monthly price
   var mrr = profiles.reduce(function(acc, p) {
     if (p.subscription_status === 'active' && p.subscription_price_id) {
       return acc + (ADMIN_PRICE_AMOUNTS[p.subscription_price_id] || 0);
@@ -76,32 +87,63 @@ function _renderAdminContent(profiles) {
     return acc;
   }, 0);
 
-  // ─── HTML structure ───
-  c.innerHTML = ''
-    + _renderKpiCards(total, trialing, active, mrr)
-    + '<div class="adm-row">'
-    +   '<div class="adm-panel adm-panel-2">'
-    +     '<div class="adm-panel-title">Inscriptions sur 30 jours</div>'
-    +     '<div class="adm-chart-wrap"><canvas id="adm-chart-signups"></canvas></div>'
-    +   '</div>'
-    +   '<div class="adm-panel">'
-    +     '<div class="adm-panel-title">R&eacute;partition des abonnements</div>'
-    +     '<div class="adm-chart-wrap"><canvas id="adm-chart-status"></canvas></div>'
-    +   '</div>'
-    + '</div>'
-    + _renderFunnel(total, onboarded, trialing + active + canceled, active)
-    + _renderRecentUsers(profiles.slice(0, 10))
-    + '<div id="adm-coaching" class="adm-panel"><div class="adm-panel-title">Contenu Coaching</div><div class="adm-loading">Chargement&hellip;</div></div>'
-    + _renderCreateUserCard()
-    + _renderAllUsersTable(profiles);
+  window._ADMIN_PROFILES = profiles;
+  window._ADMIN_STATS = {
+    total: total, trialing: trialing, active: active, canceled: canceled,
+    pastDue: pastDue, none: none, onboarded: onboarded, mrr: mrr
+  };
 
-  // ─── Render charts (after DOM) ───
-  setTimeout(function() {
-    _renderSignupsChart(profiles);
-    _renderStatusDonut(trialing, active, canceled, pastDue, none);
-    _wireCreateUserBtn();
+  // ─── Sub-navigation: admin "mode" with several pages ───
+  c.innerHTML = ''
+    + '<div class="adm-subnav">'
+    +   '<button class="adm-subnav-btn active" data-sec="dashboard" onclick="_adminShowSection(\'dashboard\')">📊 Tableau de bord</button>'
+    +   '<button class="adm-subnav-btn" data-sec="users" onclick="_adminShowSection(\'users\')">👥 Utilisateurs</button>'
+    +   '<button class="adm-subnav-btn" data-sec="coaching" onclick="_adminShowSection(\'coaching\')">📬 Contenu Coaching</button>'
+    + '</div>'
+    + '<div id="admin-section"></div>';
+
+  _adminShowSection('dashboard');
+}
+
+// Renders one admin sub-section into #admin-section.
+function _adminShowSection(name) {
+  var sec = document.getElementById('admin-section');
+  if (!sec) return;
+  document.querySelectorAll('.adm-subnav-btn').forEach(function(b) {
+    b.classList.toggle('active', b.getAttribute('data-sec') === name);
+  });
+
+  var profiles = window._ADMIN_PROFILES || [];
+  var s = window._ADMIN_STATS || {};
+
+  if (name === 'dashboard') {
+    sec.innerHTML = ''
+      + _renderKpiCards(s.total, s.trialing, s.active, s.mrr)
+      + '<div class="adm-row">'
+      +   '<div class="adm-panel adm-panel-2">'
+      +     '<div class="adm-panel-title">Inscriptions sur 30 jours</div>'
+      +     '<div class="adm-chart-wrap"><canvas id="adm-chart-signups"></canvas></div>'
+      +   '</div>'
+      +   '<div class="adm-panel">'
+      +     '<div class="adm-panel-title">R&eacute;partition des abonnements</div>'
+      +     '<div class="adm-chart-wrap"><canvas id="adm-chart-status"></canvas></div>'
+      +   '</div>'
+      + '</div>'
+      + _renderFunnel(s.total, s.onboarded, s.trialing + s.active + s.canceled, s.active);
+    setTimeout(function() {
+      _renderSignupsChart(profiles);
+      _renderStatusDonut(s.trialing, s.active, s.canceled, s.pastDue, s.none);
+    }, 0);
+  } else if (name === 'users') {
+    sec.innerHTML = ''
+      + _renderRecentUsers(profiles.slice(0, 10))
+      + _renderCreateUserCard()
+      + _renderAllUsersTable(profiles);
+    setTimeout(_wireCreateUserBtn, 0);
+  } else if (name === 'coaching') {
+    sec.innerHTML = '<div id="adm-coaching" class="adm-panel"><div class="adm-panel-title">Contenu Coaching</div><div class="adm-loading">Chargement&hellip;</div></div>';
     _loadAndRenderCoaching();
-  }, 0);
+  }
 }
 
 // ═══════════════════════════════════════════════
