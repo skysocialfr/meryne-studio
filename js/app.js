@@ -157,7 +157,6 @@ function setTab(id, btn) {
   if (id === 'followers') renderCoaching();
   if (id === 'tags') renderTags();
   if (id === 'admin' && typeof renderAdmin === 'function') renderAdmin();
-  if (id === 'connexions' && typeof renderConnexions === 'function') renderConnexions();
   if (id === 'feed' && typeof renderFeed === 'function') renderFeed();
 }
 

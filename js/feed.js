@@ -134,7 +134,17 @@ async function syncRealInstagram() {
       .eq('platform', 'instagram')
       .eq('status', 'active')
       .maybeSingle();
-    if (!connRes.data) return; // Instagram not connected
+    if (!connRes.data) {
+      // Instagram not connected — show the connect banner, and prompt once per session
+      _setFeedConnectBanner(true);
+      if (typeof openConnexionsModal === 'function'
+          && !sessionStorage.getItem('veyra_cx_prompted')) {
+        sessionStorage.setItem('veyra_cx_prompted', '1');
+        openConnexionsModal();
+      }
+      return;
+    }
+    _setFeedConnectBanner(false);
     var syncRes = await sb.functions.invoke('instagram-sync', { body: {} });
     if (syncRes && syncRes.data && !syncRes.data.error) {
       window._IG_LIVE = syncRes.data;
@@ -142,6 +152,12 @@ async function syncRealInstagram() {
   } catch (e) {
     console.error('syncRealInstagram failed:', e);
   }
+}
+
+// Shows or hides the "connect your Instagram" banner at the top of the Feed.
+function _setFeedConnectBanner(show) {
+  var banner = document.getElementById('feed-connect-banner');
+  if (banner) banner.style.display = show ? '' : 'none';
 }
 
 // Compact number formatter (1.2K, 3.4M)
