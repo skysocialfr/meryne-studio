@@ -268,8 +268,8 @@ function handleConnectionReturn() {
     if (typeof track === 'function') track('connexion_instagram_completed');
     var panel = document.getElementById('tab-connexions');
     if (panel && panel.classList.contains('active')) renderConnexions();
-    // Refresh the real feed in the Feed tab now that we're connected
-    if (typeof renderInstagramLive === 'function') renderInstagramLive();
+    // Re-render the Feed so the beautiful header + grid pick up the real data
+    if (typeof renderFeed === 'function') renderFeed();
   } else if (connected === 'error') {
     console.error('Instagram connect error:', detail);
     showSync('❌ Échec connexion Instagram' + (detail ? ' — ' + detail : ''), 'rgba(220,38,38,.85)');

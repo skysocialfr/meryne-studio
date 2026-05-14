@@ -91,7 +91,15 @@ function switchFeed(plat, btn) {
 
 function updateFeedCount() {
   var el = document.getElementById('ig-post-count');
-  if (el) el.textContent = FEED_DATA.insta.length;
+  if (!el) return;
+  // Prefer the real Instagram media count when connected; fall back to
+  // manual drafts otherwise.
+  var live = window._IG_LIVE && window._IG_LIVE.profile;
+  if (live && typeof live.media_count === 'number') {
+    el.textContent = live.media_count;
+  } else {
+    el.textContent = FEED_DATA.insta.length;
+  }
 }
 
 // ═══════════════════════════════════════════════
@@ -104,6 +112,44 @@ async function renderFeed() {
   renderFeedGrid('tiktok');
   updateFeedCount();
   renderHighlights();
+  // Pull the user's real Instagram data in the background, then
+  // re-render the header + grid so the published posts appear.
+  syncRealInstagram().then(function () {
+    renderHighlights();
+    renderFeedGrid('insta');
+    updateFeedCount();
+  });
+}
+
+// Fetch the user's real Instagram data (profile + published media)
+// via the instagram-sync edge function. Result cached in
+// window._IG_LIVE = { profile, media } — or null if not connected.
+async function syncRealInstagram() {
+  window._IG_LIVE = null;
+  if (typeof sb === 'undefined' || !sb || !window._VEYRA_UID) return;
+  try {
+    var connRes = await sb.from('social_connections')
+      .select('id')
+      .eq('user_id', window._VEYRA_UID)
+      .eq('platform', 'instagram')
+      .eq('status', 'active')
+      .maybeSingle();
+    if (!connRes.data) return; // Instagram not connected
+    var syncRes = await sb.functions.invoke('instagram-sync', { body: {} });
+    if (syncRes && syncRes.data && !syncRes.data.error) {
+      window._IG_LIVE = syncRes.data;
+    }
+  } catch (e) {
+    console.error('syncRealInstagram failed:', e);
+  }
+}
+
+// Compact number formatter (1.2K, 3.4M)
+function _feedNum(n) {
+  if (n == null) return '—';
+  if (n >= 1000000) return (n / 1000000).toFixed(1).replace('.0', '') + 'M';
+  if (n >= 1000)    return (n / 1000).toFixed(1).replace('.0', '') + 'K';
+  return String(n);
 }
 
 function renderFeedGrid(plat) {
@@ -170,7 +216,8 @@ function renderFeedGrid(plat) {
       // Overlay
       + '<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.7));padding:8px 8px 6px;z-index:1;">'
       + (overlayTitle ? '<div style="font-size:11px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + overlayTitle + '</div>' : '')
-      + '<div style="display:flex;gap:4px;align-items:center;margin-top:2px;">'
+      + '<div style="display:flex;gap:4px;align-items:center;margin-top:2px;flex-wrap:wrap;">'
+      + '<span style="font-size:8px;color:#fff;background:rgba(124,58,237,.85);border-radius:4px;padding:1px 5px;font-weight:700;">✎ Brouillon</span>'
       + (overlayDate ? '<span style="font-size:9px;color:rgba(255,255,255,.75);">' + overlayDate + '</span>' : '')
       + (overlayFormat ? '<span style="font-size:8px;color:#fff;background:rgba(255,255,255,.2);border-radius:4px;padding:1px 5px;">' + overlayFormat + '</span>' : '')
       + (p.pubId ? '<span style="font-size:8px;color:#fff;background:rgba(139,92,246,.6);border-radius:4px;padding:1px 5px;">📋 Planning</span>' : '')
@@ -189,8 +236,40 @@ function renderFeedGrid(plat) {
     + '<div style="font-size:10px;margin-top:2px;">Ajouter</div>'
     + '</div></div>';
 
+  // Real published Instagram posts (only on the insta feed, when connected)
+  var realCount = 0;
+  if (plat === 'insta' && window._IG_LIVE && window._IG_LIVE.media && window._IG_LIVE.media.length) {
+    var media = window._IG_LIVE.media;
+    realCount = media.length;
+    for (var m = 0; m < media.length; m++) {
+      var rm = media[m];
+      var isVid = rm.type === 'VIDEO';
+      var imgSrc = (isVid && rm.thumbnail) ? rm.thumbnail : (rm.url || rm.thumbnail);
+      var realMediaHtml;
+      if (imgSrc) {
+        realMediaHtml = '<img src="' + escapeHtml(imgSrc) + '" style="width:100%;height:100%;object-fit:cover;" alt="" loading="lazy">';
+      } else {
+        realMediaHtml = '<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:#F3F4F6;color:#D1D5DB;font-size:32px;">▦</div>';
+      }
+      var cap = rm.caption ? escapeHtml(rm.caption.split('\n')[0].slice(0, 60)) : '';
+      html += '<a class="feed-cell feed-cell-real" href="' + escapeHtml(rm.permalink || '#') + '" target="_blank" rel="noopener"'
+        + ' style="position:relative;display:block;aspect-ratio:1;border-radius:8px;overflow:hidden;border:1.5px solid #E5E7EB;background:#fff;text-decoration:none;">'
+        + '<div class="feed-badge feed-badge-pub">✓ Publié</div>'
+        + (isVid ? '<div style="position:absolute;top:6px;right:6px;z-index:2;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;"><svg width="9" height="11" viewBox="0 0 10 13" fill="#fff"><path d="M1 1l8 5.5-8 5.5z"/></svg></div>' : '')
+        + '<div style="width:100%;height:100%;">' + realMediaHtml + '</div>'
+        + '<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.72));padding:14px 8px 6px;">'
+        + (cap ? '<div style="font-size:10px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px;">' + cap + '</div>' : '')
+        + '<div style="display:flex;gap:8px;align-items:center;font-size:10px;font-weight:600;color:#fff;">'
+        + '<span>♥ ' + _feedNum(rm.likes) + '</span>'
+        + '<span>💬 ' + _feedNum(rm.comments) + '</span>'
+        + '</div>'
+        + '</div>'
+        + '</a>';
+    }
+  }
+
   // Fill to 9 cells minimum with empty placeholders
-  var total = posts.length + 1; // +1 for the add slot
+  var total = posts.length + 1 + realCount; // +1 for the add slot
   for (var j = total; j < 9; j++) {
     html += '<div class="feed-cell feed-cell-empty" style="aspect-ratio:1;border-radius:8px;background:#F9FAFB;border:1px solid #F3F4F6;"></div>';
   }
@@ -844,13 +923,23 @@ function saveIgProfile() {
 // ═══════════════════════════════════════════════
 
 function renderHighlights() {
+  // Real Instagram profile (when connected) takes precedence over the
+  // manually-edited IG_PROFILE fallback.
+  var live = window._IG_LIVE && window._IG_LIVE.profile;
+  var handle = (live && (live.username || live.name)) || IG_PROFILE.handle || '';
+  var avatar = (live && live.avatar) || IG_PROFILE.avatar || null;
+  var bio = IG_PROFILE.bio || '';
+  var followers = (live && typeof live.followers === 'number')
+    ? live.followers
+    : IG_PROFILE.followers;
+
   // Render avatar
   var avatarEl = document.getElementById('ig-avatar-img');
   if (avatarEl) {
-    if (IG_PROFILE.avatar) {
-      avatarEl.innerHTML = '<img src="' + IG_PROFILE.avatar + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">';
+    if (avatar) {
+      avatarEl.innerHTML = '<img src="' + avatar + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="">';
     } else {
-      avatarEl.innerHTML = '<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#667EEA,#764BA2);display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:700;">' + escapeHtml(IG_PROFILE.handle.charAt(0).toUpperCase()) + '</div>';
+      avatarEl.innerHTML = '<div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg,#667EEA,#764BA2);display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:700;">' + escapeHtml((handle.charAt(0) || '?').toUpperCase()) + '</div>';
     }
   }
   // Update avatar ring: gradient when stories exist, gray when empty
@@ -865,7 +954,7 @@ function renderHighlights() {
 
   // Render handle (header chip)
   var handleEl = document.getElementById('ig-handle-display');
-  if (handleEl) handleEl.textContent = IG_PROFILE.handle || '—';
+  if (handleEl) handleEl.textContent = handle || '—';
 
   // Render goal stat (feed header)
   var goalEl = document.getElementById('feed-ig-goal');
@@ -877,8 +966,8 @@ function renderHighlights() {
   // Render bio
   var bioEl = document.getElementById('ig-bio-display');
   if (bioEl) {
-    if (IG_PROFILE.bio) {
-      bioEl.innerHTML = '<strong>' + escapeHtml(IG_PROFILE.handle) + '</strong><br>' + escapeHtml(IG_PROFILE.bio);
+    if (bio) {
+      bioEl.innerHTML = '<strong>' + escapeHtml(handle) + '</strong><br>' + escapeHtml(bio);
     } else {
       bioEl.textContent = '';
     }
@@ -886,8 +975,8 @@ function renderHighlights() {
 
   // Render followers
   var followersEl = document.getElementById('ig-followers-count');
-  if (followersEl && IG_PROFILE.followers !== null) {
-    followersEl.textContent = IG_PROFILE.followers.toLocaleString('fr-FR');
+  if (followersEl && followers != null) {
+    followersEl.textContent = Number(followers).toLocaleString('fr-FR');
   }
 
   // Render highlights row
