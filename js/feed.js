@@ -1481,46 +1481,101 @@ function closePostDetail() {
   _postDetailMedia = null;
 }
 
+// Metric definitions — label, icon, and a plain-language explanation
+// shown in the little "ⓘ" tooltip next to each stat.
+var PD_STAT_DEFS = [
+  { key: 'views', label: 'Vues', icon: '▶️',
+    info: 'Nombre total de fois où ce post a été affiché. Une même personne peut le voir plusieurs fois.' },
+  { key: 'reach', label: 'Couverture', icon: '👁️',
+    info: 'Nombre de comptes uniques qui ont vu ce post au moins une fois.' },
+  { key: 'total_interactions', label: 'Interactions', icon: '✨',
+    info: 'Total des j\'aime, commentaires, enregistrements et partages générés par ce post.' },
+  { key: 'likes', label: 'J\'aime', icon: '❤️',
+    info: 'Nombre de j\'aime sur ce post.' },
+  { key: 'comments', label: 'Commentaires', icon: '💬',
+    info: 'Nombre de commentaires sur ce post.' },
+  { key: 'saved', label: 'Enregistrements', icon: '🔖',
+    info: 'Nombre de fois où ce post a été enregistré dans une collection.' },
+  { key: 'shares', label: 'Partages', icon: '🔁',
+    info: 'Nombre de fois où ce post a été partagé (en story ou en message privé).' },
+  { key: 'profile_visits', label: 'Visites du profil', icon: '🔗',
+    info: 'Nombre de visites de ton profil générées par ce post.' },
+  { key: 'follows', label: 'Abonnements gagnés', icon: '➕',
+    info: 'Nombre de nouveaux abonnés gagnés directement grâce à ce post.' }
+];
+
+function _pdInfoIcon(text) {
+  return '<span title="' + escapeHtml(text) + '" '
+    + 'style="display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;'
+    + 'border-radius:50%;background:#D1D5DB;color:#fff;font-size:9px;font-weight:700;cursor:help;'
+    + 'margin-left:3px;font-style:normal;">i</span>';
+}
+
+// Renders the follower / non-follower split bar for reach or views.
+function _pdBreakdownBar(bd) {
+  if (!bd) return '';
+  // follow_type dimension values: FOLLOWER / NON_FOLLOWER (case-insensitive)
+  var foll = 0, nonFoll = 0;
+  Object.keys(bd).forEach(function (k) {
+    var ku = k.toUpperCase();
+    if (ku.indexOf('NON') !== -1) nonFoll += bd[k];
+    else if (ku.indexOf('FOLLOW') !== -1) foll += bd[k];
+  });
+  var total = foll + nonFoll;
+  if (total <= 0) return '';
+  var fPct = Math.round(foll / total * 100);
+  return '<div style="margin-top:6px;">'
+    + '<div style="display:flex;height:5px;border-radius:3px;overflow:hidden;background:#E5E7EB;">'
+    + '<div style="width:' + fPct + '%;background:#FF2D7A;"></div>'
+    + '<div style="width:' + (100 - fPct) + '%;background:#7C3AED;"></div>'
+    + '</div>'
+    + '<div style="display:flex;justify-content:space-between;font-size:8px;color:#9CA3AF;margin-top:2px;">'
+    + '<span>Abonnés ' + fPct + '%</span><span>Non-abonnés ' + (100 - fPct) + '%</span>'
+    + '</div></div>';
+}
+
 function renderPostDetail(data) {
   var body = document.getElementById('post-detail-body');
   if (!body) return;
   var media = data.media || {};
   var insights = data.insights || {};
+  var breakdowns = data.breakdowns || {};
   var comments = data.comments || [];
 
   var isVid = media.type === 'VIDEO';
   var imgSrc = (isVid && media.thumbnail) ? media.thumbnail : (media.url || media.thumbnail);
 
-  // Stat cards — only show the metrics Instagram returned
-  var statDefs = [
-    { key: 'reach', label: 'Couverture', icon: '👁️' },
-    { key: 'views', label: 'Vues', icon: '▶️' },
-    { key: 'likes', label: 'J\'aime', icon: '❤️' },
-    { key: 'comments', label: 'Commentaires', icon: '💬' },
-    { key: 'saved', label: 'Enregistrements', icon: '🔖' },
-    { key: 'shares', label: 'Partages', icon: '🔁' },
-    { key: 'total_interactions', label: 'Interactions', icon: '✨' }
-  ];
+  // Stat cards — show every metric Instagram returned, with an info tooltip
   var statsHtml = '';
-  for (var s = 0; s < statDefs.length; s++) {
-    var d = statDefs[s];
+  for (var s = 0; s < PD_STAT_DEFS.length; s++) {
+    var d = PD_STAT_DEFS[s];
     var val = insights[d.key];
     if (val == null && d.key === 'likes') val = media.likes;
     if (val == null && d.key === 'comments') val = media.comments;
     if (val == null) continue;
+    var bdBar = (d.key === 'reach' || d.key === 'views') ? _pdBreakdownBar(breakdowns[d.key]) : '';
     statsHtml += '<div style="background:#F9FAFB;border:1px solid #F3F4F6;border-radius:10px;padding:10px 12px;">'
-      + '<div style="font-size:10px;color:#9CA3AF;font-weight:600;margin-bottom:3px;">' + d.icon + ' ' + d.label + '</div>'
+      + '<div style="font-size:10px;color:#9CA3AF;font-weight:600;margin-bottom:3px;display:flex;align-items:center;">'
+      + '<span>' + d.icon + ' ' + d.label + '</span>' + _pdInfoIcon(d.info)
+      + '</div>'
       + '<div style="font-size:18px;font-weight:800;color:#111;">' + _feedNum(val) + '</div>'
+      + bdBar
       + '</div>';
   }
   if (!statsHtml) {
-    statsHtml = '<div style="grid-column:1/-1;color:#9CA3AF;font-size:12px;padding:6px 0;">Statistiques détaillées indisponibles pour ce post.</div>';
+    statsHtml = '<div style="grid-column:1/-1;color:#9CA3AF;font-size:12px;padding:6px 0;">'
+      + 'Statistiques indisponibles pour ce post. Instagram ne fournit les insights que pour les posts publiés '
+      + 'depuis un compte professionnel/créateur, et certaines métriques manquent sur les posts anciens.</div>';
   }
 
   // Comments
   var commentsHtml = '';
   if (!comments.length) {
-    commentsHtml = '<div style="color:#9CA3AF;font-size:12px;padding:10px 0;">Aucun commentaire pour l\'instant.</div>';
+    commentsHtml = '<div style="color:#9CA3AF;font-size:12px;padding:10px 0;">'
+      + (data.comments_error
+          ? 'Impossible de charger les commentaires pour le moment.'
+          : 'Aucun commentaire pour l\'instant.')
+      + '</div>';
   } else {
     for (var c = 0; c < comments.length; c++) {
       commentsHtml += _renderComment(comments[c]);
@@ -1540,8 +1595,8 @@ function renderPostDetail(data) {
     + '</div>'
     + '</div>'
     // Stats grid
-    + '<div style="font-size:12px;font-weight:700;color:#6B7280;margin-bottom:8px;">📊 Statistiques</div>'
-    + '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-bottom:20px;">' + statsHtml + '</div>'
+    + '<div style="font-size:12px;font-weight:700;color:#6B7280;margin-bottom:8px;">📊 Statistiques <span style="font-weight:400;color:#9CA3AF;">· en temps réel depuis Instagram</span></div>'
+    + '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:20px;">' + statsHtml + '</div>'
     // Comments
     + '<div style="font-size:12px;font-weight:700;color:#6B7280;margin-bottom:8px;">💬 Commentaires (' + comments.length + ')</div>'
     + '<div id="pd-comments">' + commentsHtml + '</div>';
