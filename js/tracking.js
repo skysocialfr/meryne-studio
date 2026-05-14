@@ -3,9 +3,8 @@
    Lazy-loads Google Analytics only after explicit consent.
    ═══════════════════════════════════════════════ */
 
-// ⬇️  REPLACE WITH YOUR REAL MEASUREMENT ID FROM analytics.google.com
-//    (format: G-XXXXXXXXXX). When set to the placeholder, GA is no-op.
-var VEYRA_GA_ID = 'G-PLACEHOLDER';
+// Google Analytics 4 measurement ID — Veyra Studio property.
+var VEYRA_GA_ID = 'G-PGWDPGRBF0';
 
 var CONSENT_KEY = 'veyra_cookie_consent'; // 'granted' | 'denied'
 
