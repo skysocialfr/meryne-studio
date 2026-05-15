@@ -100,7 +100,12 @@ function renderProd() {
 
   var html = '';
   if (activeTasks.length === 0 && doneTasks.length === 0) {
-    html = '<div style="text-align:center;padding:32px 16px;color:#9CA3AF;font-size:13px;">Aucune tâche de production</div>';
+    html = '<div class="empty-state">'
+      + '<div class="empty-ic">🎬</div>'
+      + '<div class="empty-title">Ton studio est prêt</div>'
+      + '<div class="empty-text">Crée ta première tâche de production : shooting, montage, prépa de Reel… L\'IA peut même te générer le script de tournage.</div>'
+      + '<button class="empty-cta" onclick="openProdModal(null)">+ Créer ma première tâche</button>'
+      + '</div>';
   } else {
     for (var j = 0; j < activeTasks.length; j++) html += _buildProdCard(activeTasks[j]);
     if (doneTasks.length > 0) {

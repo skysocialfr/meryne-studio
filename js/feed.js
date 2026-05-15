@@ -276,8 +276,20 @@ function renderFeedGrid(plat) {
     }
   }
 
-  // Fill to 9 cells minimum with empty placeholders
   var total = posts.length + realCount;
+
+  // True empty state on the Instagram feed: no drafts AND no published posts
+  if (plat === 'insta' && total === 0) {
+    container.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">'
+      + '<div class="empty-ic">📸</div>'
+      + '<div class="empty-title">Ton feed est prêt</div>'
+      + '<div class="empty-text">Ajoute un brouillon pour prévisualiser à quoi ressemblera ton feed, ou connecte ton Instagram pour voir tes vrais posts.</div>'
+      + '<button class="empty-cta" onclick="addFeedPost()">+ Ajouter un post</button>'
+      + '</div>';
+    return;
+  }
+
+  // Fill to 9 cells minimum with empty placeholders
   for (var j = total; j < 9; j++) {
     html += '<div class="feed-cell feed-cell-empty" style="aspect-ratio:1;border-radius:8px;background:#F9FAFB;border:1px solid #F3F4F6;"></div>';
   }
