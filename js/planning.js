@@ -293,7 +293,15 @@ function renderPlanning() {
   });
 
   if (!html) {
-    html = '<div style="text-align:center;padding:40px;color:var(--muted);font-size:13px;">Aucun post à afficher</div>';
+    var hasSearch = fSearch || (fPlat && fPlat !== 'all');
+    html = '<div class="empty-state">'
+      + '<div class="empty-ic">📅</div>'
+      + '<div class="empty-title">' + (hasSearch ? 'Aucun résultat' : 'Ton planning est vide') + '</div>'
+      + '<div class="empty-text">' + (hasSearch
+          ? 'Aucun post ne correspond à ta recherche. Essaie un autre mot-clé ou retire le filtre.'
+          : 'Planifie ton premier post — l\'IA peut même te générer la caption et les hashtags.') + '</div>'
+      + (hasSearch ? '' : '<button class="empty-cta" onclick="openPubModal(null)">+ Planifier mon premier post</button>')
+      + '</div>';
   }
 
   el.innerHTML = html;
