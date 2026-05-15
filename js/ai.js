@@ -1,8 +1,6 @@
 /* ═══════════════════════════════════════════════
-   VEYRA STUDIO — IA (Claude API)
+   VEYRA STUDIO — IA (Claude API, server-side proxy)
    ═══════════════════════════════════════════════ */
-
-var AI_KEY_LS = 'claude_api_key';
 
 // Build the "creator persona" preamble for AI prompts, derived from the user profile.
 // Falls back to a generic creator description if profile is empty.
@@ -27,64 +25,45 @@ function _aiPersonaBlock() {
   return 'Tu es un assistant pour ' + label + ', ' + profileLine + '.' + personaLine + '\n\n';
 }
 
-function getAiKey() { return localStorage.getItem(AI_KEY_LS) || ''; }
 
-// ─── Key Configuration Modal ───
+// Back-compat shims — the per-user API key modal is gone (IA is now
+// proxied through the ai-generate edge function with our own key).
+// Any caller of getAiKey()/showAiKeyModal() keeps working.
+function getAiKey() { return 'server'; }
 function showAiKeyModal(onSuccess) {
-  var current = getAiKey();
-  var html = '<button class="modal-x" onclick="closeModal()">&times;</button>'
-    + '<h2>\uD83E\uDD16 Clé API Claude</h2>'
-    + '<p style="font-size:12px;color:var(--muted);margin:0 0 16px">Obtiens ta clé sur <strong>console.anthropic.com</strong><br>Stockée localement sur ton appareil uniquement.</p>'
-    + '<div class="fr"><label>Clé API</label><input id="ai-key-inp" type="password" value="' + escapeHtml(current) + '" placeholder="sk-ant-api03-..." style="font-family:\'DM Mono\',monospace;font-size:11px;letter-spacing:.5px;"></div>'
-    + '<div class="modal-acts">'
-    + '<button class="btn-s" onclick="closeModal()">Annuler</button>'
-    + '<button class="btn-p" onclick="saveAiKey()">Enregistrer \u2713</button>'
-    + '</div>';
-  openModal(html);
-  window._aiKeyCallback = onSuccess;
+  if (typeof onSuccess === 'function') onSuccess();
 }
 
-function saveAiKey() {
-  var inp = document.getElementById('ai-key-inp');
-  if (!inp) return;
-  var key = inp.value.trim();
-  if (!key.startsWith('sk-')) { inp.style.borderColor = 'var(--rose)'; return; }
-  localStorage.setItem(AI_KEY_LS, key);
-  closeModal();
-  showSync('\u2705 Clé API sauvegardée', 'rgba(5,150,105,.8)');
-  if (window._aiKeyCallback) { window._aiKeyCallback(); window._aiKeyCallback = null; }
-}
-
-// ─── Core API Call ───
+// ─── Core API Call (proxied via the ai-generate edge function) ───
 async function callClaude(prompt) {
-  var key = getAiKey();
-  if (!key) return null;
-  try {
-    var res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-        'content-type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1024,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-    var data = await res.json();
-    if (data.error) { showSync('\u274C ' + (data.error.message || 'Erreur API'), 'rgba(220,38,38,.8)'); return null; }
-    if (data.content && data.content[0]) return data.content[0].text;
+  if (typeof sb === 'undefined' || !sb) {
+    showSync('❌ Service IA indisponible', 'rgba(220,38,38,.8)');
     return null;
-  } catch(e) {
-    showSync('\u274C Erreur réseau — vérifie ta connexion', 'rgba(220,38,38,.8)');
+  }
+  try {
+    var res = await sb.functions.invoke('ai-generate', { body: { prompt: prompt } });
+    if (res.error) {
+      showSync('❌ Erreur IA — vérifie ta connexion', 'rgba(220,38,38,.8)');
+      return null;
+    }
+    var data = res.data || {};
+    if (data.error) {
+      if (data.error === 'subscription_required') {
+        showSync('🔒 Réservé aux abonnés actifs', 'rgba(245,158,11,.8)');
+      } else if (data.error === 'ai_not_configured') {
+        showSync('⚠️ IA non configurée — contacte le support', 'rgba(245,158,11,.8)');
+      } else {
+        showSync('❌ ' + (typeof data.error === 'string' ? data.error : 'Erreur IA'), 'rgba(220,38,38,.8)');
+      }
+      return null;
+    }
+    return data.text || null;
+  } catch (e) {
+    showSync('❌ Erreur réseau — vérifie ta connexion', 'rgba(220,38,38,.8)');
     return null;
   }
 }
 
-// ─── Generate Script for Production Card ───
 async function generateProdScript(prodId) {
   if (!getAiKey()) { showAiKeyModal(function() { generateProdScript(prodId); }); return; }
 

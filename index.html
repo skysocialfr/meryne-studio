@@ -6,7 +6,7 @@
 <!-- Auto-update: force a fresh load when a new version is deployed -->
 <script>
 (function(){
-  var APP_VERSION = '27';
+  var APP_VERSION = '28';
   try {
     fetch('/version.json?_=' + Date.now(), { cache: 'no-store' })
       .then(function(r){ return r.json(); })
@@ -587,10 +587,6 @@
               <span class="settings-row-ic">&#x1F504;</span>
               <span class="settings-row-label">Synchroniser mes donn&eacute;es</span>
             </button>
-            <button class="settings-row" onclick="showAiKeyModal();closeSettingsMenu()">
-              <span class="settings-row-ic">&#x1F916;</span>
-              <span class="settings-row-label">Cl&eacute; API Claude</span>
-            </button>
             <div class="settings-sep"></div>
             <button class="settings-row settings-row-danger" onclick="doLogout()">
               <span class="settings-row-ic">&#x1F6AA;</span>
@@ -967,7 +963,7 @@
 
 <script src="js/notes.js?v=2"></script>
 <script src="js/hashtags.js?v=2"></script>
-<script src="js/ai.js?v=2"></script>
+<script src="js/ai.js?v=3"></script>
 <script src="js/milestones.js?v=3"></script>
 <script src="js/admin.js?v=6"></script>
 <script src="js/connexions.js?v=5"></script>
