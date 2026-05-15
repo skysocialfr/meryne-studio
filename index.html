@@ -6,7 +6,7 @@
 <!-- Auto-update: force a fresh load when a new version is deployed -->
 <script>
 (function(){
-  var APP_VERSION = '22';
+  var APP_VERSION = '23';
   try {
     fetch('/version.json?_=' + Date.now(), { cache: 'no-store' })
       .then(function(r){ return r.json(); })
@@ -39,7 +39,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=21">
+<link rel="stylesheet" href="css/style.css?v=22">
 <link rel="canonical" href="https://veyrastudio.fr/">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -796,7 +796,7 @@
 <!-- ECAL MODAL -->
 <div id="ecal-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeEcalModal()">
   <div class="modal-box" style="max-width:440px;max-height:90vh;overflow-y:auto;">
-    <div class="modal-hdr"><div class="modal-title" id="ecal-modal-title">Nouvel &eacute;v&eacute;nement</div><button class="modal-close" onclick="closeEcalModal()">&#10005;</button></div>
+    <div class="modal-hdr"><div class="modal-title" id="ecal-modal-title">Nouvel &eacute;v&eacute;nement</div><button class="modal-close" onclick="closeEcalModal()" aria-label="Fermer">&#10005;</button></div>
     <div id="ecal-modal-body"></div>
   </div>
 </div>
@@ -804,7 +804,7 @@
 <!-- FEED MODAL -->
 <div id="feed-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeFeedModal()">
   <div class="modal-box" style="max-width:480px;max-height:90vh;overflow-y:auto;">
-    <div class="modal-hdr"><div class="modal-title" id="feed-modal-title">Post Feed</div><button class="modal-close" onclick="closeFeedModal()">&#10005;</button></div>
+    <div class="modal-hdr"><div class="modal-title" id="feed-modal-title">Post Feed</div><button class="modal-close" onclick="closeFeedModal()" aria-label="Fermer">&#10005;</button></div>
     <div id="feed-modal-body"></div>
   </div>
 </div>
@@ -812,7 +812,7 @@
 <!-- POST DETAIL MODAL (stats + comments for a published IG post) -->
 <div id="post-detail-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closePostDetail()">
   <div class="modal-box" style="max-width:560px;max-height:90vh;overflow-y:auto;">
-    <div class="modal-hdr"><div class="modal-title">Analyse du post</div><button class="modal-close" onclick="closePostDetail()">&#10005;</button></div>
+    <div class="modal-hdr"><div class="modal-title">Analyse du post</div><button class="modal-close" onclick="closePostDetail()" aria-label="Fermer">&#10005;</button></div>
     <div id="post-detail-body"></div>
   </div>
 </div>
@@ -820,7 +820,7 @@
 <!-- CONNEXIONS MODAL (link Instagram / TikTok) -->
 <div id="cx-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeCxModal()">
   <div class="modal-box" style="max-width:480px;max-height:90vh;overflow-y:auto;">
-    <div class="modal-hdr"><div class="modal-title">Connexions</div><button class="modal-close" onclick="closeCxModal()">&#10005;</button></div>
+    <div class="modal-hdr"><div class="modal-title">Connexions</div><button class="modal-close" onclick="closeCxModal()" aria-label="Fermer">&#10005;</button></div>
     <div id="cx-modal-body"></div>
   </div>
 </div>
@@ -857,7 +857,7 @@
 </div>
 
 <!-- HASHTAG FAB + PANEL -->
-<button id="hash-fab" onclick="toggleHashPanel()" title="Bibliothèque hashtags">#</button>
+<button id="hash-fab" onclick="toggleHashPanel()" title="Bibliothèque hashtags" aria-label="Ouvrir la bibliothèque de hashtags">#</button>
 <div id="hash-panel">
   <div class="hash-hdr">
     <span class="hash-title"># Hashtags</span>
@@ -870,7 +870,7 @@
 </div>
 
 <!-- NOTES FAB + PANEL -->
-<button id="notes-fab" onclick="toggleNotesPanel()" title="Notes rapides">&#x1F4DD;</button>
+<button id="notes-fab" onclick="toggleNotesPanel()" title="Notes rapides" aria-label="Ouvrir les notes rapides">&#x1F4DD;</button>
 <div id="notes-panel">
   <div class="notes-hdr">
     <span class="notes-title">Notes rapides</span>
