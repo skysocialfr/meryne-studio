@@ -87,10 +87,37 @@ function _renderAdminContent(profiles) {
     return acc;
   }, 0);
 
+  // ─── Business signals ───
+  var now = Date.now();
+  var DAY = 86400000;
+  var thisWeek = profiles.filter(function(p){
+    return p.created_at && (now - new Date(p.created_at).getTime()) < 7 * DAY;
+  }).length;
+  var lastWeek = profiles.filter(function(p){
+    var t = p.created_at ? new Date(p.created_at).getTime() : 0;
+    var age = now - t;
+    return t && age >= 7 * DAY && age < 14 * DAY;
+  }).length;
+
+  // Trial conversion: among users whose trial has ended, % that became active
+  var trialEndedActive = profiles.filter(function(p){
+    return p.trial_end && new Date(p.trial_end).getTime() < now && p.subscription_status === 'active';
+  }).length;
+  var trialEndedCanceled = profiles.filter(function(p){
+    return p.trial_end && new Date(p.trial_end).getTime() < now && p.subscription_status === 'canceled';
+  }).length;
+  var trialEnded = trialEndedActive + trialEndedCanceled;
+  var trialConversion = trialEnded > 0 ? (trialEndedActive / trialEnded * 100) : null;
+
+  // Churn rate among users who left trial
+  var churnRate = (active + canceled) > 0 ? (canceled / (active + canceled) * 100) : null;
+
   window._ADMIN_PROFILES = profiles;
   window._ADMIN_STATS = {
     total: total, trialing: trialing, active: active, canceled: canceled,
-    pastDue: pastDue, none: none, onboarded: onboarded, mrr: mrr
+    pastDue: pastDue, none: none, onboarded: onboarded, mrr: mrr,
+    thisWeek: thisWeek, lastWeek: lastWeek,
+    trialConversion: trialConversion, churnRate: churnRate
   };
 
   // ─── Sub-navigation: admin "mode" with several pages ───
@@ -119,6 +146,7 @@ function _adminShowSection(name) {
   if (name === 'dashboard') {
     sec.innerHTML = ''
       + _renderKpiCards(s.total, s.trialing, s.active, s.mrr)
+      + '<div id="admin-extras-kpis"></div>'
       + '<div class="adm-row">'
       +   '<div class="adm-panel adm-panel-2">'
       +     '<div class="adm-panel-title">Inscriptions sur 30 jours</div>'
@@ -133,6 +161,7 @@ function _adminShowSection(name) {
     setTimeout(function() {
       _renderSignupsChart(profiles);
       _renderStatusDonut(s.trialing, s.active, s.canceled, s.pastDue, s.none);
+      _renderExtrasKpis(s);
     }, 0);
   } else if (name === 'users') {
     sec.innerHTML = ''
@@ -421,6 +450,71 @@ function _renderStatusDonut(trialing, active, canceled, pastDue, none) {
       }
     }
   });
+}
+
+// ─── Engagement & business KPI cards (second row) ───
+async function _renderExtrasKpis(s) {
+  var host = document.getElementById('admin-extras-kpis');
+  if (!host) return;
+  var extras = await _adminLoadExtras();
+
+  function fmtPct(v) { return v == null ? '—' : v.toFixed(1) + '%'; }
+  function fmtDelta(t, l) {
+    if (!l) return t > 0 ? '+' + t + ' nouveaux' : '—';
+    var pct = Math.round((t - l) / l * 100);
+    return (pct >= 0 ? '+' : '') + pct + '% vs sem. précédente';
+  }
+
+  var cards = [
+    { label: 'Comptes IG connect&eacute;s', value: extras.ig_connections,
+      tag: s.total ? Math.round(extras.ig_connections / s.total * 100) + '% des utilisateurs' : '—',
+      cls: 'adm-kpi-rose' },
+    { label: 'Posts publi&eacute;s via Veyra', value: extras.published_posts,
+      tag: extras.scheduled_posts ? extras.scheduled_posts + ' programm&eacute;s en attente' : 'Pipeline vide',
+      cls: 'adm-kpi-violet' },
+    { label: 'Inscriptions cette semaine', value: s.thisWeek,
+      tag: fmtDelta(s.thisWeek, s.lastWeek), cls: 'adm-kpi-cyan' },
+    { label: 'Conversion essai &rarr; payant', value: fmtPct(s.trialConversion),
+      tag: s.trialConversion == null ? 'Pas encore de donn&eacute;es' : 'sur essais termin&eacute;s',
+      cls: 'adm-kpi-green' },
+    { label: 'Churn', value: fmtPct(s.churnRate),
+      tag: s.churnRate == null ? 'Pas encore de donn&eacute;es' : 'annul&eacute;s / (actifs + annul&eacute;s)',
+      cls: 'adm-kpi-cyan' }
+  ];
+
+  host.innerHTML = '<div class="adm-kpis">'
+    + cards.map(function(k) {
+        return '<div class="adm-kpi ' + k.cls + '">'
+          + '<div class="adm-kpi-label">' + k.label + '</div>'
+          + '<div class="adm-kpi-value">' + k.value + '</div>'
+          + '<div class="adm-kpi-tag">' + k.tag + '</div>'
+          + '</div>';
+      }).join('')
+    + '</div>';
+}
+
+// Fetches counts the admin SELECT policies expose for engagement signals.
+async function _adminLoadExtras() {
+  var out = { ig_connections: 0, published_posts: 0, scheduled_posts: 0 };
+  if (!sb) return out;
+  try {
+    var igRes = await sb.from('social_connections')
+      .select('id', { count: 'exact', head: true })
+      .eq('platform', 'instagram')
+      .eq('status', 'active');
+    out.ig_connections = igRes.count || 0;
+    var pubRes = await sb.from('scheduled_posts')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'published');
+    out.published_posts = pubRes.count || 0;
+    var schedRes = await sb.from('scheduled_posts')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'scheduled');
+    out.scheduled_posts = schedRes.count || 0;
+  } catch (e) {
+    console.error('admin extras load failed:', e);
+  }
+  return out;
 }
 
 // ─── Conversion funnel ───
