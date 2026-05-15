@@ -536,6 +536,21 @@ body.on-landing{background:var(--dark);color:#F0F0F0;overflow-x:hidden;}
 .land-cta-final{padding:90px 0 100px;text-align:center;background:linear-gradient(135deg,rgba(255,45,122,.12) 0%,rgba(124,58,237,.12) 100%);border-top:1px solid rgba(255,255,255,.05);border-bottom:1px solid rgba(255,255,255,.05);}
 .land-cta-final-h2{font-family:'Cormorant Garamond',serif;font-size:42px;font-weight:700;line-height:1.1;letter-spacing:-.8px;color:#fff;margin-bottom:14px;}
 .land-cta-final-sub{font-size:15px;color:rgba(255,255,255,.6);margin-bottom:32px;}
+.land-cta-trust{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;font-size:12px;color:rgba(255,255,255,.45);margin-top:22px;}
+.land-cta-trust span:nth-child(even){color:rgba(255,255,255,.2);}
+
+/* Trust strip section */
+.land-trust-section{padding-top:60px;padding-bottom:60px;}
+.land-trust-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;}
+.land-trust-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:22px;transition:border-color .18s ease,transform .18s ease;}
+.land-trust-card:hover{border-color:rgba(255,45,122,.3);transform:translateY(-3px);}
+.land-trust-ic{font-size:28px;line-height:1;margin-bottom:12px;}
+.land-trust-title{font-size:14px;font-weight:800;color:#fff;margin-bottom:6px;letter-spacing:-.2px;}
+.land-trust-desc{font-size:12.5px;color:rgba(255,255,255,.55);line-height:1.6;}
+@media(max-width:640px){
+  .land-trust-section{padding-top:40px;padding-bottom:40px;}
+  .land-trust-card{padding:18px;}
+}
 
 /* Footer */
 .land-footer{padding:60px 0 40px;border-top:1px solid rgba(255,255,255,.05);background:rgba(0,0,0,.25);}
