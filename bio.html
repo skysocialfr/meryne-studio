@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Veyra Bio</title>
+<meta name="description" content="Tous mes liens, un seul endroit.">
+<meta name="theme-color" content="#0A0A14">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://uqyprtitkuqkdrrzckbc.supabase.co">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,500;9..40,700;9..40,800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'DM Sans',sans-serif;background:#0A0A14;color:#fff;min-height:100vh;-webkit-font-smoothing:antialiased;
+    background:radial-gradient(ellipse 70% 60% at 50% 0%,rgba(255,45,122,.22),transparent 55%),
+               radial-gradient(ellipse 60% 50% at 80% 100%,rgba(124,58,237,.18),transparent 60%),
+               #0A0A14;}
+  .bio-wrap{max-width:480px;margin:0 auto;padding:60px 20px 40px;text-align:center;}
+  .bio-avatar{width:96px;height:96px;border-radius:50%;background:linear-gradient(135deg,#FF2D7A,#7C3AED);display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:800;color:#fff;margin:0 auto 18px;box-shadow:0 16px 36px -8px rgba(124,58,237,.55);}
+  .bio-name{font-size:22px;font-weight:800;letter-spacing:-.3px;margin-bottom:4px;}
+  .bio-handle{font-size:13px;color:rgba(255,255,255,.55);margin-bottom:10px;}
+  .bio-tagline{font-size:13px;color:rgba(255,255,255,.75);line-height:1.6;margin-bottom:28px;}
+  .bio-links{display:flex;flex-direction:column;gap:11px;margin-top:8px;}
+  .bio-link{display:flex;align-items:center;gap:12px;padding:15px 18px;border-radius:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#fff;text-decoration:none;font-size:14px;font-weight:700;transition:transform .15s ease,background .15s ease,border-color .15s ease;}
+  .bio-link:hover{transform:translateY(-2px);background:rgba(255,255,255,.1);border-color:rgba(255,45,122,.4);}
+  .bio-link-emoji{font-size:20px;line-height:1;flex-shrink:0;}
+  .bio-link-title{flex:1;text-align:left;}
+  .bio-link-arrow{opacity:.5;font-size:14px;}
+  .bio-empty{font-size:13px;color:rgba(255,255,255,.45);padding:30px 0;}
+  .bio-foot{margin-top:38px;font-size:11px;color:rgba(255,255,255,.32);}
+  .bio-foot a{color:rgba(255,255,255,.55);text-decoration:none;font-weight:700;}
+  .bio-foot a:hover{color:#fff;}
+  .bio-error{padding:36px 22px;border-radius:14px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#FCA5A5;font-size:13px;line-height:1.6;}
+  @keyframes bioFade{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+  .bio-wrap > *{animation:bioFade .4s cubic-bezier(.21,.6,.35,1) both;}
+  .bio-wrap > *:nth-child(2){animation-delay:.06s;}
+  .bio-wrap > *:nth-child(3){animation-delay:.12s;}
+  .bio-wrap > *:nth-child(4){animation-delay:.18s;}
+  .bio-wrap > *:nth-child(5){animation-delay:.24s;}
+</style>
+</head>
+<body>
+<div class="bio-wrap" id="bio-root">
+  <div class="bio-empty">Chargement…</div>
+</div>
+<script>
+  (function(){
+    var SUPABASE_URL = 'https://uqyprtitkuqkdrrzckbc.supabase.co';
+    var SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxeXBydGl0a3Vxa2Rycnpja2JjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzNzUwNzUsImV4cCI6MjA4ODk1MTA3NX0.6SWZcRcctqMecI6VIsO3gwdGopiadcMP-W5HD66fo0c';
+    var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+    var root = document.getElementById('bio-root');
+    function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+
+    var slug = new URLSearchParams(location.search).get('u');
+    if (!slug) {
+      root.innerHTML = '<div class="bio-error">Lien invalide. Ajoute <code>?u=ton-pseudo</code> à l\'URL.</div>'
+        + '<div class="bio-foot">Propulsé par <a href="/">Veyra Studio</a></div>';
+      return;
+    }
+
+    sb.rpc('get_public_bio', { slug: slug }).then(function(res){
+      var data = res && res.data;
+      if (!data) {
+        root.innerHTML = '<div class="bio-error">Cette page n\'existe pas (ou plus). Vérifie l\'orthographe du pseudo.</div>'
+          + '<div class="bio-foot">Propulsé par <a href="/">Veyra Studio</a></div>';
+        return;
+      }
+      var display = data.display_name || data.ig_handle || slug;
+      var initial = display.charAt(0).toUpperCase();
+      var links = Array.isArray(data.links) ? data.links : [];
+
+      var linksHtml = links.length
+        ? '<div class="bio-links">' + links.map(function(l){
+            return '<a class="bio-link" href="' + esc(l.url) + '" target="_blank" rel="noopener">'
+              + '<span class="bio-link-emoji">' + esc(l.emoji || '🔗') + '</span>'
+              + '<span class="bio-link-title">' + esc(l.title || l.url) + '</span>'
+              + '<span class="bio-link-arrow">↗</span>'
+              + '</a>';
+          }).join('') + '</div>'
+        : '<div class="bio-empty">Aucun lien pour le moment.</div>';
+
+      root.innerHTML = ''
+        + '<div class="bio-avatar">' + esc(initial) + '</div>'
+        + '<div class="bio-name">' + esc(display) + '</div>'
+        + (data.ig_handle ? '<div class="bio-handle">@' + esc(data.ig_handle) + '</div>' : '')
+        + (data.tagline ? '<div class="bio-tagline">' + esc(data.tagline) + '</div>' : '')
+        + linksHtml
+        + '<div class="bio-foot">Propulsé par <a href="/">Veyra Studio</a></div>';
+      document.title = display + ' · Veyra Bio';
+    }).catch(function(){
+      root.innerHTML = '<div class="bio-error">Impossible de charger cette page pour le moment.</div>'
+        + '<div class="bio-foot">Propulsé par <a href="/">Veyra Studio</a></div>';
+    });
+  })();
+</script>
+</body>
+</html>

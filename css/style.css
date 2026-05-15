@@ -168,6 +168,37 @@ input[type="date"]::-webkit-calendar-picker-indicator{cursor:pointer;opacity:.5;
 .empty-cta:hover{transform:translateY(-2px);box-shadow:0 12px 28px -8px rgba(124,58,237,.6);}
 body.dark .empty-state{background:#1A1A2E;border-color:#2A2A3A;}
 
+/* ═══ LINKIN.BIO MANAGER ═══ */
+.bio-public-url{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;background:linear-gradient(120deg,rgba(255,45,122,.08),rgba(124,58,237,.08));border:1px solid rgba(124,58,237,.18);margin:14px 0;font-size:12px;}
+.bio-url-label{font-weight:700;color:var(--muted);flex-shrink:0;}
+.bio-public-url a{color:var(--rose);font-weight:700;text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.bio-copy-btn{padding:5px 12px;border-radius:7px;border:none;background:var(--rose);color:#fff;font-size:11px;font-weight:800;cursor:pointer;font-family:inherit;flex-shrink:0;}
+.bio-public-empty{font-style:italic;color:var(--muted);background:#F9FAFB;border-color:var(--bord);}
+.bio-section-title{font-size:12px;font-weight:800;color:var(--ink);margin:14px 0 8px;}
+.bio-loading{padding:14px;font-size:12px;color:var(--muted);text-align:center;}
+.bio-link-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border:1px solid var(--bord);border-radius:10px;margin-bottom:6px;}
+.bio-row-emoji{font-size:18px;flex-shrink:0;}
+.bio-row-text{flex:1;min-width:0;}
+.bio-row-title{font-size:12px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.bio-row-url{font-size:10px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.bio-row-actions{display:flex;gap:3px;flex-shrink:0;}
+.bio-row-actions button{width:24px;height:24px;border:1px solid var(--bord);background:var(--surf);border-radius:6px;font-size:10px;cursor:pointer;color:var(--muted);padding:0;line-height:1;}
+.bio-row-actions button:disabled{opacity:.3;cursor:default;}
+.bio-row-actions button:not(:disabled):hover{color:var(--ink);border-color:var(--ink);}
+.bio-row-del{color:#EF4444 !important;border-color:#FCA5A5 !important;background:#FEF2F2 !important;}
+.bio-add-form{display:grid;grid-template-columns:54px 1fr 1fr auto;gap:6px;margin-top:10px;}
+.bio-add-form input{padding:8px 10px;border:1.5px solid var(--bord);border-radius:7px;font-size:12px;font-family:inherit;box-sizing:border-box;width:100%;}
+.bio-add-form button{padding:8px 14px;border-radius:7px;border:none;background:var(--rose);color:#fff;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;white-space:nowrap;}
+@media(max-width:520px){
+  .bio-add-form{grid-template-columns:54px 1fr;}
+  .bio-add-form input[type="url"]{grid-column:1/-1;}
+  .bio-add-form button{grid-column:1/-1;}
+}
+body.dark .bio-link-row{border-color:#2A2A3A;}
+body.dark .bio-row-actions button{background:#13131F;border-color:#2A2A3A;}
+body.dark .bio-add-form input{background:#1A1A2E;border-color:#2A2A3A;color:#F0F0F0;}
+body.dark .bio-public-empty{background:#13131F;}
+
 /* ═══ STATS — Trends & best time to post ═══ */
 .trends-block,.timing-block{margin-bottom:10px;}
 .trends-grid{display:flex;flex-direction:column;gap:8px;}
