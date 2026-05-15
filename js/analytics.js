@@ -617,6 +617,9 @@ function _renderAnalyticsReal(data) {
     }).join('');
   }
 
+  // ─── Period comparison + best time to post ───
+  _renderTrendsAndTiming(posts);
+
   // ─── Platform split — Instagram only (real data) ───
   var platEl = document.getElementById('plat-split');
   if (platEl) {
@@ -792,6 +795,103 @@ function _renderAnalyticsReal(data) {
 }
 
 // Heatmap of real post publication dates
+// Splits posts in two halves chronologically and compares averages.
+function _periodCompare(posts) {
+  if (!posts || posts.length < 4) return null;
+  var sorted = posts.slice().sort(function(a, b) {
+    return new Date(b.timestamp || 0) - new Date(a.timestamp || 0);
+  });
+  var half = Math.floor(sorted.length / 2);
+  var recent = sorted.slice(0, half);
+  var prior  = sorted.slice(half, half * 2);
+  function avg(arr, fn) {
+    if (!arr.length) return 0;
+    return arr.reduce(function(s, p){ return s + (fn(p) || 0); }, 0) / arr.length;
+  }
+  function pct(now, prev) { return prev > 0 ? ((now - prev) / prev * 100) : null; }
+  var vNow = avg(recent, function(p){ return p.views || p.reach || 0; });
+  var vPrev = avg(prior,  function(p){ return p.views || p.reach || 0; });
+  var eNow = avg(recent, _anaEng);
+  var ePrev = avg(prior,  _anaEng);
+  return {
+    halfCount: half,
+    viewsAvgNow: vNow, viewsAvgPrev: vPrev, viewsPct: pct(vNow, vPrev),
+    engAvgNow: eNow,   engAvgPrev: ePrev,   engPct: pct(eNow, ePrev)
+  };
+}
+
+// Computes the 3 hours-of-day with the highest average engagement.
+function _bestHours(posts) {
+  var buckets = {};
+  posts.forEach(function(p) {
+    if (!p.timestamp) return;
+    var hr = new Date(p.timestamp).getHours();
+    if (isNaN(hr)) return;
+    if (!buckets[hr]) buckets[hr] = { sum: 0, count: 0 };
+    buckets[hr].sum += _anaEng(p);
+    buckets[hr].count++;
+  });
+  return Object.keys(buckets)
+    .map(function(h) {
+      return { hour: +h, avg: buckets[h].sum / buckets[h].count, count: buckets[h].count };
+    })
+    .sort(function(a, b) { return b.avg - a.avg; })
+    .slice(0, 3);
+}
+
+function _renderTrendsAndTiming(posts) {
+  var host = document.getElementById('ana-trends-timing');
+  if (!host) return;
+
+  var cmp = _periodCompare(posts);
+  var best = _bestHours(posts);
+
+  function deltaBadge(pct) {
+    if (pct == null) return '<span class="trend-pill trend-neutral">—</span>';
+    var cls = pct >= 0 ? 'trend-up' : 'trend-down';
+    var sign = pct >= 0 ? '+' : '';
+    return '<span class="trend-pill ' + cls + '">' + sign + pct.toFixed(0) + '%</span>';
+  }
+
+  var trendHtml = '';
+  if (cmp) {
+    trendHtml = '<div class="chart-block trends-block">'
+      + '<div class="chart-title">📈 Tendance · ' + cmp.halfCount + ' derniers posts vs précédents</div>'
+      + '<div class="trends-grid">'
+      +   '<div class="trend-row">'
+      +     '<div class="trend-label">Vues moyennes par post</div>'
+      +     '<div class="trend-value">' + _anaNum(Math.round(cmp.viewsAvgNow)) + '</div>'
+      +     deltaBadge(cmp.viewsPct)
+      +   '</div>'
+      +   '<div class="trend-row">'
+      +     '<div class="trend-label">Engagement moyen</div>'
+      +     '<div class="trend-value">' + cmp.engAvgNow.toFixed(1) + '%</div>'
+      +     deltaBadge(cmp.engPct)
+      +   '</div>'
+      + '</div>'
+      + '</div>';
+  }
+
+  var timeHtml = '';
+  if (best.length) {
+    timeHtml = '<div class="chart-block timing-block">'
+      + '<div class="chart-title">⏰ Meilleurs créneaux pour publier <span style="font-weight:400;color:#9CA3AF;">· calculés sur tes posts</span></div>'
+      + '<div class="timing-row">'
+      + best.map(function(h, i) {
+          var medals = ['🥇','🥈','🥉'];
+          return '<div class="timing-card">'
+            + '<div class="timing-medal">' + medals[i] + '</div>'
+            + '<div class="timing-hour">' + (h.hour < 10 ? '0' + h.hour : h.hour) + 'h</div>'
+            + '<div class="timing-sub">' + h.avg.toFixed(1) + '% eng. · ' + h.count + ' post' + (h.count > 1 ? 's' : '') + '</div>'
+            + '</div>';
+        }).join('')
+      + '</div>'
+      + '</div>';
+  }
+
+  host.innerHTML = trendHtml + timeHtml;
+}
+
 function _renderRealHeatmap(posts) {
   var el = document.getElementById('heatmap-grid');
   if (!el) return;

@@ -6,7 +6,7 @@
 <!-- Auto-update: force a fresh load when a new version is deployed -->
 <script>
 (function(){
-  var APP_VERSION = '25';
+  var APP_VERSION = '26';
   try {
     fetch('/version.json?_=' + Date.now(), { cache: 'no-store' })
       .then(function(r){ return r.json(); })
@@ -39,7 +39,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=23">
+<link rel="stylesheet" href="css/style.css?v=24">
 <link rel="canonical" href="https://veyrastudio.fr/">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -762,6 +762,7 @@
         <strong>3.</strong> Les KPIs se mettent &agrave; jour <strong style="color:var(--rose)">automatiquement</strong>
       </div>
       <div id="ana-kpis" class="ana-kpis"></div>
+      <div id="ana-trends-timing"></div>
       <div id="plat-split" class="plat-split"></div>
       <div id="best-block"></div>
       <div style="background:#fff;border:1.5px solid var(--bord);border-radius:12px;padding:14px;margin-bottom:12px;">
@@ -898,7 +899,7 @@
 <script src="js/planning.js?v=6"></script>
 <script src="js/calendar.js?v=4"></script>
 <script src="js/coaching.js?v=3"></script>
-<script src="js/analytics.js?v=6"></script>
+<script src="js/analytics.js?v=7"></script>
 <script src="js/tags.js?v=3"></script>
 <!-- STORY VIEWER -->
 <div id="story-viewer" style="position:fixed;inset:0;z-index:2000;background:#000;display:none;flex-direction:column;align-items:center;justify-content:center;">
