@@ -224,7 +224,7 @@ function showLoginUI(mode) {
 
 // ─── Entrer dans l'app ───
 var PROFILE_COLUMNS = 'id, email, role, display_name, niche, location, tagline, '
-  + 'ig_handle, tt_handle, ig_goal, tt_goal, ai_persona, onboarded, '
+  + 'ig_handle, tt_handle, ig_goal, tt_goal, ai_persona, onboarded, bio_slug, '
   + 'stripe_customer_id, subscription_id, subscription_status, subscription_price_id, '
   + 'current_period_end, trial_end, cancel_at_period_end';
 
