@@ -130,6 +130,35 @@ function _makeHBarChart(containerId, labels, data) {
   });
 }
 
+// ─── Export PDF — leverages window.print() with a stats-only print stylesheet ───
+function exportStatsPdf() {
+  var p = window._USER_PROFILE || {};
+  var handle = p.ig_handle || p.display_name || '';
+  var date = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+
+  // Insert a print header above the Stats tab
+  var tab = document.getElementById('tab-analytics');
+  if (!tab) return;
+  var hdr = document.createElement('div');
+  hdr.id = 'stats-print-header';
+  hdr.innerHTML = '<div class="sph-brand">Veyra Studio</div>'
+    + '<div class="sph-title">Rapport de performances Instagram</div>'
+    + '<div class="sph-meta">' + escapeHtml(handle ? '@' + handle : '') + ' &middot; ' + escapeHtml(date) + '</div>';
+  tab.insertBefore(hdr, tab.firstChild);
+
+  document.body.classList.add('printing-stats');
+
+  function cleanup() {
+    document.body.classList.remove('printing-stats');
+    if (hdr && hdr.parentNode) hdr.parentNode.removeChild(hdr);
+    window.removeEventListener('afterprint', cleanup);
+  }
+  window.addEventListener('afterprint', cleanup);
+  // Safari fallback — afterprint may not fire reliably
+  setTimeout(function() { if (document.body.classList.contains('printing-stats')) cleanup(); }, 3000);
+  window.print();
+}
+
 // ─── Export CSV ───
 function exportCSV() {
   // Real Instagram dataset takes precedence when available

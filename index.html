@@ -6,7 +6,7 @@
 <!-- Auto-update: force a fresh load when a new version is deployed -->
 <script>
 (function(){
-  var APP_VERSION = '32';
+  var APP_VERSION = '33';
   try {
     fetch('/version.json?_=' + Date.now(), { cache: 'no-store' })
       .then(function(r){ return r.json(); })
@@ -39,7 +39,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=29">
+<link rel="stylesheet" href="css/style.css?v=30">
 <link rel="canonical" href="https://veyrastudio.fr/">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -809,7 +809,10 @@
     <div id="tab-analytics" class="tab-panel">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
         <div style="font-size:13px;font-weight:800;color:var(--ink);">Activit&eacute; de publication</div>
-        <button class="ana-export-btn" onclick="exportCSV()">&#x2B07;&#xFE0F; Export CSV</button>
+        <div style="display:flex;gap:6px;">
+          <button class="ana-export-btn ana-export-pdf" onclick="exportStatsPdf()" title="Exporter en PDF" aria-label="Exporter en PDF">&#x1F4C4; PDF</button>
+          <button class="ana-export-btn" onclick="exportCSV()">&#x2B07;&#xFE0F; CSV</button>
+        </div>
       </div>
       <div style="background:#fff;border:1.5px solid var(--bord);border-radius:12px;padding:14px;margin-bottom:12px;">
         <div style="font-size:12px;font-weight:700;color:var(--ink);margin-bottom:8px;">Heatmap des publications</div>
@@ -961,7 +964,7 @@
 <script src="js/planning.js?v=6"></script>
 <script src="js/calendar.js?v=4"></script>
 <script src="js/coaching.js?v=3"></script>
-<script src="js/analytics.js?v=7"></script>
+<script src="js/analytics.js?v=8"></script>
 <script src="js/tags.js?v=3"></script>
 <!-- STORY VIEWER -->
 <div id="story-viewer" style="position:fixed;inset:0;z-index:2000;background:#000;display:none;flex-direction:column;align-items:center;justify-content:center;">
