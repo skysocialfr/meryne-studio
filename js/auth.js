@@ -298,6 +298,11 @@ function _routeAfterAuth() {
   applyProfileToUI();
   renderSubscriptionBadge();
   initApp();
+
+  // Fire-and-forget welcome email (server dedupes via welcome_email_sent_at)
+  if (sb && typeof sb.functions !== 'undefined') {
+    sb.functions.invoke('send-welcome', { body: {} }).catch(function() {});
+  }
 }
 
 // Is the user currently entitled to use the app?
