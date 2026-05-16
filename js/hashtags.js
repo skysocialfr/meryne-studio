@@ -168,3 +168,142 @@ function renderHashModalRow() {
         + escapeHtml(g.name) + '</button>';
     }).join('');
 }
+
+// ═══════════════════════════════════════════════
+//  Hashtag suggestions: by niche + extracted from the user's own posts
+// ═══════════════════════════════════════════════
+
+// Curated bundles per niche (15-25 tags each). Match the niches offered
+// in onboarding. Generic mix when the niche isn't recognised.
+var HASHTAG_BUNDLES = {
+  'Mode':       '#mode #fashion #ootd #outfitoftheday #style #fashionblogger #fashionista #look #lookdujour #mood #stylish #wiwt #parisienne #frenchstyle #frenchgirl #inspo #outfitinspo #fashionable #streetstyle',
+  'Beauté':     '#beauty #beaute #skincare #makeup #routine #glowup #beautyaddict #skincareroutine #makeuplover #beautytips #frenchbeauty #beautyhacks #cleanbeauty #selfcare #naturelle #peausensible',
+  'Fitness':    '#fitness #fit #workout #gymlife #training #fitfrance #musculation #fitfam #motivation #healthylife #sportlife #fitnessmotivation #homeworkout #cardio #abs #bodygoals #healthy',
+  'Lifestyle':  '#lifestyle #lifestyleblogger #dailylife #aesthetic #aestheticfeed #moodboard #moments #goodvibes #lifeisbeautiful #slowlife #cozy #mood #inspo #morningroutine #lifestylecontent',
+  'Food':       '#food #foodie #foodporn #foodstagram #recettesfaciles #cuisinefrancaise #homemade #yummy #foodphotography #faitmaison #recette #cooking #foodblogger #healthyfood #gourmandise',
+  'Voyage':     '#travel #travelgram #voyage #wanderlust #travelphotography #explore #travelblogger #adventure #travelling #voyageinsta #beautifuldestinations #passportready #escapade #weekendtravel',
+  'Tech':       '#tech #technology #innovation #startup #ai #ia #techlover #productivity #digital #future #techreview #gadgets #coding #developer #saas #appdev',
+  'Gaming':     '#gaming #gamer #gameplay #twitch #streamer #esports #videogames #pcgaming #consolelife #gamingsetup #playstation #xboxlife #nintendoswitch #gamingcommunity',
+  'Musique':    '#music #musique #artist #musicianlife #songwriter #studio #musicproducer #independantartist #frenchmusic #livemusic #songoftheday #musicvideo #soundcloud',
+  'Art':        '#art #artist #artoftheday #illustration #drawing #digitalart #creative #artwork #artistsoninstagram #sketchbook #painting #design #portfolio #handmade',
+  'Business':   '#business #entrepreneur #entrepreneurship #startup #motivation #mindset #success #businessowner #marketing #networking #freelance #solopreneur #personalbranding',
+  'Éducation':  '#education #learning #etudiant #studygram #studytips #motivation #productivity #etudes #knowledge #studymotivation #revisions #apprentissage',
+  'Famille':    '#famille #maman #parents #parentinglife #vieparents #enfants #mamanblogueuse #papablogueur #motherhood #fatherhood #famillyfirst #babylove #parentingjourney',
+  'Humour':     '#humour #funny #lol #drole #meme #comedyposts #humourfr #blagues #lifehumor #vidéosdroles #humoureveryday #zinzin'
+};
+
+var HASHTAG_GENERIC =
+  '#contentcreator #creator #createurdecontenu #frenchcreator #insta #instagood #explorepage #fyp #pourtoi #foryou #grow #engagement #community #authentic #behindthescenes';
+
+// Top 30 most-used hashtags across the user's own published posts.
+function _myTopHashtags() {
+  var live = window._IG_LIVE && window._IG_LIVE.media;
+  var stats = window._IG_STATS && window._IG_STATS.posts;
+  var captions = [];
+  if (Array.isArray(stats)) captions = stats.map(function(p) { return p.caption || ''; });
+  else if (Array.isArray(live)) captions = live.map(function(m) { return m.caption || ''; });
+  var counts = {};
+  captions.forEach(function(c) {
+    (c.match(/#[\p{L}\p{N}_]+/gu) || []).forEach(function(t) {
+      var k = t.toLowerCase();
+      counts[k] = (counts[k] || 0) + 1;
+    });
+  });
+  return Object.keys(counts)
+    .map(function(t) { return { tag: t, count: counts[t] }; })
+    .sort(function(a, b) { return b.count - a.count; })
+    .slice(0, 30);
+}
+
+var _HASH_SUG_TAB = 'niche';
+
+function openHashSuggestModal() {
+  if (typeof openModal !== 'function') return;
+  _HASH_SUG_TAB = 'niche';
+  openModal(_hashSuggestHtml());
+}
+
+function _hashSuggestHtml() {
+  var p = window._USER_PROFILE || {};
+  var niche = (p.niche || '').trim();
+  var bundleTags = HASHTAG_BUNDLES[niche] || HASHTAG_GENERIC;
+  var nicheLabel = HASHTAG_BUNDLES[niche] ? niche : 'Général (pas de niche définie)';
+
+  var nicheTabActive = _HASH_SUG_TAB === 'niche';
+  var myTabActive = _HASH_SUG_TAB === 'mine';
+
+  var body = '';
+  if (_HASH_SUG_TAB === 'niche') {
+    var tags = bundleTags.trim().split(/\s+/);
+    body = '<div class="hash-sug-meta">Niche : <strong>' + escapeHtml(nicheLabel) + '</strong> · ' + tags.length + ' hashtags</div>'
+      + '<div class="hash-sug-cloud">' + tags.map(function(t) {
+          return '<span class="hash-sug-chip" onclick="copyHashSuggest(\'' + escapeHtml(t) + '\')">' + escapeHtml(t) + '</span>';
+        }).join('') + '</div>'
+      + '<div class="modal-acts">'
+      +   '<button class="btn-s" onclick="closeModal()">Fermer</button>'
+      +   '<button class="btn-p" onclick="saveHashBundleAsGroup(' + JSON.stringify(nicheLabel) + ',' + JSON.stringify(bundleTags) + ')">Enregistrer comme groupe</button>'
+      + '</div>';
+  } else {
+    var top = _myTopHashtags();
+    if (!top.length) {
+      body = '<div class="hash-sug-empty">Aucun hashtag détecté dans tes posts publiés.<br>Connecte Instagram et publie quelques posts pour voir tes hashtags récurrents.</div>';
+    } else {
+      body = '<div class="hash-sug-meta">' + top.length + ' hashtags les plus utilisés dans tes posts publiés</div>'
+        + '<div class="hash-sug-cloud">' + top.map(function(t) {
+            var size = 11 + Math.min(t.count * 1.5, 8);
+            return '<span class="hash-sug-chip" style="font-size:' + size + 'px;" onclick="copyHashSuggest(\'' + escapeHtml(t.tag) + '\')">'
+              + escapeHtml(t.tag) + '<span class="hash-sug-count">' + t.count + '</span></span>';
+          }).join('') + '</div>'
+        + '<div class="modal-acts">'
+        +   '<button class="btn-s" onclick="closeModal()">Fermer</button>'
+        +   '<button class="btn-p" onclick="saveMyTopAsGroup()">Enregistrer comme groupe</button>'
+        + '</div>';
+    }
+  }
+
+  return '<button class="modal-x" onclick="closeModal()" aria-label="Fermer">&times;</button>'
+    + '<h2>💡 Suggestions de hashtags</h2>'
+    + '<div class="hash-sug-tabs">'
+    +   '<button class="hash-sug-tab' + (nicheTabActive ? ' active' : '') + '" onclick="_switchHashSugTab(\'niche\')">🎯 Par niche</button>'
+    +   '<button class="hash-sug-tab' + (myTabActive ? ' active' : '') + '" onclick="_switchHashSugTab(\'mine\')">📊 Mes hashtags top</button>'
+    + '</div>'
+    + body;
+}
+
+function _switchHashSugTab(tab) {
+  _HASH_SUG_TAB = tab;
+  var body = document.getElementById('modal-body');
+  if (body) body.innerHTML = _hashSuggestHtml();
+}
+
+function copyHashSuggest(tag) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(tag).then(function() {
+      showSync('📋 ' + tag + ' copié', 'rgba(5,150,105,.8)');
+    });
+  }
+}
+
+function saveHashBundleAsGroup(name, tags) {
+  var colors = ['#FF2D7A', '#7C3AED', '#06B6D4', '#10B981', '#F59E0B', '#EC4899', '#6366F1'];
+  var color = colors[(HASHTAG_GROUPS ? HASHTAG_GROUPS.length : 0) % colors.length];
+  var group = {
+    id: 'hg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+    name: 'Niche · ' + name,
+    color: color,
+    tags: tags
+  };
+  if (!HASHTAG_GROUPS) HASHTAG_GROUPS = [];
+  HASHTAG_GROUPS.push(group);
+  save();
+  renderHashGroups();
+  closeModal();
+  showSync('✅ Groupe enregistré', 'rgba(5,150,105,.8)');
+}
+
+function saveMyTopAsGroup() {
+  var top = _myTopHashtags();
+  if (!top.length) return;
+  var tags = top.map(function(t) { return t.tag; }).join(' ');
+  saveHashBundleAsGroup('Mes top', tags);
+}
