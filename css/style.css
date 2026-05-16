@@ -236,6 +236,17 @@ body.dark .bio-public-empty{background:#13131F;}
 body.dark .media-lib-cell{background:#13131F;border-color:#2A2A3A;}
 body.dark .media-lib-actions button,body.dark .media-lib-actions a{background:#1A1A2E;border-color:#2A2A3A;color:#9CA3AF;}
 
+/* ═══ iOS INSTALL TOAST ═══ */
+.ios-install-toast{position:fixed;left:12px;right:12px;bottom:78px;z-index:1500;background:#1A1A2E;color:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 20px 40px -10px rgba(16,16,40,.5);animation:iitSlide .35s cubic-bezier(.21,.7,.3,1);max-width:520px;margin:0 auto;border:1px solid rgba(255,255,255,.08);}
+@keyframes iitSlide{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+.ios-install-toast .iit-row{display:flex;align-items:center;gap:12px;}
+.ios-install-toast .iit-ic{font-size:28px;line-height:1;flex-shrink:0;}
+.ios-install-toast .iit-body{flex:1;display:flex;flex-direction:column;gap:3px;min-width:0;}
+.ios-install-toast .iit-body strong{font-size:13px;font-weight:800;}
+.ios-install-toast .iit-body span{font-size:11.5px;color:rgba(255,255,255,.7);line-height:1.5;}
+.ios-install-toast .iit-close{flex-shrink:0;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.08);color:#fff;border:none;font-size:16px;cursor:pointer;line-height:1;padding:0;}
+.ios-install-toast .iit-close:hover{background:rgba(255,255,255,.15);}
+
 /* ═══ STATS — Trends & best time to post ═══ */
 .trends-block,.timing-block{margin-bottom:10px;}
 .trends-grid{display:flex;flex-direction:column;gap:8px;}
