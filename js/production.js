@@ -110,15 +110,19 @@ function renderProd() {
 // ═══════════════════════════════════════════════
 
 function toggleProd(id) {
+  var t = null;
   for (var i = 0; i < PROD.length; i++) {
     if ((PROD[i].id || i) == id) {
       PROD[i].done = !PROD[i].done;
+      t = PROD[i];
       break;
     }
   }
+  if (t && typeof _syncDoneFromProd === 'function') _syncDoneFromProd(t);
   save();
   renderProd();
   renderKPIs();
+  if (t && t.pubId && typeof renderPlanning === 'function') renderPlanning();
 }
 
 // ═══════════════════════════════════════════════
@@ -156,6 +160,7 @@ function openProdModal(idx) {
     posts: t.posts || '',
     note: t.note || '',
     launch: t.launch || false,
+    pubId: t.pubId || '',
     script: t.script ? { title: t.script.title || '', shots: [] } : { title: '', shots: [] }
   };
 
@@ -220,6 +225,23 @@ function openProdModal(idx) {
     + '<input type="checkbox" id="pe-launch"' + (_pe.launch ? ' checked' : '') + ' style="width:16px;height:16px;accent-color:var(--rose);">'
     + '<label for="pe-launch" style="font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;">⭐ Priorité</label>'
     + '</div>'
+
+    // Link to a Planning publication — done state syncs across both
+    + (function() {
+        var pubs = (typeof PUBS !== 'undefined' && Array.isArray(PUBS))
+          ? PUBS.slice().sort(function(a, b) {
+              return (b.yr * 10000 + b.mo * 100 + b.day) - (a.yr * 10000 + a.mo * 100 + a.day);
+            })
+          : [];
+        var opts = '<option value="">— Aucun —</option>';
+        pubs.forEach(function(pub) {
+          var sel = (pub.id === _pe.pubId) ? ' selected' : '';
+          var lbl = escapeHtml((pub.date || '') + ' · ' + (pub.title || pub.fmt || ''));
+          opts += '<option value="' + escapeHtml(pub.id) + '"' + sel + '>' + lbl + '</option>';
+        });
+        return '<div class="fr"><label>📋 Lié à une publication Planning <span style="font-weight:400;color:#9CA3AF;">— le statut sera synchronisé</span></label>'
+          + '<select id="pe-pubid">' + opts + '</select></div>';
+      })()
 
     + '<hr class="sep">'
 
@@ -298,6 +320,10 @@ function saveProd(id, isNew, idx) {
   var noteVal = (document.getElementById('pe-note') || {}).value || '';
   var launchVal = (document.getElementById('pe-launch') || {}).checked || false;
   var scriptTitle = (document.getElementById('pe-script-title') || {}).value || '';
+  var pubIdVal = (document.getElementById('pe-pubid') || {}).value || '';
+
+  // Preserve existing done state when editing (so the link sync doesn't reset it)
+  var existing = isNew ? null : PROD.find(function(x) { return (x.id || PROD.indexOf(x)) == id; });
 
   var task = {
     id: id,
@@ -310,12 +336,19 @@ function saveProd(id, isNew, idx) {
     posts: postsVal,
     note: noteVal,
     launch: launchVal,
-    done: false,
+    pubId: pubIdVal || null,
+    done: existing ? !!existing.done : false,
     script: {
       title: scriptTitle,
       shots: _pe ? _pe.script.shots : []
     }
   };
+
+  // If a fresh link is set and the linked PUB is already done, inherit it
+  if (task.pubId) {
+    var linkedPub = (PUBS || []).find(function(x) { return x.id === task.pubId; });
+    if (linkedPub) task.done = !!linkedPub.done;
+  }
 
   if (isNew) {
     PROD.push(task);

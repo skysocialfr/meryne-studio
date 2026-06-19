@@ -71,7 +71,7 @@ var D_HASHTAG_GROUPS = [
 ];
 
 // ─── STATE ───
-var PROD, PUBS, FW, GOALS, TAGS, NOTES, HASHTAG_GROUPS;
+var PROD, PUBS, FW, GOALS, TAGS, NOTES, HASHTAG_GROUPS, CAL_EVENTS;
 var fSem = 'all', fPlat = 'all';
 
 // ─── SAVE / LOAD ───
@@ -83,6 +83,7 @@ function save() {
   cloudSave('tags2', TAGS);
   cloudSave('notes', NOTES);
   cloudSave('hashtag_groups', HASHTAG_GROUPS);
+  cloudSave('cal_events', CAL_EVENTS);
 }
 
 async function load() {
@@ -93,13 +94,15 @@ async function load() {
     cloudLoad('goals', null),
     cloudLoad('tags2', null),
     cloudLoad('notes', null),
-    cloudLoad('hashtag_groups', null)
+    cloudLoad('hashtag_groups', null),
+    cloudLoad('cal_events', null)
   ]);
   PROD = results[0]; PUBS = results[1]; FW = results[2];
   GOALS = results[3]; TAGS = results[4]; NOTES = results[5];
-  HASHTAG_GROUPS = results[6];
+  HASHTAG_GROUPS = results[6]; CAL_EVENTS = results[7];
   if (!PROD)           PROD           = [];
   if (!PUBS)           PUBS           = [];
+  if (!CAL_EVENTS)     CAL_EVENTS     = [];
   if (!FW)             FW             = JSON.parse(JSON.stringify(D_FW));
   var p = window._USER_PROFILE || {};
   if (!GOALS) GOALS = { ig: p.ig_goal || 0, tt: p.tt_goal || 0 };
@@ -109,6 +112,35 @@ async function load() {
   if (!TAGS)           TAGS           = [];
   if (!NOTES)          NOTES          = [];
   if (!HASHTAG_GROUPS) HASHTAG_GROUPS = JSON.parse(JSON.stringify(D_HASHTAG_GROUPS));
+}
+
+// ─── Cross-tab done-state sync ────────────────────────────────────────
+// Production tasks, Planning publications and Feed drafts can be linked
+// to each other (PROD.pubId → PUBS.id; Feed draft .pubId → PUBS.id).
+// When any of them flips its `done` state we mirror it to the others so
+// the workflow stays in sync without manual upkeep.
+function _syncDoneFromPub(pubId, done) {
+  if (!pubId) return;
+  if (Array.isArray(PROD)) {
+    PROD.forEach(function(t) { if (t.pubId === pubId && t.done !== done) t.done = done; });
+  }
+  if (typeof FEED_DATA !== 'undefined' && FEED_DATA && Array.isArray(FEED_DATA.insta)) {
+    FEED_DATA.insta.forEach(function(fp) {
+      if (fp.pubId === pubId && fp.done !== done) fp.done = done;
+    });
+  }
+}
+function _syncDoneFromProd(prodTask) {
+  if (!prodTask || !prodTask.pubId) return;
+  var pub = (PUBS || []).find(function(x) { return x.id === prodTask.pubId; });
+  if (pub && pub.done !== prodTask.done) pub.done = prodTask.done;
+  _syncDoneFromPub(prodTask.pubId, prodTask.done);
+}
+function _syncDoneFromFeedDraft(feedDraft) {
+  if (!feedDraft || !feedDraft.pubId) return;
+  var pub = (PUBS || []).find(function(x) { return x.id === feedDraft.pubId; });
+  if (pub && pub.done !== feedDraft.done) pub.done = feedDraft.done;
+  _syncDoneFromPub(feedDraft.pubId, feedDraft.done);
 }
 
 // ─── INIT ───
