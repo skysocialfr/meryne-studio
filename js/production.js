@@ -408,19 +408,129 @@ function saveEvents() {
 function setProdView(view, btn) {
   prodView = view;
 
-  document.querySelectorAll('#pvt-prod-list,#pvt-prod-cal').forEach(function(b) {
+  document.querySelectorAll('#pvt-prod-list,#pvt-prod-cal,#pvt-prod-kanban').forEach(function(b) {
     b.classList.remove('active');
   });
   if (btn) btn.classList.add('active');
 
   var listEl = document.getElementById('prod-list-view');
-  var calEl = document.getElementById('prod-cal-view');
+  var calEl  = document.getElementById('prod-cal-view');
+  var kanEl  = document.getElementById('prod-kanban-view');
 
-  if (listEl) listEl.style.display = view === 'list' ? '' : 'none';
-  if (calEl) calEl.style.display = view === 'cal' ? '' : 'none';
+  if (listEl) listEl.style.display = view === 'list'   ? '' : 'none';
+  if (calEl)  calEl.style.display  = view === 'cal'    ? '' : 'none';
+  if (kanEl)  kanEl.style.display  = view === 'kanban' ? '' : 'none';
 
-  if (view === 'cal') {
-    renderProdCal();
+  if (view === 'cal')    renderProdCal();
+  if (view === 'kanban') renderProdKanban();
+}
+
+// ─── Production Kanban ───
+// Columns derived from a status field with backwards-compat fallback:
+//   - todo      → "À faire"
+//   - shooting  → "En tournage"
+//   - done      → "Terminé" (also covers any task with done=true)
+function _prodStatus(t) {
+  if (t.done) return 'done';
+  if (t.status === 'shooting' || t.status === 'done') return t.status;
+  return 'todo';
+}
+
+function renderProdKanban() {
+  var board = document.getElementById('prod-kanban-board');
+  if (!board) return;
+  var cols = [
+    { id: 'todo',     label: 'À faire',     emoji: '💡', accent: '#9CA3AF' },
+    { id: 'shooting', label: 'En tournage', emoji: '🎬', accent: '#F59E0B' },
+    { id: 'done',     label: 'Terminé',     emoji: '✅', accent: '#10B981' }
+  ];
+
+  var byCol = { todo: [], shooting: [], done: [] };
+  (PROD || []).forEach(function(t) { byCol[_prodStatus(t)].push(t); });
+
+  board.innerHTML = '<div class="kanban-board">' + cols.map(function(col) {
+    var cards = byCol[col.id].map(function(t) {
+      var id = t.id || PROD.indexOf(t);
+      var plat = (t.plat || '').toLowerCase();
+      var platCls = plat.indexOf('tiktok') !== -1 && plat.indexOf('insta') !== -1 ? 'mix'
+                  : plat.indexOf('tiktok') !== -1 ? 'tt'
+                  : plat.indexOf('insta') !== -1 ? 'ig' : '';
+      var em = t.em ? escapeHtml(t.em) + ' ' : '';
+      return '<article class="kanban-card' + (platCls ? ' kc-' + platCls : '') + '"'
+        + ' draggable="true" ondragstart="_kanbanDragStart(event,\'prod\',\'' + id + '\')"'
+        + ' onclick="openProdModal(' + PROD.indexOf(t) + ')">'
+        + (t.launch ? '<span class="kc-flag">⭐</span>' : '')
+        + '<div class="kc-title">' + em + escapeHtml(t.title || 'Sans titre') + '</div>'
+        + (t.date ? '<div class="kc-meta"><span>' + escapeHtml(t.date) + '</span>' + (t.fmt ? '<span class="kc-tag">' + escapeHtml(t.fmt) + '</span>' : '') + '</div>' : (t.fmt ? '<div class="kc-meta"><span class="kc-tag">' + escapeHtml(t.fmt) + '</span></div>' : ''))
+        + (t.script && t.script.shots && t.script.shots.length ? '<div class="kc-shots">📝 ' + t.script.shots.length + ' plans</div>' : '')
+        + '</article>';
+    }).join('');
+    return '<div class="kanban-col" data-col="' + col.id + '"'
+      + ' ondragover="_kanbanDragOver(event)" ondragleave="_kanbanDragLeave(event)" ondrop="_kanbanDrop(event,\'prod\',\'' + col.id + '\')">'
+      + '<div class="kanban-col-head" style="--accent:' + col.accent + ';">'
+      +   '<span class="kanban-col-emoji">' + col.emoji + '</span>'
+      +   '<span class="kanban-col-label">' + col.label + '</span>'
+      +   '<span class="kanban-col-count">' + byCol[col.id].length + '</span>'
+      + '</div>'
+      + '<div class="kanban-col-body">'
+      +   (cards || '<div class="kanban-empty">Glisse une carte ici</div>')
+      + '</div>'
+      + '</div>';
+  }).join('') + '</div>';
+}
+
+// ─── Kanban drag-and-drop (shared between Production & Planning) ───
+var _KAN_DRAG = null;
+function _kanbanDragStart(e, kind, id) {
+  e.stopPropagation();
+  _KAN_DRAG = { kind: kind, id: id };
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', id);
+  e.currentTarget.style.opacity = '.5';
+}
+function _kanbanDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('kanban-col-over');
+}
+function _kanbanDragLeave(e) {
+  e.currentTarget.classList.remove('kanban-col-over');
+}
+function _kanbanDrop(e, kind, colId) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('kanban-col-over');
+  if (!_KAN_DRAG || _KAN_DRAG.kind !== kind) { _KAN_DRAG = null; return; }
+  var id = _KAN_DRAG.id;
+  _KAN_DRAG = null;
+  document.querySelectorAll('.kanban-card').forEach(function(c) { c.style.opacity = ''; });
+
+  if (kind === 'prod') {
+    var t = (PROD || []).find(function(x) { return (x.id || PROD.indexOf(x)) == id; });
+    if (!t) return;
+    var newDone = colId === 'done';
+    var prevDone = !!t.done;
+    t.status = colId;
+    t.done = newDone;
+    if (newDone !== prevDone && typeof _syncDoneFromProd === 'function') _syncDoneFromProd(t);
+    save();
+    renderProdKanban();
+    renderKPIs();
+    if (typeof renderPlanning === 'function') renderPlanning();
+    if (typeof renderFeed === 'function') renderFeed();
+  } else if (kind === 'plan') {
+    var pub = (PUBS || []).find(function(x) { return x.id === id; });
+    if (!pub) return;
+    var newDoneP = colId === 'done';
+    var prevDoneP = !!pub.done;
+    pub.done = newDoneP;
+    if (newDoneP !== prevDoneP && typeof _syncDoneFromPub === 'function') _syncDoneFromPub(pub.id, pub.done);
+    save();
+    renderPlanKanban();
+    renderKPIs();
+    buildFilters();
+    renderPlanning();
+    if (typeof renderProd === 'function') renderProd();
+    if (typeof renderFeed === 'function') renderFeed();
   }
 }
 

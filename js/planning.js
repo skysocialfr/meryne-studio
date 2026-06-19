@@ -360,13 +360,72 @@ function deletePubDirect(id) {
   });
 }
 
-// ─── Plan View Toggle (List / Calendar) ───
+// ─── Plan View Toggle (List / Calendar / Kanban) ───
 function setPlanView(view, btn) {
-  document.querySelectorAll('#pvt-list,#pvt-cal').forEach(function(b) { b.classList.remove('active'); });
+  document.querySelectorAll('#pvt-list,#pvt-cal,#pvt-kanban').forEach(function(b) { b.classList.remove('active'); });
   if (btn) btn.classList.add('active');
-  document.getElementById('plan-list-view').style.display = view === 'list' ? 'block' : 'none';
-  document.getElementById('plan-cal-view').style.display = view === 'cal' ? 'block' : 'none';
-  if (view === 'cal') renderCalendar();
+  var listEl = document.getElementById('plan-list-view');
+  var calEl  = document.getElementById('plan-cal-view');
+  var kanEl  = document.getElementById('plan-kanban-view');
+  if (listEl) listEl.style.display = view === 'list'   ? 'block' : 'none';
+  if (calEl)  calEl.style.display  = view === 'cal'    ? 'block' : 'none';
+  if (kanEl)  kanEl.style.display  = view === 'kanban' ? 'block' : 'none';
+  if (view === 'cal')    renderCalendar();
+  if (view === 'kanban') renderPlanKanban();
+}
+
+// ─── Planning Kanban ───
+// Columns:
+//   - À planifier   : future date AND !done
+//   - Cette semaine : within next 7 days AND !done
+//   - Publié        : done
+function _planStatus(p) {
+  if (p.done) return 'published';
+  var dt = (p.yr && p.mo != null && p.day) ? new Date(p.yr, p.mo, p.day) : null;
+  if (!dt) return 'todo';
+  var now = new Date(); now.setHours(0, 0, 0, 0);
+  var diff = Math.floor((dt.getTime() - now.getTime()) / 86400000);
+  if (diff < 0) return 'todo';
+  return diff <= 7 ? 'thisweek' : 'todo';
+}
+
+function renderPlanKanban() {
+  var board = document.getElementById('plan-kanban-board');
+  if (!board) return;
+  var cols = [
+    { id: 'todo',      label: 'À planifier',   emoji: '🗒️', accent: '#6366F1' },
+    { id: 'thisweek',  label: 'Cette semaine', emoji: '⏳', accent: '#F59E0B' },
+    { id: 'published', label: 'Publié',        emoji: '🚀', accent: '#10B981' }
+  ];
+  var byCol = { todo: [], thisweek: [], published: [] };
+  (PUBS || []).forEach(function(p) { byCol[_planStatus(p)].push(p); });
+
+  board.innerHTML = '<div class="kanban-board">' + cols.map(function(col) {
+    var cards = byCol[col.id].map(function(p) {
+      var platCls = ({tiktok:'tt', insta:'ig', stories:'st'})[p.plat] || '';
+      return '<article class="kanban-card kc-' + platCls + '"'
+        + ' draggable="true" ondragstart="_kanbanDragStart(event,\'plan\',\'' + p.id + '\')"'
+        + ' onclick="openPubById(\'' + p.id + '\')">'
+        + '<div class="kc-title">' + escapeHtml(p.title || '') + '</div>'
+        + '<div class="kc-meta">'
+        +   (p.date ? '<span>' + escapeHtml(p.date) + '</span>' : '')
+        +   (p.heure && p.heure !== '—' ? '<span>' + escapeHtml(p.heure) + '</span>' : '')
+        +   (p.fmt ? '<span class="kc-tag">' + escapeHtml(p.fmt) + '</span>' : '')
+        + '</div>'
+        + '</article>';
+    }).join('');
+    return '<div class="kanban-col" data-col="' + col.id + '"'
+      + ' ondragover="_kanbanDragOver(event)" ondragleave="_kanbanDragLeave(event)" ondrop="_kanbanDrop(event,\'plan\',\'' + col.id + '\')">'
+      + '<div class="kanban-col-head" style="--accent:' + col.accent + ';">'
+      +   '<span class="kanban-col-emoji">' + col.emoji + '</span>'
+      +   '<span class="kanban-col-label">' + col.label + '</span>'
+      +   '<span class="kanban-col-count">' + byCol[col.id].length + '</span>'
+      + '</div>'
+      + '<div class="kanban-col-body">'
+      +   (cards || '<div class="kanban-empty">Glisse une carte ici</div>')
+      + '</div>'
+      + '</div>';
+  }).join('') + '</div>';
 }
 
 // ─── Publication Modal ───
