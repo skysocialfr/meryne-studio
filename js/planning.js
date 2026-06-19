@@ -394,7 +394,7 @@ function renderPlanKanban() {
   if (!board) return;
   var cols = [
     { id: 'todo',      label: 'À planifier',   emoji: '🗒️', accent: '#6366F1' },
-    { id: 'thisweek',  label: 'Cette semaine', emoji: '⏳', accent: '#F59E0B' },
+    { id: 'thisweek',  label: 'Prêt à publier', emoji: '⏳', accent: '#F59E0B' },
     { id: 'published', label: 'Publié',        emoji: '🚀', accent: '#10B981' }
   ];
   var byCol = { todo: [], thisweek: [], published: [] };
