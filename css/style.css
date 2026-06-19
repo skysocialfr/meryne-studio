@@ -261,6 +261,28 @@ body.dark #li-post-text{background:#1A1A2E;border-color:#2A2A3A;color:#F0F0F0;}
 body.dark .tt-upload-label{background:#13131F;border-color:#2A2A3A;}
 body.dark #tt-post-title{background:#1A1A2E;border-color:#2A2A3A;color:#F0F0F0;}
 
+/* ═══ SCRIPT MODAL ═══ */
+.script-modal-hero{position:relative;padding:32px 28px 24px;background:linear-gradient(135deg,#1a0e2e 0%,#0e1a2e 100%);color:#fff;overflow:hidden;}
+.script-modal-hero::after{content:'';position:absolute;right:-40px;top:-40px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(255,45,122,.35),transparent 70%);pointer-events:none;}
+.script-modal-close{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.12);color:#fff;border:none;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2;transition:background .15s ease;line-height:1;padding:0;}
+.script-modal-close:hover{background:rgba(255,255,255,.22);}
+.script-modal-eyebrow{font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;opacity:.72;margin-bottom:6px;position:relative;}
+.script-modal-title{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:700;line-height:1.15;letter-spacing:-.4px;margin:0;position:relative;}
+.script-modal-ctx{font-size:12px;opacity:.7;margin-top:6px;position:relative;}
+.script-modal-meta{display:inline-block;margin-top:14px;font-size:10.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;background:rgba(255,255,255,.14);border-radius:99px;padding:5px 12px;position:relative;}
+.script-modal-list{padding:20px 22px 26px;}
+.script-shot{display:flex;align-items:flex-start;gap:14px;padding:14px 0;border-bottom:1px solid var(--bord);}
+.script-shot:last-child{border-bottom:none;}
+.script-shot-badge{width:58px;height:58px;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;flex-shrink:0;gap:1px;}
+.script-shot-n{font-size:11px;font-weight:800;letter-spacing:.5px;opacity:.85;font-family:'DM Mono',monospace;line-height:1;}
+.script-shot-emoji{font-size:22px;line-height:1;}
+.script-shot-body{flex:1;min-width:0;padding-top:4px;}
+.script-shot-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;color:var(--violet);margin-bottom:5px;}
+.script-shot-text{font-size:13.5px;line-height:1.65;color:var(--ink);}
+.script-empty{padding:30px 14px;text-align:center;color:var(--muted);font-size:13px;}
+body.dark .script-shot{border-color:#2A2A3A;}
+body.dark .script-shot-text{color:#F0F0F0;}
+
 /* ═══ iOS INSTALL TOAST ═══ */
 .ios-install-toast{position:fixed;left:12px;right:12px;bottom:78px;z-index:1500;background:#1A1A2E;color:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 20px 40px -10px rgba(16,16,40,.5);animation:iitSlide .35s cubic-bezier(.21,.7,.3,1);max-width:520px;margin:0 auto;border:1px solid rgba(255,255,255,.08);}
 @keyframes iitSlide{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
