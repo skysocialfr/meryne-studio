@@ -6,7 +6,7 @@
 <!-- Auto-update: force a fresh load when a new version is deployed -->
 <script>
 (function(){
-  var APP_VERSION = '40';
+  var APP_VERSION = '41';
   try {
     fetch('/version.json?_=' + Date.now(), { cache: 'no-store' })
       .then(function(r){ return r.json(); })
@@ -39,7 +39,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=36">
+<link rel="stylesheet" href="css/style.css?v=37">
 <link rel="canonical" href="https://veyrastudio.fr/">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -748,6 +748,10 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             Calendrier
           </button>
+          <button class="pvt" id="pvt-prod-kanban" onclick="setProdView('kanban',this)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="5" height="16" rx="1"/><rect x="10" y="4" width="5" height="11" rx="1"/><rect x="17" y="4" width="4" height="7" rx="1"/></svg>
+            Kanban
+          </button>
         </div>
       </div>
       <div id="prod-list-view">
@@ -758,6 +762,9 @@
       </div>
       <div id="prod-cal-view" style="display:none;">
         <div id="prod-cal-inner"></div>
+      </div>
+      <div id="prod-kanban-view" style="display:none;">
+        <div id="prod-kanban-board"></div>
       </div>
     </div>
 
@@ -780,6 +787,10 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             Calendrier
           </button>
+          <button class="pvt" id="pvt-kanban" onclick="setPlanView('kanban',this)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="5" height="16" rx="1"/><rect x="10" y="4" width="5" height="11" rx="1"/><rect x="17" y="4" width="4" height="7" rx="1"/></svg>
+            Kanban
+          </button>
         </div>
       </div>
       <div id="plan-list-view">
@@ -792,6 +803,9 @@
       </div>
       <div id="plan-cal-view" style="display:none;">
         <div class="pcal-wrap"><div id="plan-cal-inner"></div></div>
+      </div>
+      <div id="plan-kanban-view" style="display:none;">
+        <div id="plan-kanban-board"></div>
       </div>
     </div>
 
@@ -978,9 +992,9 @@
 <script src="js/onboarding.js?v=2"></script>
 <script src="js/feed.js?v=23"></script>
 <script src="js/script-modal.js?v=1"></script>
-<script src="js/production.js?v=8"></script>
+<script src="js/production.js?v=9"></script>
 <script src="js/prod-import.js?v=1"></script>
-<script src="js/planning.js?v=8"></script>
+<script src="js/planning.js?v=9"></script>
 <script src="js/calendar.js?v=5"></script>
 <script src="js/coaching.js?v=3"></script>
 <script src="js/analytics.js?v=8"></script>
