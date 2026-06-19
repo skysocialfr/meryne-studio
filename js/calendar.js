@@ -25,10 +25,20 @@ function renderCalendar() {
     pubsByDay[key].push(p);
   });
 
+  var eventsByDay = {};
+  (CAL_EVENTS || []).forEach(function(ev) {
+    var key = ev.day + '-' + ev.mo + '-' + ev.yr;
+    if (!eventsByDay[key]) eventsByDay[key] = [];
+    eventsByDay[key].push(ev);
+  });
+
   var html = '<div class="pcal-nav">'
     + '<button class="pcal-add-btn" onclick="openPubModal(-1)">'
     + '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'
-    + ' Ajouter</button>'
+    + ' Post</button>'
+    + '<button class="pcal-add-btn pcal-add-event" onclick="openEventModal(null)">'
+    + '<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'
+    + ' Événement</button>'
     + '<button class="pcal-nav-btn" onclick="calMove(-1)">‹</button>'
     + '<div class="pcal-month">' + MNAMES[m] + ' ' + y + '</div>'
     + '<button class="pcal-nav-btn" onclick="calMove(1)">›</button>'
@@ -56,8 +66,20 @@ function renderCalendar() {
     if (isCurrentMonth) {
       html += '<div class="pcal-day">' + (isToday ? '<span class="today-badge">' + day + '</span>' : day) + '</div>';
       var key = day + '-' + m + '-' + y;
+      // Events first (so they always show, even when many pubs)
+      var dayEvents = eventsByDay[key] || [];
+      dayEvents.slice(0, 2).forEach(function(ev) {
+        var short = (ev.title || '').length > 18 ? ev.title.slice(0, 17) + '…' : (ev.title || 'Événement');
+        html += '<div class="pcal-pip pcal-pip-event"'
+          + ' style="--ev-color:' + (ev.color || '#F59E0B') + ';"'
+          + ' onclick="event.stopPropagation();openEventModal(\'' + ev.id + '\')"'
+          + ' title="' + escapeHtml(ev.title || '') + '">'
+          + (ev.emoji ? escapeHtml(ev.emoji) + ' ' : '📅 ')
+          + escapeHtml(short) + '</div>';
+      });
+      var pubsLimit = Math.max(0, 3 - Math.min(dayEvents.length, 2));
       var dayPubs = pubsByDay[key] || [];
-      dayPubs.slice(0, 3).forEach(function(p) {
+      dayPubs.slice(0, pubsLimit).forEach(function(p) {
         var platCls = {tiktok:'tt', insta:'ig', stories:'st'}[p.plat] || 'ig';
         var short = p.title.length > 18 ? p.title.slice(0, 17) + '…' : p.title;
         html += '<div class="pcal-pip ' + platCls + (p.done ? ' done' : '') + '"'
@@ -67,8 +89,9 @@ function renderCalendar() {
           + ' title="' + escapeHtml(p.title) + '">'
           + escapeHtml(short) + '</div>';
       });
-      if (dayPubs.length > 3) {
-        html += '<div style="font-size:9px;color:var(--muted)">+' + (dayPubs.length - 3) + ' autres</div>';
+      var overflow = (dayPubs.length - pubsLimit) + Math.max(0, dayEvents.length - 2);
+      if (overflow > 0) {
+        html += '<div style="font-size:9px;color:var(--muted)">+' + overflow + ' autres</div>';
       }
     }
     html += '</div>';
@@ -153,4 +176,133 @@ function calDrop(e, day, mo, yr) {
   save();
   renderCalendar();
   renderPlanning();
+}
+
+// ═══════════════════════════════════════════════
+//  Calendar Events (Fashion Week, lancements, etc.)
+// ═══════════════════════════════════════════════
+
+var _evNow = new Date();
+
+function openEventModal(id, prefillDay, prefillMo, prefillYr) {
+  if (typeof openModal !== 'function') return;
+  var ev = id ? (CAL_EVENTS || []).find(function(x) { return x.id === id; }) : null;
+  var isEdit = !!ev;
+  var palette = [
+    { hex: '#F59E0B', label: 'Ambre' },
+    { hex: '#EC4899', label: 'Rose' },
+    { hex: '#7C3AED', label: 'Violet' },
+    { hex: '#06B6D4', label: 'Cyan' },
+    { hex: '#10B981', label: 'Vert' },
+    { hex: '#EF4444', label: 'Rouge' },
+    { hex: '#6B7280', label: 'Gris' }
+  ];
+  var pickedColor = ev ? (ev.color || palette[0].hex) : palette[0].hex;
+  var day = ev ? ev.day : (prefillDay || _evNow.getDate());
+  var mo  = ev ? ev.mo  : (prefillMo  != null ? prefillMo  : _evNow.getMonth());
+  var yr  = ev ? ev.yr  : (prefillYr  || _evNow.getFullYear());
+  var dateStr = String(day).padStart(2, '0') + '-' + String(mo + 1).padStart(2, '0') + '-' + yr;
+
+  var swatches = palette.map(function(c) {
+    return '<button type="button" class="ev-swatch' + (c.hex === pickedColor ? ' sel' : '') + '"'
+      + ' style="background:' + c.hex + ';"'
+      + ' onclick="_pickEventColor(\'' + c.hex + '\',this)"'
+      + ' title="' + c.label + '" aria-label="' + c.label + '"></button>';
+  }).join('');
+
+  var html = '<button class="modal-x" onclick="closeModal()" aria-label="Fermer">&times;</button>'
+    + '<h2>📅 ' + (isEdit ? 'Modifier l\'événement' : 'Nouvel événement') + '</h2>'
+
+    + '<div class="fr"><label>Titre</label>'
+    + '<input id="ev-title" type="text" value="' + escapeHtml(ev ? (ev.title || '') : '') + '" placeholder="Fashion Week, lancement de marque…" autofocus></div>'
+
+    + '<div style="display:grid;grid-template-columns:80px 1fr;gap:8px;align-items:end;">'
+    +   '<div class="fr"><label>Emoji</label>'
+    +     '<input id="ev-emoji" type="text" value="' + escapeHtml(ev ? (ev.emoji || '') : '') + '" maxlength="4" placeholder="🎟️" style="text-align:center;"></div>'
+    +   '<div class="fr"><label>Date (jj-mm-aaaa)</label>'
+    +     '<input id="ev-date" type="text" value="' + escapeHtml(dateStr) + '" placeholder="15-09-2026"></div>'
+    + '</div>'
+
+    + '<div class="fr"><label>Note (optionnel)</label>'
+    + '<textarea id="ev-note" rows="2" placeholder="Lieu, contacts, accessoires à prendre…">' + escapeHtml(ev ? (ev.note || '') : '') + '</textarea></div>'
+
+    + '<div class="fr"><label>Couleur</label>'
+    + '<div class="ev-swatch-row" data-color="' + pickedColor + '">' + swatches + '</div></div>'
+
+    + '<div class="modal-acts">'
+    + (isEdit ? '<button class="btn-d" onclick="deleteEvent(\'' + ev.id + '\')" style="margin-right:auto;">Supprimer</button>' : '')
+    + '<button class="btn-s" onclick="closeModal()">Annuler</button>'
+    + '<button class="btn-p" onclick="saveEvent(\'' + (ev ? ev.id : '') + '\')">' + (isEdit ? 'Enregistrer' : 'Créer') + '</button>'
+    + '</div>';
+
+  openModal(html);
+}
+
+function _pickEventColor(hex, el) {
+  var row = el && el.parentNode;
+  if (!row) return;
+  row.setAttribute('data-color', hex);
+  row.querySelectorAll('.ev-swatch').forEach(function(b) { b.classList.remove('sel'); });
+  el.classList.add('sel');
+}
+
+function _parseEvDate(str) {
+  var m = (str || '').match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})$/);
+  if (!m) return null;
+  var d = parseInt(m[1], 10), mo = parseInt(m[2], 10) - 1;
+  var y = parseInt(m[3], 10);
+  if (y < 100) y += 2000;
+  if (isNaN(d) || d < 1 || d > 31) return null;
+  if (isNaN(mo) || mo < 0 || mo > 11) return null;
+  if (isNaN(y) || y < 2000) return null;
+  return { day: d, mo: mo, yr: y };
+}
+
+function saveEvent(id) {
+  var title = ((document.getElementById('ev-title') || {}).value || '').trim();
+  var emoji = ((document.getElementById('ev-emoji') || {}).value || '').trim();
+  var note  = ((document.getElementById('ev-note')  || {}).value || '').trim();
+  var dateStr = ((document.getElementById('ev-date') || {}).value || '').trim();
+  var colorRow = document.querySelector('.ev-swatch-row');
+  var color = (colorRow && colorRow.getAttribute('data-color')) || '#F59E0B';
+
+  if (!title) { showSync('⚠️ Titre requis', 'rgba(245,158,11,.8)'); return; }
+  var parsed = _parseEvDate(dateStr);
+  if (!parsed) { showSync('⚠️ Date invalide (jj-mm-aaaa)', 'rgba(245,158,11,.8)'); return; }
+
+  if (!Array.isArray(CAL_EVENTS)) CAL_EVENTS = [];
+  if (id) {
+    var idx = CAL_EVENTS.findIndex(function(x) { return x.id === id; });
+    if (idx === -1) return;
+    CAL_EVENTS[idx] = Object.assign(CAL_EVENTS[idx], {
+      title: title, emoji: emoji, note: note, color: color,
+      day: parsed.day, mo: parsed.mo, yr: parsed.yr
+    });
+  } else {
+    CAL_EVENTS.push({
+      id: 'ev_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+      title: title, emoji: emoji, note: note, color: color,
+      day: parsed.day, mo: parsed.mo, yr: parsed.yr,
+      created_at: new Date().toISOString()
+    });
+  }
+  save();
+  closeModal();
+  renderCalendar();
+  showSync(id ? '✅ Événement mis à jour' : '✅ Événement ajouté', 'rgba(5,150,105,.8)');
+}
+
+function deleteEvent(id) {
+  if (typeof askConfirm !== 'function') {
+    CAL_EVENTS = (CAL_EVENTS || []).filter(function(x) { return x.id !== id; });
+    save(); closeModal(); renderCalendar();
+    return;
+  }
+  askConfirm('Supprimer cet événement ?', function() {
+    CAL_EVENTS = (CAL_EVENTS || []).filter(function(x) { return x.id !== id; });
+    save();
+    closeModal();
+    renderCalendar();
+    showSync('🗑️ Événement supprimé', 'rgba(124,58,237,.8)');
+  });
 }

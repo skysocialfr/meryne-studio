@@ -821,12 +821,21 @@ async function saveFeedPost() {
   }
 
   // ─── Draft: save locally for feed preview only ───
-  _appendOrUpdateFeedPost({
+  var draftFields = {
     title: title, date: date, format: format, description: desc,
     hashtags: hashtags, done: done, media: media, photos: photos,
     cover: window._carouselCover || null, pubId: pubId || null
-  });
+  };
+  _appendOrUpdateFeedPost(draftFields);
   saveFeedData();
+  // Cross-tab sync: if this draft is linked to a Planning post, mirror
+  // the done state to the Planning post (+ saving Planning + re-render).
+  if (pubId && typeof _syncDoneFromFeedDraft === 'function') {
+    _syncDoneFromFeedDraft({ pubId: pubId, done: done });
+    if (typeof save === 'function') save();
+    if (typeof renderPlanning === 'function') renderPlanning();
+    if (typeof renderProd === 'function') renderProd();
+  }
   renderFeedGrid(feedPlat);
   updateFeedCount();
   closeFeedModal();

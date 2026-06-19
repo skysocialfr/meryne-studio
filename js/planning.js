@@ -302,10 +302,13 @@ function togglePub(id) {
   var p = PUBS.find(function(x) { return x.id === id; });
   if (p) {
     p.done = !p.done;
+    if (typeof _syncDoneFromPub === 'function') _syncDoneFromPub(p.id, p.done);
     save();
     buildFilters();
     renderPlanning();
     renderKPIs();
+    if (typeof renderProd === 'function') renderProd();
+    if (typeof renderFeed === 'function') renderFeed();
   }
 }
 
