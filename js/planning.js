@@ -118,17 +118,8 @@ function _pubCardHtml(p) {
   var lcCls = p.launch ? 'lc' : '';
   var platCls2 = p.plat === 'tiktok' ? 'plat-tt' : p.plat === 'insta' ? 'plat-ig' : 'plat-st';
 
-  // Script panel
-  var scriptHtml = '';
-  if (p.script && p.script.shots && p.script.shots.length) {
-    scriptHtml = '<div class="pub-script-panel" id="pubsp-' + p.id + '">'
-      + '<div class="psp-pub-head">' + escapeHtml(p.script.title || 'Script') + '</div>';
-    p.script.shots.forEach(function(sh) {
-      scriptHtml += '<div class="psp-pub-shot"><div class="psp-pub-n">Plan ' + sh.n + '</div>'
-        + '<div class="psp-pub-d">' + escapeHtml(sh.d) + '</div></div>';
-    });
-    scriptHtml += '<div class="psp-pub-foot">' + escapeHtml(p.src || '') + '</div></div>';
-  }
+  // Script button shows a polished modal — no inline panel anymore
+  var hasScript = !!(p.script && p.script.shots && p.script.shots.length);
 
   // Stats panel — conditional watch time (video only)
   var statsFields = [
@@ -199,7 +190,7 @@ function _pubCardHtml(p) {
     + linkHtml
     + '<div class="pub-actions" style="margin-top:8px;">'
     + '<div class="pub-btns">'
-    + (scriptHtml ? '<button class="sb sb-script" onclick="togglePubScript(\'' + p.id + '\')">\uD83D\uDCDD Script</button>' : '')
+    + (hasScript ? '<button class="sb sb-script" onclick="togglePubScript(\'' + p.id + '\')">\uD83D\uDCDD Script</button>' : '')
     + '<button class="sb sb-edit" onclick="openPubModal(' + realIdx + ')">✏️ Modifier</button>'
     + (p.done ? '<button class="sb sb-stats" onclick="toggleStats(\'' + p.id + '\')">\uD83D\uDCCA Stats</button>' : '')
     + (function() {
@@ -215,7 +206,6 @@ function _pubCardHtml(p) {
     + '</div>'
     + '</div>'
     + '</div>'
-    + scriptHtml
     + statsHtml
     + '</div>';
 }
@@ -319,10 +309,11 @@ function togglePub(id) {
   }
 }
 
-// ─── Toggle Script Panel ───
+// ─── Open script in the polished modal ───
 function togglePubScript(id) {
-  var el = document.getElementById('pubsp-' + id);
-  if (el) el.classList.toggle('open');
+  var p = PUBS.find(function(x) { return x.id === id; });
+  if (!p || !p.script) return;
+  openScriptModal(p.script, p.title || 'Publication');
 }
 
 // ─── Toggle Stats Panel ───
@@ -469,10 +460,6 @@ function openPubModal(idx) {
     + '<div id="hash-modal-row" class="hash-modal-row" style="margin-bottom:6px;"></div>'
     + '<input id="ppe-tags" value="' + escapeHtml(_pubbe.tags) + '" placeholder="#hashtag1 #hashtag2..." oninput="updateHashCount(this.value)">'
     + '</div>'
-    + '<div class="ai-caption-row">'
-    + '<button id="ai-caption-btn" class="btn-ai-sm" onclick="generateCaption(\'' + _pubbe.id + '\')">✨ Caption IA</button>'
-    + '</div>'
-    + '<div id="ai-caption-result"></div>'
     + linkField
     + '<hr class="sep">'
     + '<div class="fr"><label>🎬 Titre du script</label><input id="ppe-stitle" value="' + escapeHtml(_pubbe.script.title) + '"></div>'

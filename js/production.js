@@ -72,28 +72,9 @@ function renderProd() {
     if (t.note) c += '<div style="font-size:10px;color:#9CA3AF;font-style:italic;margin-bottom:4px;">' + escapeHtml(t.note) + '</div>';
     if (t.launch) c += '<span class="badge b-launch" style="margin-bottom:5px;">⭐ Priorité</span>';
     c += '<div class="pc-actions">';
-    if (t.script && t.script.title) c += '<button class="sb sb-script" onclick="toggleProdScript(\'' + id + '\')">Script</button>';
-    c += '<button class="sb sb-ai" id="ai-prod-btn-' + id + '" onclick="generateProdScript(\'' + id + '\')">\u2728 IA</button>';
+    if (t.script && t.script.title) c += '<button class="sb sb-script" onclick="toggleProdScript(\'' + id + '\')">\ud83d\udcdd Script</button>';
     c += '<button class="sb sb-edit" onclick="openProdModal(' + realIdx + ')">Modifier</button>';
     c += '</div></div></div>'; // pc-actions + pc-body + pc-main
-
-    if (t.script && t.script.title) {
-      c += '<div class="prod-script-panel" id="prod-script-' + id + '"><div class="psp-inner">';
-      c += '<div class="psp-hdr"><div class="psp-dots">'
-        + '<div class="psp-dot" style="background:#FF5F57;"></div>'
-        + '<div class="psp-dot" style="background:#FFBD2E;"></div>'
-        + '<div class="psp-dot" style="background:#28CA41;"></div>'
-        + '</div><span class="psp-label">script</span></div>';
-      c += '<div class="psp-head">' + escapeHtml(t.script.title) + '</div>';
-      if (t.script.shots) {
-        for (var s = 0; s < t.script.shots.length; s++) {
-          var shot = t.script.shots[s];
-          c += '<div class="psp-shot"><div class="psp-n">PLAN ' + (s + 1) + '</div>'
-            + '<div class="psp-d">' + escapeHtml(shot.d || '') + '</div></div>';
-        }
-      }
-      c += '</div></div>';
-    }
     c += '</div>'; // prod-card
     return c;
   }
@@ -103,7 +84,7 @@ function renderProd() {
     html = '<div class="empty-state">'
       + '<div class="empty-ic">🎬</div>'
       + '<div class="empty-title">Ton studio est prêt</div>'
-      + '<div class="empty-text">Crée ta première tâche de production : shooting, montage, prépa de Reel… L\'IA peut même te générer le script de tournage.</div>'
+      + '<div class="empty-text">Crée ta première tâche de production : shooting, montage, prépa de Reel. Note tes idées, ajoute ton plan de tournage.</div>'
       + '<button class="empty-cta" onclick="openProdModal(null)">+ Créer ma première tâche</button>'
       + '</div>';
   } else {
@@ -145,9 +126,9 @@ function toggleProd(id) {
 // ═══════════════════════════════════════════════
 
 function toggleProdScript(id) {
-  var panel = document.getElementById('prod-script-' + id);
-  if (!panel) return;
-  panel.classList.toggle('open');
+  var t = PROD.find(function(x) { return (x.id || PROD.indexOf(x)) == id; });
+  if (!t || !t.script) return;
+  openScriptModal(t.script, t.title || 'Production');
 }
 
 function toggleProdArchive() {
@@ -245,7 +226,6 @@ function openProdModal(idx) {
     // Script section
     + '<div style="margin-bottom:6px;font-size:11px;font-weight:700;color:var(--violet);text-transform:uppercase;letter-spacing:.5px;">Script</div>'
     + '<div class="fr"><label>Titre du script</label><input type="text" id="pe-script-title" value="' + escapeHtml(_pe.script.title) + '" placeholder="Titre du script..."></div>'
-    + '<button class="btn-ai-sm" id="ai-prod-modal-btn" onclick="generateProdModalScript()" style="margin-bottom:10px;">\u2728 Générer le script avec IA</button>'
 
     // Shot list
     + '<div id="pe-shots">' + shotsHtml + '</div>'
