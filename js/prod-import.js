@@ -1,12 +1,22 @@
 /* ═══════════════════════════════════════════════
-   VEYRA STUDIO — Production import
-   Lets the user drop a .csv or .xlsx file and bulk-create Production
-   tasks (with their scripts) from it.
+   VEYRA STUDIO — Production import (with upsert + Planning auto-link)
 
-   Expected columns (case-insensitive, all optional except "Titre") :
-     Date · Emoji · Titre · Description · Plateforme · Format · Note ·
-     Priorité · Plan 1 · Plan 2 · ... · Plan N
-   Any column starting with "Plan " becomes a shot in the script.
+   Schema (all columns optional except Titre):
+     ID · Date tournage · Emoji · Titre · Description · Plateforme · Format ·
+     Note · Priorité · Date publication · Heure publication · Script - Titre ·
+     Plan 1 · Plan 2 · … · Plan N
+
+   Re-import logic:
+     - Empty ID  → new PROD task (a fresh id is generated)
+     - ID present and matches → that task is UPDATED in place (no doublons)
+
+   Auto-link to Planning:
+     - If a row carries "Date publication" we also create (or update) a PUB
+       in Planning, with the same title / platform / format, scheduled at
+       that date + heure, and link the prod task to it via prod.pubId.
+
+   "Exporter CSV" dumps the current PROD list with IDs so the user can
+   keep editing in Excel and re-import without losing the link.
    ═══════════════════════════════════════════════ */
 
 var _PROD_IMPORT_PARSED = null;
@@ -20,10 +30,11 @@ async function openProdImportModal() {
 function _prodImportShellHtml() {
   return '<button class="modal-x" onclick="closeModal()" aria-label="Fermer">&times;</button>'
     + '<h2>📥 Importer des tâches Production</h2>'
-    + '<p style="font-size:12.5px;color:var(--muted);line-height:1.65;margin:0 0 14px;">Importe un fichier Excel <strong>.xlsx</strong> ou <strong>.csv</strong>. Une ligne = une tâche. Toutes les colonnes commençant par <em>Plan 1, Plan 2…</em> deviennent les plans du script.</p>'
+    + '<p style="font-size:12.5px;color:var(--muted);line-height:1.65;margin:0 0 14px;">Importe un fichier <strong>.csv</strong> ou <strong>.xlsx</strong>. Une ligne = une tâche. La colonne <strong>ID</strong> permet la mise à jour : ré-importe le même fichier édité, les rubriques existantes sont mises à jour, pas dupliquées. Si <strong>Date publication</strong> est renseignée, la rubrique apparaît aussi dans le Planning.</p>'
 
-    + '<div style="margin-bottom:16px;">'
-    +   '<button class="btn-s" onclick="downloadProdImportTemplate()">⬇️ Télécharger le modèle CSV</button>'
+    + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">'
+    +   '<button class="btn-s" onclick="downloadProdImportTemplate()">⬇️ Modèle CSV vierge</button>'
+    +   '<button class="btn-s" onclick="exportProdToCsv()">📤 Exporter mes tâches (avec IDs)</button>'
     + '</div>'
 
     + '<label class="prod-import-drop">'
@@ -40,11 +51,16 @@ function _prodImportShellHtml() {
     + '</div>';
 }
 
+function _IMPORT_HEADER_ROW() {
+  return ['ID','Date tournage','Emoji','Titre','Description','Plateforme','Format','Note','Priorité',
+          'Date publication','Heure publication','Script - Titre',
+          'Plan 1','Plan 2','Plan 3','Plan 4','Plan 5','Plan 6','Plan 7','Plan 8'];
+}
+
 function downloadProdImportTemplate() {
-  var header = ['Date','Emoji','Titre','Description','Plateforme','Format','Note','Priorité',
-                'Script - Titre','Plan 1','Plan 2','Plan 3','Plan 4','Plan 5','Plan 6','Plan 7','Plan 8'];
-  var example = ['12/03','🎬','Reel routine matin','Une journée dans ma vie de créatrice','Instagram','Reel','Matériel : trépied + ring light','oui',
-                 'Routine matin — script',
+  var header = _IMPORT_HEADER_ROW();
+  var example = ['','12/03','🎬','Reel routine matin','Une journée dans ma vie de créatrice','Instagram','Reel','Matériel : trépied + ring light','oui',
+                 '14/03','18h00','Routine matin — script',
                  'Hook : "Voilà comment je commence mes journées"',
                  'Vue d\'ensemble du lit (5s)',
                  'Café + bullet journal — gros plan mains',
@@ -53,17 +69,46 @@ function downloadProdImportTemplate() {
                  'Sortie de chez moi — extérieur',
                  'CTA : "Abonne-toi pour la routine du soir"',
                  ''];
-  var rows = [header, example];
+  _downloadCsv('veyra-import-production.csv', [header, example]);
+}
+
+function exportProdToCsv() {
+  var header = _IMPORT_HEADER_ROW();
+  var rows = [header];
+  (PROD || []).forEach(function(t) {
+    var linkedPub = t.pubId ? (PUBS || []).find(function(x) { return x.id === t.pubId; }) : null;
+    var shots = (t.script && t.script.shots) ? t.script.shots : [];
+    var planCells = [];
+    for (var i = 0; i < 8; i++) planCells.push((shots[i] && shots[i].d) || '');
+    rows.push([
+      t.id || '',
+      t.date || '',
+      t.em || '',
+      t.title || '',
+      t.desc || '',
+      t.plat || '',
+      t.fmt || '',
+      t.note || '',
+      t.launch ? 'oui' : '',
+      linkedPub ? (linkedPub.date || '') : '',
+      linkedPub ? (linkedPub.heure || '') : '',
+      (t.script && t.script.title) || '',
+    ].concat(planCells));
+  });
+  _downloadCsv('veyra-production-' + new Date().toISOString().slice(0, 10) + '.csv', rows);
+}
+
+function _downloadCsv(filename, rows) {
   var csv = rows.map(function(r) {
     return r.map(function(c) {
-      var s = String(c || '');
+      var s = String(c == null ? '' : c);
       return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
     }).join(',');
   }).join('\n');
   var blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
-  a.href = url; a.download = 'veyra-import-production.csv';
+  a.href = url; a.download = filename;
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
@@ -95,11 +140,9 @@ async function _handleProdImportFile(ev) {
   _PROD_IMPORT_PARSED = parsed;
   _renderImportPreview(parsed);
   var btn = document.getElementById('prod-import-confirm');
-  if (btn) btn.disabled = parsed.length === 0;
+  if (btn) btn.disabled = parsed.tasks.length === 0;
 }
 
-// SheetJS is heavy (~200 KB) — load only when the user actually opens
-// the import modal with an .xlsx file.
 function _ensureXlsxLoaded() {
   if (window.XLSX) return Promise.resolve();
   return new Promise(function (resolve, reject) {
@@ -111,10 +154,7 @@ function _ensureXlsxLoaded() {
   });
 }
 
-// Minimal CSV parser that handles quoted fields, escaped quotes and
-// embedded newlines — good enough for spreadsheet exports.
 function _parseCsv(text) {
-  // Strip UTF-8 BOM if present
   if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
   var rows = [], row = [], cur = '', inQ = false;
   for (var i = 0; i < text.length; i++) {
@@ -135,9 +175,8 @@ function _parseCsv(text) {
   return rows;
 }
 
-// Maps the 2-D matrix into proper task objects, recognising the schema.
 function _normaliseImportRows(rows) {
-  if (!rows.length) return [];
+  if (!rows.length) return { tasks: [], stats: { inserted: 0, updated: 0, withPub: 0 } };
   var header = rows[0].map(function(c) { return String(c || '').trim(); });
   function findCol(re) {
     for (var i = 0; i < header.length; i++) {
@@ -145,15 +184,18 @@ function _normaliseImportRows(rows) {
     }
     return -1;
   }
-  var iDate   = findCol(/^date$/);
-  var iEmoji  = findCol(/^emoji$/);
-  var iTitle  = findCol(/^titre$|^title$/);
-  var iDesc   = findCol(/^description$|^d[ée]scription$/);
-  var iPlat   = findCol(/^plateforme$|^plate-forme$|^platform$/);
-  var iFmt    = findCol(/^format$/);
-  var iNote   = findCol(/^note$/);
-  var iPrio   = findCol(/^priorit[ée]$|^priority$/);
-  var iSTitle = findCol(/^script.*titre|^script.*title/);
+  var iId      = findCol(/^id$/);
+  var iDate    = findCol(/^date(\s|$|tournage)/);
+  var iEmoji   = findCol(/^emoji$/);
+  var iTitle   = findCol(/^titre$|^title$/);
+  var iDesc    = findCol(/^description$|^d[ée]scription$/);
+  var iPlat    = findCol(/^plateforme$|^plate-forme$|^platform$/);
+  var iFmt     = findCol(/^format$/);
+  var iNote    = findCol(/^note$/);
+  var iPrio    = findCol(/^priorit[ée]$|^priority$/);
+  var iDatePub = findCol(/^date\s*publi/);
+  var iHourPub = findCol(/^heure\s*publi/);
+  var iSTitle  = findCol(/^script.*titre|^script.*title/);
   var planCols = [];
   header.forEach(function(h, idx) {
     if (/^plan\s+\d+/i.test(h)) planCols.push({ idx: idx, num: parseInt(h.match(/\d+/)[0], 10) });
@@ -161,73 +203,170 @@ function _normaliseImportRows(rows) {
   planCols.sort(function(a, b) { return a.num - b.num; });
 
   var tasks = [];
+  var stats = { inserted: 0, updated: 0, withPub: 0 };
+  var existingIds = {};
+  (PROD || []).forEach(function(t) { if (t.id) existingIds[t.id] = true; });
+
   for (var r = 1; r < rows.length; r++) {
     var row = rows[r].map(function(c) { return String(c || '').trim(); });
-    if (!row.some(function(c) { return c !== ''; })) continue; // skip blank
+    if (!row.some(function(c) { return c !== ''; })) continue;
     var title = iTitle !== -1 ? row[iTitle] : '';
     if (!title) continue;
+    var id = iId !== -1 ? row[iId] : '';
     var shots = planCols.map(function(pc) {
       var d = (row[pc.idx] || '').trim();
       return d ? { d: d } : null;
     }).filter(Boolean);
-    tasks.push({
-      date: iDate   !== -1 ? row[iDate]  : '',
-      em:   iEmoji  !== -1 ? row[iEmoji] : '',
-      title: title,
-      desc: iDesc   !== -1 ? row[iDesc]  : '',
-      plat: iPlat   !== -1 ? row[iPlat]  : '',
-      fmt:  iFmt    !== -1 ? row[iFmt]   : '',
-      note: iNote   !== -1 ? row[iNote]  : '',
-      launch: iPrio !== -1 ? /^(oui|yes|true|1|✓)$/i.test(row[iPrio]) : false,
+
+    var task = {
+      id: id || null,
+      date:    iDate    !== -1 ? row[iDate]    : '',
+      em:      iEmoji   !== -1 ? row[iEmoji]   : '',
+      title:   title,
+      desc:    iDesc    !== -1 ? row[iDesc]    : '',
+      plat:    iPlat    !== -1 ? row[iPlat]    : '',
+      fmt:     iFmt     !== -1 ? row[iFmt]     : '',
+      note:    iNote    !== -1 ? row[iNote]    : '',
+      launch:  iPrio    !== -1 ? /^(oui|yes|true|1|✓)$/i.test(row[iPrio]) : false,
+      datePub: iDatePub !== -1 ? row[iDatePub] : '',
+      hourPub: iHourPub !== -1 ? row[iHourPub] : '',
       scriptTitle: iSTitle !== -1 ? row[iSTitle] : (shots.length ? title : ''),
-      shots: shots
-    });
+      shots: shots,
+      _action: id && existingIds[id] ? 'update' : 'insert'
+    };
+    if (task._action === 'update') stats.updated++;
+    else stats.inserted++;
+    if (task.datePub) stats.withPub++;
+    tasks.push(task);
   }
-  return tasks;
+  return { tasks: tasks, stats: stats };
 }
 
-function _renderImportPreview(tasks) {
+function _renderImportPreview(parsed) {
   var el = document.getElementById('prod-import-preview');
   if (!el) return;
+  var tasks = parsed.tasks;
+  var s = parsed.stats;
   if (!tasks.length) {
     el.innerHTML = '<div class="prod-import-empty">Aucune tâche trouvée. Vérifie que ton fichier a bien une colonne <strong>Titre</strong>.</div>';
     return;
   }
-  var head = '<div class="prod-import-summary">' + tasks.length + ' tâche' + (tasks.length > 1 ? 's' : '') + ' prête' + (tasks.length > 1 ? 's' : '') + ' à importer</div>';
-  var rows = tasks.slice(0, 5).map(function(t) {
+  var summary = '<div class="prod-import-summary">'
+    + tasks.length + ' ligne' + (tasks.length > 1 ? 's' : '') + ' à traiter · '
+    + '<span class="pis-ins">' + s.inserted + ' nouvelle' + (s.inserted > 1 ? 's' : '') + '</span> · '
+    + '<span class="pis-upd">' + s.updated + ' mise' + (s.updated > 1 ? 's' : '') + ' à jour</span> · '
+    + '<span class="pis-pub">' + s.withPub + ' avec publi Planning</span>'
+    + '</div>';
+  var rows = tasks.slice(0, 6).map(function(t) {
+    var actLabel = t._action === 'update' ? '<span class="pir-act pir-act-upd">↻ MAJ</span>' : '<span class="pir-act pir-act-ins">+ NEW</span>';
     return '<div class="prod-import-row">'
+      + actLabel
       + '<span class="pir-em">' + escapeHtml(t.em || '🎬') + '</span>'
       + '<span class="pir-title">' + escapeHtml(t.title) + '</span>'
-      + (t.plat ? '<span class="pir-tag">' + escapeHtml(t.plat) + '</span>' : '')
       + (t.fmt  ? '<span class="pir-tag">' + escapeHtml(t.fmt)  + '</span>' : '')
       + (t.shots.length ? '<span class="pir-shots">' + t.shots.length + ' plans</span>' : '')
+      + (t.datePub ? '<span class="pir-pub">📅 ' + escapeHtml(t.datePub) + '</span>' : '')
       + '</div>';
   }).join('');
-  var more = tasks.length > 5 ? '<div class="prod-import-more">… et ' + (tasks.length - 5) + ' autres</div>' : '';
-  el.innerHTML = head + rows + more;
+  var more = tasks.length > 6 ? '<div class="prod-import-more">… et ' + (tasks.length - 6) + ' autres</div>' : '';
+  el.innerHTML = summary + rows + more;
+}
+
+// Parse "dd/mm" or "dd/mm/yyyy" → { day, mo, yr, date }
+function _parsePubDate(str) {
+  if (!str) return null;
+  var m = str.match(/^(\d{1,2})[\/-](\d{1,2})(?:[\/-](\d{2,4}))?/);
+  if (!m) return null;
+  var d = parseInt(m[1], 10);
+  var mo = parseInt(m[2], 10) - 1;
+  var y = m[3] ? parseInt(m[3], 10) : new Date().getFullYear();
+  if (y < 100) y += 2000;
+  if (isNaN(d) || isNaN(mo) || isNaN(y)) return null;
+  return {
+    day: d, mo: mo, yr: y,
+    date: String(d).padStart(2, '0') + '/' + String(mo + 1).padStart(2, '0')
+  };
+}
+
+function _platSlugFromImport(plat) {
+  var p = (plat || '').toLowerCase();
+  if (p.indexOf('tiktok') !== -1) return 'tiktok';
+  if (p.indexOf('insta') !== -1) return 'insta';
+  if (p.indexOf('stor') !== -1) return 'stories';
+  return 'insta';
 }
 
 async function confirmProdImport() {
-  if (!Array.isArray(_PROD_IMPORT_PARSED) || !_PROD_IMPORT_PARSED.length) return;
+  if (!_PROD_IMPORT_PARSED || !_PROD_IMPORT_PARSED.tasks.length) return;
   if (!Array.isArray(PROD)) PROD = [];
+  if (!Array.isArray(PUBS)) PUBS = [];
 
-  _PROD_IMPORT_PARSED.forEach(function(t) {
-    PROD.push({
-      id: 'pi_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
-      date: t.date, em: t.em, title: t.title, desc: t.desc,
-      plat: t.plat, fmt: t.fmt, note: t.note,
-      launch: !!t.launch,
-      done: false,
-      pubId: null,
-      script: t.scriptTitle || t.shots.length
-        ? { title: t.scriptTitle || t.title, shots: t.shots }
-        : { title: '', shots: [] }
-    });
+  var s = _PROD_IMPORT_PARSED.stats;
+
+  _PROD_IMPORT_PARSED.tasks.forEach(function(t) {
+    // ─── Upsert the PROD task ───
+    var task;
+    if (t._action === 'update') {
+      task = PROD.find(function(x) { return x.id === t.id; });
+      if (!task) { t._action = 'insert'; }
+    }
+    if (t._action === 'insert') {
+      task = {
+        id: t.id || 'pi_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+        done: false, pubId: null
+      };
+      PROD.push(task);
+    }
+    task.date = t.date;
+    task.em = t.em;
+    task.title = t.title;
+    task.desc = t.desc;
+    task.plat = t.plat;
+    task.fmt = t.fmt;
+    task.note = t.note;
+    task.launch = !!t.launch;
+    task.script = {
+      title: t.scriptTitle || (t.shots.length ? t.title : ''),
+      shots: t.shots
+    };
+
+    // ─── Optionally upsert the linked PUB ───
+    if (t.datePub) {
+      var dt = _parsePubDate(t.datePub);
+      if (dt) {
+        var pub = task.pubId ? PUBS.find(function(x) { return x.id === task.pubId; }) : null;
+        if (!pub) {
+          pub = {
+            id: 'pub' + Date.now() + '_' + Math.random().toString(36).slice(2, 5),
+            sem: 'S1', launch: false, done: false,
+            stats: { v: 0, l: 0, c: 0, s: 0, sh: 0, wt: 0, pv: 0, dur: 0 },
+            tags: '', son: '', src: 'A filmer 🎬'
+          };
+          PUBS.push(pub);
+          task.pubId = pub.id;
+        }
+        pub.title = t.title;
+        pub.fmt = t.fmt || pub.fmt || 'Reel';
+        pub.plat = _platSlugFromImport(t.plat);
+        pub.date = dt.date;
+        pub.day = dt.day;
+        pub.mo  = dt.mo;
+        pub.yr  = dt.yr;
+        pub.heure = t.hourPub || pub.heure || '18h00';
+      }
+    }
   });
 
   save();
   if (typeof renderProd === 'function') renderProd();
+  if (typeof renderPlanning === 'function') renderPlanning();
   if (typeof renderKPIs === 'function') renderKPIs();
+  if (typeof buildFilters === 'function') buildFilters();
   closeModal();
-  showSync('✅ ' + _PROD_IMPORT_PARSED.length + ' tâche(s) importée(s)', 'rgba(5,150,105,.8)');
+
+  var bits = [];
+  if (s.inserted) bits.push(s.inserted + ' nouvelle' + (s.inserted > 1 ? 's' : ''));
+  if (s.updated)  bits.push(s.updated  + ' mise à jour' + (s.updated  > 1 ? 's' : ''));
+  if (s.withPub)  bits.push(s.withPub  + ' planifiée' + (s.withPub  > 1 ? 's' : ''));
+  showSync('✅ Import terminé · ' + bits.join(' · '), 'rgba(5,150,105,.8)');
 }
