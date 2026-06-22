@@ -6,7 +6,7 @@
 <!-- Auto-update: force a fresh load when a new version is deployed -->
 <script>
 (function(){
-  var APP_VERSION = '43';
+  var APP_VERSION = '44';
   try {
     fetch('/version.json?_=' + Date.now(), { cache: 'no-store' })
       .then(function(r){ return r.json(); })
@@ -756,7 +756,8 @@
       </div>
       <div id="prod-list-view">
         <div class="add-row"><button class="add-btn-main" onclick="openProdModal(-1)">&#xFF0B; Ajouter une t&acirc;che</button>
-          <button class="add-btn-sec" onclick="openProdImportModal()">&#x1F4E5; Importer Excel/CSV</button>
+          <button class="add-btn-sec" onclick="openProdImportModal()">&#x1F4E5; Importer</button>
+          <button class="add-btn-sec" onclick="exportProdToCsv()">&#x1F4E4; Exporter CSV</button>
         </div>
         <div id="prod-list"></div>
       </div>
