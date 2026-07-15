@@ -7,8 +7,11 @@
 -- Guarantees for this migration:
 --   * Every existing auth.users row gets a personal workspace called
 --     "Espace perso" and is added as its owner + editor member.
---   * Every existing studio_data row is stamped with the owner's personal
---     workspace_id (nullable until backfill, then NOT NULL).
+--   * Every existing studio_data row whose key follows the "<uuid>:<name>"
+--     convention is stamped with the owner's personal workspace_id. The
+--     column stays nullable in PR 1 so the current app (which doesn't yet
+--     read/write workspace_id) keeps working; a later PR will enforce
+--     NOT NULL after the client migrates.
 --   * New signups automatically receive a personal workspace via trigger.
 --   * RLS on new tables: equal editors (any member may read/write workspace).
 --   * studio_data RLS is left untouched in this PR so the current app keeps
@@ -63,6 +66,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS workspace_invites_pending_unique
   WHERE status = 'pending';
 
 -- ---------- studio_data workspace scoping ---------------------------------
+-- studio_data has no user_id column; per-user isolation is done client-side
+-- by prefixing every key with "<uuid>:" (see js/storage.js _sk()). We extract
+-- that UUID with split_part() to attribute each row to its owner's workspace.
 
 ALTER TABLE public.studio_data
   ADD COLUMN IF NOT EXISTS workspace_id uuid REFERENCES public.workspaces(id) ON DELETE CASCADE;
@@ -115,17 +121,20 @@ END;
 $$;
 
 -- ---------- Backfill studio_data.workspace_id ----------------------------
+-- The client stores rows with key = "<owner_uuid>:<logical_key>". We map each
+-- row to the owner's personal workspace by extracting that prefix.
+-- Legacy rows without a UUID prefix (or whose prefix does not resolve to a
+-- known user) stay NULL for now; workspace_id remains nullable in PR 1 so the
+-- app keeps working. A later PR will enforce NOT NULL after cleanup.
 
 UPDATE public.studio_data sd
    SET workspace_id = w.id
   FROM public.workspaces w
- WHERE w.owner_id = sd.user_id
-   AND w.is_personal = true
-   AND sd.workspace_id IS NULL;
-
--- Enforce NOT NULL now that every row is stamped.
-ALTER TABLE public.studio_data
-  ALTER COLUMN workspace_id SET NOT NULL;
+ WHERE w.is_personal = true
+   AND sd.workspace_id IS NULL
+   AND position(':' IN sd.key) > 0
+   AND split_part(sd.key, ':', 1) ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+   AND w.owner_id::text = split_part(sd.key, ':', 1);
 
 -- ---------- Trigger: auto-create personal workspace on signup ------------
 
