@@ -217,6 +217,7 @@ async function wsSetActive(id) {
 
   await wsRefreshMembers();
   if (typeof load === 'function') await load();
+  if (typeof loadIgProfile === 'function') await loadIgProfile();
   if (typeof loadFeedData === 'function') await loadFeedData();
   if (typeof loadEvents === 'function') await loadEvents();
   if (typeof renderAll === 'function') renderAll();

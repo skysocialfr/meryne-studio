@@ -31,14 +31,18 @@ Deno.serve(async (req: Request) => {
 
     const body = await req.json().catch(() => ({}));
     const text = (body.text ?? "").toString().trim();
+    const bodyWs: string | null = typeof body.workspace_id === "string" ? body.workspace_id : null;
     if (!text) return json({ error: "missing_text" }, 400);
     if (text.length > 3000) return json({ error: "text_too_long" }, 400);
 
     const admin = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const workspaceId = bodyWs ?? await personalWorkspace(admin, userId);
+    if (!workspaceId) return json({ error: "no_workspace" }, 404);
+
     const { data: conn } = await admin
       .from("social_connections")
       .select("id, account_id")
-      .eq("user_id", userId)
+      .eq("workspace_id", workspaceId)
       .eq("platform", "linkedin")
       .eq("status", "active")
       .maybeSingle();
@@ -95,4 +99,15 @@ function json(body: unknown, status = 200): Response {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+}
+
+// deno-lint-ignore no-explicit-any
+async function personalWorkspace(admin: any, userId: string): Promise<string | null> {
+  const { data } = await admin
+    .from("workspaces")
+    .select("id")
+    .eq("owner_id", userId)
+    .eq("is_personal", true)
+    .maybeSingle();
+  return data?.id ?? null;
 }

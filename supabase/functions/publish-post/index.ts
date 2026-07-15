@@ -43,6 +43,7 @@ Deno.serve(async (req: Request) => {
     const mediaUrls: string[] = Array.isArray(body.media_urls) ? body.media_urls : [];
     const postType: string = (body.post_type ?? "image").toString();
     const scheduledFor: string | null = body.scheduled_for ?? null;
+    const bodyWs: string | null = typeof body.workspace_id === "string" ? body.workspace_id : null;
 
     if (!mediaUrls.length) return json({ error: "no_media" }, 400);
     if (mediaUrls.some((u) => typeof u !== "string" || !u.startsWith("https://"))) {
@@ -50,12 +51,14 @@ Deno.serve(async (req: Request) => {
     }
 
     const admin = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const workspaceId = bodyWs ?? await personalWorkspace(admin, userId);
+    if (!workspaceId) return json({ error: "no_workspace" }, 404);
 
-    // Find the user's active Instagram connection
+    // Find the workspace's active Instagram connection
     const { data: conn } = await admin
       .from("social_connections")
       .select("id, account_id")
-      .eq("user_id", userId)
+      .eq("workspace_id", workspaceId)
       .eq("platform", "instagram")
       .eq("status", "active")
       .maybeSingle();
@@ -192,4 +195,15 @@ function json(body: unknown, status = 200): Response {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+}
+
+// deno-lint-ignore no-explicit-any
+async function personalWorkspace(admin: any, userId: string): Promise<string | null> {
+  const { data } = await admin
+    .from("workspaces")
+    .select("id")
+    .eq("owner_id", userId)
+    .eq("is_personal", true)
+    .maybeSingle();
+  return data?.id ?? null;
 }

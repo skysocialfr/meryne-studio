@@ -145,7 +145,7 @@ async function syncRealInstagram() {
       return;
     }
     _setFeedConnectBanner(false);
-    var syncRes = await sb.functions.invoke('instagram-sync', { body: {} });
+    var syncRes = await sb.functions.invoke('instagram-sync', { body: { workspace_id: window._VEYRA_WS_ID || null } });
     if (syncRes && syncRes.data && !syncRes.data.error) {
       window._IG_LIVE = syncRes.data;
     }
@@ -787,7 +787,7 @@ async function saveFeedPost() {
     try {
       var mediaUrls = await uploadFeedMedia(photos);
       var resp = await sb.functions.invoke('publish-post', {
-        body: { caption: caption, media_urls: mediaUrls, post_type: postType, scheduled_for: scheduledFor }
+        body: { caption: caption, media_urls: mediaUrls, post_type: postType, scheduled_for: scheduledFor, workspace_id: window._VEYRA_WS_ID || null }
       });
       if (resp.error || (resp.data && resp.data.error)) {
         var detail = (resp.data && resp.data.error) || (resp.error && resp.error.message) || 'erreur';
@@ -1484,7 +1484,7 @@ async function openPostDetail(mediaIdx) {
   document.body.style.overflow = 'hidden';
 
   try {
-    var res = await sb.functions.invoke('post-details', { body: { media_id: media.id } });
+    var res = await sb.functions.invoke('post-details', { body: { media_id: media.id, workspace_id: window._VEYRA_WS_ID || null } });
     if (res.error || (res.data && res.data.error)) {
       var detail = (res.data && res.data.error) || (res.error && res.error.message) || 'erreur';
       body.innerHTML = '<div style="padding:30px 0;text-align:center;color:#EF4444;font-size:13px;">Impossible de charger ce post<br><span style="color:#9CA3AF;font-size:11px;">' + escapeHtml(String(detail)) + '</span></div>';

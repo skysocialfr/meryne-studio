@@ -37,9 +37,14 @@ Deno.serve(async (req: Request) => {
     if (!appSecret) throw new Error("missing_app_secret");
     if (!state)     throw new Error("missing_state");
 
-    // 1. Identify the Veyra user from the state JWT
+    // 1. Identify the Veyra user + target workspace from the state param.
+    // State was either the raw JWT (legacy) or a base64-encoded JSON
+    // {jwt, ws} — the workspaced client packs both so the callback knows
+    // which space the account should attach to.
+    const { jwt, workspaceId: statedWorkspaceId } = decodeState(state);
+
     const supabaseAuth = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
-      global: { headers: { Authorization: `Bearer ${state}` } },
+      global: { headers: { Authorization: `Bearer ${jwt}` } },
     });
     const { data: userData, error: userErr } = await supabaseAuth.auth.getUser();
     if (userErr || !userData?.user) throw new Error("invalid_state_jwt:" + (userErr?.message ?? "no_user"));
@@ -98,10 +103,15 @@ Deno.serve(async (req: Request) => {
     // 5. Persist the connection (service role bypasses RLS)
     const admin = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
+    // Resolve target workspace: prefer the one the client stated, else fall
+    // back to the user's personal workspace so legacy links keep working.
+    const targetWorkspaceId = await resolveWorkspace(admin, veyraUserId, statedWorkspaceId);
+
     const { data: conn, error: connErr } = await admin
       .from("social_connections")
       .upsert({
         user_id: veyraUserId,
+        workspace_id: targetWorkspaceId,
         platform: "instagram",
         account_id: accountId,
         account_username: me.username ?? null,
@@ -111,7 +121,7 @@ Deno.serve(async (req: Request) => {
         status: "active",
         token_expires_at: expiresAt,
         last_synced_at: new Date().toISOString(),
-      }, { onConflict: "user_id,platform,account_id" })
+      }, { onConflict: "workspace_id,platform,account_id" })
       .select()
       .single();
     if (connErr) throw new Error("db_connection_failed:" + connErr.message);
@@ -140,4 +150,41 @@ function fail(detail: string): Response {
 
 function redirect(to: string): Response {
   return new Response(null, { status: 302, headers: { Location: to } });
+}
+
+// Decode a state string into { jwt, workspaceId }.
+// Modern clients send base64(JSON({jwt,ws})). Legacy clients send the raw JWT.
+// Fallback to the whole string as the JWT so old flows keep working.
+function decodeState(state: string): { jwt: string; workspaceId: string | null } {
+  try {
+    const decoded = atob(state);
+    const parsed = JSON.parse(decoded);
+    if (parsed && typeof parsed.jwt === "string" && parsed.jwt.length > 20) {
+      return { jwt: parsed.jwt, workspaceId: parsed.ws ?? null };
+    }
+  } catch { /* fallthrough */ }
+  return { jwt: state, workspaceId: null };
+}
+
+// Resolve the target workspace for a new connection.
+// - If the client stated a workspace and the user is a member, use it.
+// - Otherwise fall back to the user's personal workspace.
+// deno-lint-ignore no-explicit-any
+async function resolveWorkspace(admin: any, userId: string, statedWs: string | null): Promise<string | null> {
+  if (statedWs) {
+    const { data } = await admin
+      .from("workspace_members")
+      .select("workspace_id")
+      .eq("workspace_id", statedWs)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (data) return statedWs;
+  }
+  const { data: personal } = await admin
+    .from("workspaces")
+    .select("id")
+    .eq("owner_id", userId)
+    .eq("is_personal", true)
+    .maybeSingle();
+  return personal?.id ?? null;
 }

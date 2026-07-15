@@ -36,15 +36,19 @@ Deno.serve(async (req: Request) => {
     const videoUrl = (body.video_url ?? "").toString().trim();
     const title = (body.title ?? "").toString().slice(0, 2200);
     const privacy = ((body.privacy_level ?? "SELF_ONLY") as string).toUpperCase();
+    const bodyWs: string | null = typeof body.workspace_id === "string" ? body.workspace_id : null;
     // Allowed: PUBLIC_TO_EVERYONE, MUTUAL_FOLLOW_FRIENDS, FOLLOWER_OF_CREATOR, SELF_ONLY
     if (!videoUrl) return json({ error: "missing_video_url" }, 400);
     if (!/^https:\/\//.test(videoUrl)) return json({ error: "video_url_must_be_https" }, 400);
 
     const admin = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const workspaceId = bodyWs ?? await personalWorkspace(admin, userId);
+    if (!workspaceId) return json({ error: "no_workspace" }, 404);
+
     const { data: conn } = await admin
       .from("social_connections")
       .select("id, account_id")
-      .eq("user_id", userId)
+      .eq("workspace_id", workspaceId)
       .eq("platform", "tiktok")
       .eq("status", "active")
       .maybeSingle();
@@ -101,4 +105,15 @@ function json(body: unknown, status = 200): Response {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+}
+
+// deno-lint-ignore no-explicit-any
+async function personalWorkspace(admin: any, userId: string): Promise<string | null> {
+  const { data } = await admin
+    .from("workspaces")
+    .select("id")
+    .eq("owner_id", userId)
+    .eq("is_personal", true)
+    .maybeSingle();
+  return data?.id ?? null;
 }

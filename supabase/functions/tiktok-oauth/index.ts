@@ -61,17 +61,23 @@ Deno.serve(async (req: Request) => {
     }
     const u = userJson.data.user;
 
-    // 3. Identify the Veyra user via the `state` JWT
+    // 3. Identify the Veyra user + target workspace via the `state` value.
+    // Modern clients pack base64(JSON({jwt,ws})); legacy clients send the
+    // bare JWT — decodeState handles both.
+    const { jwt, workspaceId: statedWs } = decodeState(state);
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const admin = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
-      global: { headers: { Authorization: `Bearer ${state}` } },
+      global: { headers: { Authorization: `Bearer ${jwt}` } },
     });
     const { data: userData } = await userClient.auth.getUser();
     if (!userData?.user) {
       return redirect(`${APP_RETURN}/?connected=error&detail=session_expired`);
     }
     const userId = userData.user.id;
+
+    // Resolve target workspace (stated by client, else user's personal).
+    const targetWorkspaceId = await resolveWorkspace(admin, userId, statedWs);
 
     // 4. Upsert connection
     const accountId = openId;
@@ -82,7 +88,7 @@ Deno.serve(async (req: Request) => {
     const { data: existing } = await admin
       .from("social_connections")
       .select("id")
-      .eq("user_id", userId)
+      .eq("workspace_id", targetWorkspaceId)
       .eq("platform", "tiktok")
       .eq("account_id", accountId)
       .maybeSingle();
@@ -101,6 +107,7 @@ Deno.serve(async (req: Request) => {
     } else {
       const ins = await admin.from("social_connections").insert({
         user_id: userId,
+        workspace_id: targetWorkspaceId,
         platform: "tiktok",
         account_id: accountId,
         account_username: username,
@@ -134,4 +141,35 @@ Deno.serve(async (req: Request) => {
 
 function redirect(url: string): Response {
   return new Response(null, { status: 302, headers: { Location: url } });
+}
+
+function decodeState(state: string): { jwt: string; workspaceId: string | null } {
+  try {
+    const decoded = atob(state);
+    const parsed = JSON.parse(decoded);
+    if (parsed && typeof parsed.jwt === "string" && parsed.jwt.length > 20) {
+      return { jwt: parsed.jwt, workspaceId: parsed.ws ?? null };
+    }
+  } catch { /* fallthrough */ }
+  return { jwt: state, workspaceId: null };
+}
+
+// deno-lint-ignore no-explicit-any
+async function resolveWorkspace(admin: any, userId: string, statedWs: string | null): Promise<string | null> {
+  if (statedWs) {
+    const { data } = await admin
+      .from("workspace_members")
+      .select("workspace_id")
+      .eq("workspace_id", statedWs)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (data) return statedWs;
+  }
+  const { data: personal } = await admin
+    .from("workspaces")
+    .select("id")
+    .eq("owner_id", userId)
+    .eq("is_personal", true)
+    .maybeSingle();
+  return personal?.id ?? null;
 }
