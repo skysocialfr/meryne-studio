@@ -24,6 +24,18 @@ var LINKEDIN_CLIENT_ID = ''; // ex: '86xxxxxxxxxxxx'
 var LINKEDIN_REDIRECT = 'https://uqyprtitkuqkdrrzckbc.supabase.co/functions/v1/linkedin-oauth';
 var LINKEDIN_SCOPE = 'openid profile email w_member_social';
 
+// Pack (jwt, active_workspace_id) into the OAuth `state` param so the
+// server-side callback can attribute the new connection to the workspace
+// the user is currently in — not always their personal one.
+function _buildOAuthState(jwt) {
+  try {
+    var payload = { jwt: jwt, ws: window._VEYRA_WS_ID || null };
+    return btoa(JSON.stringify(payload));
+  } catch (e) {
+    return jwt;
+  }
+}
+
 // TikTok app client key. Set once the TikTok Developer App is created
 // (redirect URI: https://uqyprtitkuqkdrrzckbc.supabase.co/functions/v1/tiktok-oauth).
 var TIKTOK_CLIENT_KEY = ''; // ex: 'awxxxxxxxxxxxxxx'
@@ -40,11 +52,11 @@ async function openConnexionsModal() {
   document.body.style.overflow = 'hidden';
 
   var connections = [];
-  if (sb && window._VEYRA_UID) {
+  if (sb && window._VEYRA_UID && window._VEYRA_WS_ID) {
     try {
       var res = await sb.from('social_connections')
         .select('id, platform, account_username, account_name, account_avatar_url, status, connected_at, token_expires_at')
-        .eq('user_id', window._VEYRA_UID);
+        .eq('workspace_id', window._VEYRA_WS_ID);
       connections = res.data || [];
     } catch (e) {
       console.error('connexions load failed:', e);
@@ -181,7 +193,7 @@ async function connectLinkedin() {
       + '?response_type=code'
       + '&client_id=' + encodeURIComponent(LINKEDIN_CLIENT_ID)
       + '&redirect_uri=' + encodeURIComponent(LINKEDIN_REDIRECT)
-      + '&state=' + encodeURIComponent(jwt)
+      + '&state=' + encodeURIComponent(_buildOAuthState(jwt))
       + '&scope=' + encodeURIComponent(LINKEDIN_SCOPE);
     window.location.href = url;
   } catch (e) {
@@ -253,7 +265,7 @@ async function connectTiktok() {
       + '&scope=' + encodeURIComponent(TIKTOK_SCOPE)
       + '&response_type=code'
       + '&redirect_uri=' + encodeURIComponent(TIKTOK_REDIRECT)
-      + '&state=' + encodeURIComponent(jwt);
+      + '&state=' + encodeURIComponent(_buildOAuthState(jwt));
     window.location.href = url;
   } catch (e) {
     showSync('Impossible de démarrer la connexion', 'rgba(220,38,38,.8)');
@@ -268,7 +280,7 @@ async function connectInstagram() {
     var jwt = res.data && res.data.session && res.data.session.access_token;
     if (!jwt) { showSync('Session expirée — reconnecte-toi', 'rgba(220,38,38,.8)'); return; }
     if (typeof track === 'function') track('connexion_instagram_started');
-    window.location.href = INSTAGRAM_AUTH_BASE + '&state=' + encodeURIComponent(jwt);
+    window.location.href = INSTAGRAM_AUTH_BASE + '&state=' + encodeURIComponent(_buildOAuthState(jwt));
   } catch (e) {
     showSync('Impossible de démarrer la connexion', 'rgba(220,38,38,.8)');
   }
@@ -374,7 +386,7 @@ async function publishLinkedin() {
   if (btn) { btn.disabled = true; btn.textContent = 'Publication…'; }
 
   try {
-    var res = await sb.functions.invoke('linkedin-publish', { body: { text: text } });
+    var res = await sb.functions.invoke('linkedin-publish', { body: { text: text, workspace_id: window._VEYRA_WS_ID || null } });
     if (res.error || (res.data && res.data.error)) {
       var detail = (res.data && (res.data.detail || res.data.error)) || (res.error && res.error.message) || 'erreur';
       showSync('❌ ' + String(detail).slice(0, 120), 'rgba(220,38,38,.8)');
@@ -486,7 +498,7 @@ async function publishTiktok() {
     if (btn) btn.textContent = 'Envoi à TikTok…';
 
     var res = await sb.functions.invoke('tiktok-publish', {
-      body: { video_url: videoUrl, title: title, privacy_level: privacy }
+      body: { video_url: videoUrl, title: title, privacy_level: privacy, workspace_id: window._VEYRA_WS_ID || null }
     });
     if (res.error || (res.data && res.data.error)) {
       var detail = (res.data && (res.data.detail || res.data.error)) || (res.error && res.error.message) || 'erreur';

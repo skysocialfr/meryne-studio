@@ -276,7 +276,7 @@ async function renderAnalytics() {
   if (kpiEl) kpiEl.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:#9CA3AF;font-size:13px;">Chargement de tes statistiques Instagram…</div>';
 
   try {
-    var res = await sb.functions.invoke('instagram-stats', { body: {} });
+    var res = await sb.functions.invoke('instagram-stats', { body: { workspace_id: window._VEYRA_WS_ID || null } });
     if (res.error || (res.data && res.data.error)) {
       // API failed — fall back to manual so the tab isn't empty
       if (tip) tip.style.display = '';
