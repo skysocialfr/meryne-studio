@@ -128,18 +128,23 @@ async function syncRealInstagram() {
   window._IG_LIVE = null;
   if (typeof sb === 'undefined' || !sb || !window._VEYRA_UID) return;
   try {
-    var connRes = await sb.from('social_connections')
+    // Scope the connection check to the ACTIVE workspace — otherwise we
+    // find the personal-workspace IG when we're browsing a shared space,
+    // hide the connect banner, and end up showing stale profile data.
+    var connQuery = sb.from('social_connections')
       .select('id')
-      .eq('user_id', window._VEYRA_UID)
       .eq('platform', 'instagram')
-      .eq('status', 'active')
-      .maybeSingle();
+      .eq('status', 'active');
+    if (window._VEYRA_WS_ID) connQuery = connQuery.eq('workspace_id', window._VEYRA_WS_ID);
+    else                    connQuery = connQuery.eq('user_id', window._VEYRA_UID);
+    var connRes = await connQuery.maybeSingle();
     if (!connRes.data) {
-      // Instagram not connected — show the connect banner, and prompt once per session
+      // Instagram not connected in this space — show the banner + reset UI
       _setFeedConnectBanner(true);
+      _resetFeedProfileUI();
       if (typeof openConnexionsModal === 'function'
-          && !sessionStorage.getItem('veyra_cx_prompted')) {
-        sessionStorage.setItem('veyra_cx_prompted', '1');
+          && !sessionStorage.getItem('veyra_cx_prompted:' + (window._VEYRA_WS_ID || 'anon'))) {
+        sessionStorage.setItem('veyra_cx_prompted:' + (window._VEYRA_WS_ID || 'anon'), '1');
         openConnexionsModal();
       }
       return;
@@ -151,6 +156,18 @@ async function syncRealInstagram() {
     }
   } catch (e) {
     console.error('syncRealInstagram failed:', e);
+  }
+}
+
+// Reset the DOM bits of the Feed header that can hold stale text from a
+// previous workspace (followers count, live handle, avatar) so switching
+// spaces doesn't leak the old space's profile.
+function _resetFeedProfileUI() {
+  var el;
+  if ((el = document.getElementById('ig-followers-count'))) el.textContent = '—';
+  if ((el = document.getElementById('ig-handle-display'))) {
+    var p = window._USER_PROFILE || {};
+    el.textContent = p.ig_handle || '—';
   }
 }
 
