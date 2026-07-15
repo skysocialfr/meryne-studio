@@ -146,11 +146,14 @@ function _syncDoneFromFeedDraft(feedDraft) {
 // ─── INIT ───
 async function initApp() {
   // initSupabase() est maintenant appelé au chargement de storage.js
+  if (typeof wsInit === 'function') await wsInit();
   await load();
   await loadIgProfile();
   await loadFeedData();
   await loadEvents();
   renderAll();
+  if (typeof renderWorkspacePill === 'function') renderWorkspacePill();
+  if (typeof showPendingInvitesBanner === 'function') showPendingInvitesBanner();
 }
 
 function renderAll() {
