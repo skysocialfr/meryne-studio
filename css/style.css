@@ -1736,3 +1736,205 @@ body.dark .bnt.active{background:rgba(255,45,122,.12);}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;}
 }
+
+/* ═══════════════════════════════════════════════
+   WORKSPACES — pill, banner, modal
+   ═══════════════════════════════════════════════ */
+
+/* Header pill */
+.ws-pill{
+  display:inline-flex;align-items:center;gap:6px;
+  margin-top:6px;padding:5px 10px 5px 8px;
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:999px;
+  color:rgba(255,255,255,.92);
+  font-size:12px;font-weight:600;letter-spacing:.01em;
+  cursor:pointer;transition:background .15s,border-color .15s;
+  align-self:flex-start;
+}
+.ws-pill:hover{background:rgba(255,255,255,.13);border-color:rgba(255,255,255,.22)}
+.ws-pill-ic{font-size:13px;line-height:1}
+.ws-pill-name{max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ws-pill-caret{width:12px;height:12px;opacity:.7;flex-shrink:0}
+
+/* Pending invites banner */
+.ws-invites-banner{
+  padding:10px 18px;
+  background:linear-gradient(90deg,rgba(236,72,153,.14),rgba(139,92,246,.14));
+  border-bottom:1px solid rgba(236,72,153,.28);
+}
+.ws-invite-card{
+  display:flex;align-items:center;gap:14px;
+  padding:8px 4px;
+  color:var(--ink,#0F172A);
+  font-size:13.5px;
+}
+.ws-invite-card + .ws-invite-card{border-top:1px solid rgba(0,0,0,.08)}
+.ws-invite-txt{flex:1;min-width:0}
+.ws-invite-btns{display:flex;gap:6px;flex-shrink:0}
+body.dark .ws-invite-card{color:#fff}
+
+/* Modal body */
+.ws-loading{padding:40px;text-align:center;color:var(--muted,#64748B);font-size:13px}
+.ws-sec{padding:14px 0;border-top:1px solid rgba(0,0,0,.06)}
+.ws-sec:first-child{border-top:none;padding-top:8px}
+body.dark .ws-sec{border-color:rgba(255,255,255,.08)}
+.ws-sec-title{
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;
+  color:var(--muted,#64748B);
+  margin-bottom:10px;
+}
+.ws-sec-subtitle{
+  font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--muted,#64748B);margin:12px 0 6px;
+}
+
+/* Workspace list */
+.ws-list{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+.ws-list-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;
+  background:rgba(0,0,0,.02);
+  border:1px solid rgba(0,0,0,.06);
+  border-radius:10px;
+  font-size:13.5px;font-weight:600;color:var(--ink,#0F172A);
+  cursor:pointer;transition:background .12s,border-color .12s;
+  text-align:left;
+}
+.ws-list-item:hover{background:rgba(0,0,0,.05)}
+.ws-list-item.ws-active{
+  background:linear-gradient(90deg,rgba(236,72,153,.12),rgba(139,92,246,.12));
+  border-color:rgba(236,72,153,.4);
+}
+.ws-list-ic{font-size:16px}
+.ws-list-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ws-list-meta{font-size:11px;font-weight:600;color:var(--muted,#64748B);flex-shrink:0}
+body.dark .ws-list-item{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.08);color:#fff}
+body.dark .ws-list-item:hover{background:rgba(255,255,255,.07)}
+
+/* Buttons */
+.ws-btn{
+  padding:8px 14px;
+  font-size:13px;font-weight:700;
+  border:none;border-radius:8px;
+  cursor:pointer;transition:filter .12s,background .12s;
+  font-family:inherit;
+}
+.ws-btn-primary{
+  background:linear-gradient(90deg,#EC4899,#8B5CF6);color:#fff;
+}
+.ws-btn-primary:hover{filter:brightness(1.08)}
+.ws-btn-ghost{
+  background:rgba(0,0,0,.05);color:var(--ink,#0F172A);
+}
+.ws-btn-ghost:hover{background:rgba(0,0,0,.08)}
+body.dark .ws-btn-ghost{background:rgba(255,255,255,.06);color:#fff}
+body.dark .ws-btn-ghost:hover{background:rgba(255,255,255,.1)}
+.ws-btn-full{width:100%;text-align:center}
+.ws-btn-danger-ghost{
+  background:transparent;color:#DC2626;border:1px solid rgba(220,38,38,.35);
+}
+.ws-btn-danger-ghost:hover{background:rgba(220,38,38,.08)}
+
+/* Mini icon buttons */
+.ws-mini-btn{
+  width:26px;height:26px;
+  display:inline-flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.05);border:none;border-radius:6px;
+  color:var(--muted,#64748B);font-size:12px;cursor:pointer;
+  transition:background .12s,color .12s;
+}
+.ws-mini-btn:hover{background:rgba(0,0,0,.1);color:var(--ink,#0F172A)}
+.ws-mini-danger:hover{background:rgba(220,38,38,.12);color:#DC2626}
+body.dark .ws-mini-btn{background:rgba(255,255,255,.06);color:rgba(255,255,255,.7)}
+body.dark .ws-mini-btn:hover{background:rgba(255,255,255,.12);color:#fff}
+
+/* Members list */
+.ws-members{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.ws-member{
+  display:grid;grid-template-columns:1fr auto;gap:6px;
+  padding:10px 12px;
+  background:rgba(0,0,0,.02);border-radius:8px;
+  align-items:center;
+}
+body.dark .ws-member{background:rgba(255,255,255,.04)}
+.ws-member-name{font-size:13.5px;font-weight:700;color:var(--ink,#0F172A);display:flex;align-items:center;gap:8px}
+body.dark .ws-member-name{color:#fff}
+.ws-member-email{font-size:12px;color:var(--muted,#64748B);grid-column:1;grid-row:2}
+.ws-role-badge{
+  padding:2px 8px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;
+  background:rgba(0,0,0,.08);color:var(--muted,#64748B);
+  border-radius:999px;
+}
+.ws-role-self{
+  background:linear-gradient(90deg,rgba(236,72,153,.16),rgba(139,92,246,.16));
+  color:#7c3aed;
+}
+body.dark .ws-role-badge{background:rgba(255,255,255,.08);color:rgba(255,255,255,.8)}
+
+/* Invite form */
+.ws-invite-form{display:flex;gap:6px;margin-top:6px}
+.ws-input{
+  flex:1;padding:9px 12px;
+  border:1px solid rgba(0,0,0,.14);
+  border-radius:8px;
+  font-size:13px;font-family:inherit;
+  background:#fff;color:var(--ink,#0F172A);
+}
+.ws-input:focus{outline:none;border-color:#8B5CF6;box-shadow:0 0 0 3px rgba(139,92,246,.16)}
+body.dark .ws-input{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12);color:#fff}
+.ws-invite-hint{font-size:11px;color:var(--muted,#64748B);margin-top:6px}
+
+/* Pending sent invites */
+.ws-pending{display:flex;flex-direction:column;gap:4px}
+.ws-pending-item{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:6px 10px;
+  background:rgba(0,0,0,.03);border-radius:6px;
+  font-size:12.5px;color:var(--muted,#64748B);
+}
+body.dark .ws-pending-item{background:rgba(255,255,255,.04)}
+.ws-pending-email{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.ws-danger-row{margin-top:14px;display:flex;justify-content:flex-end}
+
+/* ═══ Avatars ═══ */
+.ws-av{
+  display:inline-flex;align-items:center;justify-content:center;
+  border-radius:999px;
+  color:#fff;font-weight:800;letter-spacing:.02em;
+  flex-shrink:0;
+  box-shadow:0 1px 2px rgba(0,0,0,.15), inset 0 1px 0 rgba(255,255,255,.15);
+}
+.ws-av-unknown{background:linear-gradient(135deg,#94A3B8,#64748B)!important}
+
+/* Prod card + kanban assignee */
+.pc-assignee{display:inline-flex;align-items:center;margin-left:auto;padding-left:6px}
+.pub-assignee{display:inline-flex;align-items:center;margin-left:auto;padding-left:6px}
+.kc-assignee{position:absolute;top:8px;right:8px}
+.kanban-card{position:relative}
+
+/* Mes tâches filter button — matches .pvt look but with primary-active accent */
+.mytasks-filter{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:6px 10px;
+  background:transparent;
+  border:1px solid rgba(0,0,0,.14);
+  border-radius:8px;
+  font-size:12px;font-weight:700;
+  color:var(--muted,#64748B);
+  cursor:pointer;font-family:inherit;
+  transition:background .12s,color .12s,border-color .12s;
+  margin-right:6px;
+}
+.mytasks-filter:hover{background:rgba(0,0,0,.04);color:var(--ink,#0F172A)}
+.mytasks-filter.active{
+  background:linear-gradient(90deg,rgba(236,72,153,.14),rgba(139,92,246,.14));
+  border-color:rgba(236,72,153,.4);
+  color:#7c3aed;
+}
+body.dark .mytasks-filter{border-color:rgba(255,255,255,.14);color:rgba(255,255,255,.7)}
+body.dark .mytasks-filter:hover{background:rgba(255,255,255,.06);color:#fff}
+body.dark .mytasks-filter.active{color:#c4b5fd}

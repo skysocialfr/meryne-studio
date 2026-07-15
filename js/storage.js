@@ -19,8 +19,18 @@ var sb = null;
 // Conservé pour compatibilité — ne fait plus rien
 function initSupabase() {}
 
-// ─── Clé de stockage (préfixée par UUID utilisateur) ───
+// ─── Clé de stockage ────────────────────────────────────────────────────
+// Personal workspace (default) : "<user_uuid>:<key>"  — legacy format,
+//   preserved so existing rows continue to work with no data migration.
+// Shared workspace : "ws:<workspace_id>:<key>" — new namespace so multiple
+//   workspaces can hold the same logical key without colliding on the
+//   globally-unique `key` column.
 function _sk(key) {
+  var wsId = window._VEYRA_WS_ID;
+  var personalId = window._VEYRA_WS_PERSONAL_ID;
+  if (wsId && personalId && wsId !== personalId) {
+    return 'ws:' + wsId + ':' + key;
+  }
   return window._VEYRA_UID ? window._VEYRA_UID + ':' + key : key;
 }
 
@@ -97,10 +107,12 @@ async function cloudLoad(key, fallback) {
 
 function _sbResync(sk, data) {
   if (!sb) return;
+  var wsId = window._VEYRA_WS_ID || null;
   setTimeout(function () {
-    sb.from('studio_data').upsert({
-      key: sk, data: data, updated_at: new Date().toISOString()
-    }, { onConflict: 'key' }).then(function () {}).catch(function () {});
+    var payload = { key: sk, data: data, updated_at: new Date().toISOString() };
+    if (wsId) payload.workspace_id = wsId;
+    sb.from('studio_data').upsert(payload, { onConflict: 'key' })
+      .then(function () {}).catch(function () {});
   }, 1000);
 }
 
@@ -115,11 +127,13 @@ async function cloudSave(key, data) {
 
   if (!sb) { showSync('Saved', null); return; }
   try {
-    var res = await sb.from('studio_data').upsert({
+    var payload = {
       key: sk,
       data: data,
       updated_at: new Date(ts).toISOString()
-    }, { onConflict: 'key' });
+    };
+    if (window._VEYRA_WS_ID) payload.workspace_id = window._VEYRA_WS_ID;
+    var res = await sb.from('studio_data').upsert(payload, { onConflict: 'key' });
     if (res && res.error) showSync('Local only ⚠️', 'rgba(245,158,11,.8)');
     else showSync('Saved ☁️', null);
   } catch (e) {
