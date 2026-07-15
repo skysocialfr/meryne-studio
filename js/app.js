@@ -153,6 +153,7 @@ async function initApp() {
   await loadEvents();
   renderAll();
   if (typeof renderWorkspacePill === 'function') renderWorkspacePill();
+  if (typeof refreshMyTasksFilterUI === 'function') refreshMyTasksFilterUI();
   if (typeof showPendingInvitesBanner === 'function') showPendingInvitesBanner();
 }
 

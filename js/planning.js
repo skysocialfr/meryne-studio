@@ -183,6 +183,7 @@ function _pubCardHtml(p) {
     + '<span class="badge ' + platInfo.cls + '">' + escapeHtml(platLbl) + '</span>'
     + '<span class="fmt-t">' + escapeHtml(p.fmt) + '</span>'
     + '<span class="time-t">⏰ ' + escapeHtml(p.heure) + '</span>'
+    + (p.assigneeId && typeof wsShouldShowAssignee === 'function' && wsShouldShowAssignee() ? '<span class="pub-assignee">' + wsAvatarHtml(p.assigneeId, 18) + '</span>' : '')
     + '</div>'
     + '<div class="pub-title-main"><span class="pub-date-inline">' + escapeHtml(p.date) + ' · </span>' + escapeHtml(p.title) + '</div>'
     + (p.son && p.son !== '—' ? '<div class="pub-son">🎵 ' + escapeHtml(p.son) + '</div>' : '')
@@ -220,6 +221,10 @@ function renderPlanning() {
   var inSevenDays = new Date(now.getTime() + 7 * 24 * 3600 * 1000);
 
   var pubs = PUBS;
+  if (window._MY_TASKS_ONLY && typeof wsShouldShowAssignee === 'function' && wsShouldShowAssignee()) {
+    var _mine = wsMyId();
+    pubs = pubs.filter(function(p) { return p.assigneeId === _mine; });
+  }
   if (fPlat !== 'all') pubs = pubs.filter(function(p) { return p.plat === fPlat; });
   if (fSearch) pubs = pubs.filter(function(p) {
     var q = fSearch;
@@ -397,8 +402,13 @@ function renderPlanKanban() {
     { id: 'thisweek',  label: 'Prêt à publier', emoji: '⏳', accent: '#F59E0B' },
     { id: 'published', label: 'Publié',        emoji: '🚀', accent: '#10B981' }
   ];
+  var _source = PUBS || [];
+  if (window._MY_TASKS_ONLY && typeof wsShouldShowAssignee === 'function' && wsShouldShowAssignee()) {
+    var _mineK = wsMyId();
+    _source = _source.filter(function(p) { return p.assigneeId === _mineK; });
+  }
   var byCol = { todo: [], thisweek: [], published: [] };
-  (PUBS || []).forEach(function(p) { byCol[_planStatus(p)].push(p); });
+  _source.forEach(function(p) { byCol[_planStatus(p)].push(p); });
 
   board.innerHTML = '<div class="kanban-board">' + cols.map(function(col) {
     var cards = byCol[col.id].map(function(p) {
@@ -412,6 +422,7 @@ function renderPlanKanban() {
         +   (p.heure && p.heure !== '—' ? '<span>' + escapeHtml(p.heure) + '</span>' : '')
         +   (p.fmt ? '<span class="kc-tag">' + escapeHtml(p.fmt) + '</span>' : '')
         + '</div>'
+        + (p.assigneeId && typeof wsShouldShowAssignee === 'function' && wsShouldShowAssignee() ? '<div class="kc-assignee">' + wsAvatarHtml(p.assigneeId, 20) + '</div>' : '')
         + '</article>';
     }).join('');
     return '<div class="kanban-col" data-col="' + col.id + '"'
@@ -510,6 +521,7 @@ function openPubModal(idx) {
     + '<div class="fr"><label>Son/Trend</label><input id="ppe-son" value="' + escapeHtml(_pubbe.son) + '"></div>'
     + '</div>'
     + '<div class="fr"><label>Source</label><input id="ppe-src" value="' + escapeHtml(_pubbe.src) + '"></div>'
+    + (typeof wsAssigneeSelectHtml === 'function' ? wsAssigneeSelectHtml('ppe-assignee', _pubbe.assigneeId) : '')
     // ─── Hashtags section — prominent ───
     + '<div class="fr hash-section">'
     + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">'
@@ -596,6 +608,8 @@ function savePub(id, isNew, idx) {
   _pubbe.son = document.getElementById('ppe-son').value;
   _pubbe.src = document.getElementById('ppe-src').value;
   _pubbe.tags = document.getElementById('ppe-tags').value;
+  var assigneeEl = document.getElementById('ppe-assignee');
+  if (assigneeEl) _pubbe.assigneeId = assigneeEl.value || null;
   _pubbe.script.title = document.getElementById('ppe-stitle').value;
   var linkEl = document.getElementById('ppe-link');
   if (linkEl) _pubbe.link = linkEl.value;

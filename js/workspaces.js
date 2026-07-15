@@ -7,6 +7,10 @@
 var _WS_LIST = [];
 var _WS_PERSONAL = null;
 var _WS_PENDING_INVITES = [];
+var _WS_MEMBERS_CACHE = [];
+
+// Global "Mes tâches" filter (production + planning honor it when set)
+window._MY_TASKS_ONLY = false;
 
 function _wsLsKey() {
   return 'veyra_active_ws:' + (window._VEYRA_UID || 'anon');
@@ -64,6 +68,129 @@ async function wsInit() {
   window._VEYRA_WS_ID = picked ? picked.id : null;
 
   await wsRefreshPendingInvites();
+  await wsRefreshMembers();
+}
+
+// ─── Members cache ──────────────────────────────────────────────────────
+// Called after init and after any workspace switch. Populates
+// _WS_MEMBERS_CACHE for the active workspace so renderers can look up
+// assignee display info without hitting the DB per card.
+async function wsRefreshMembers() {
+  _WS_MEMBERS_CACHE = [];
+  if (!sb || !window._VEYRA_WS_ID) return _WS_MEMBERS_CACHE;
+  var a = wsGetActive();
+  if (!a || a.is_personal) {
+    var p = window._USER_PROFILE || {};
+    _WS_MEMBERS_CACHE = [{
+      workspace_id: window._VEYRA_WS_ID,
+      user_id: window._VEYRA_UID,
+      role: 'owner',
+      email: p.email || window._USER_EMAIL || '',
+      display_name: p.display_name || ''
+    }];
+    return _WS_MEMBERS_CACHE;
+  }
+  try {
+    var res = await sb.from('workspace_members_with_profile')
+      .select('*').eq('workspace_id', window._VEYRA_WS_ID)
+      .order('joined_at', { ascending: true });
+    if (res && res.data) _WS_MEMBERS_CACHE = res.data;
+  } catch (e) {}
+  return _WS_MEMBERS_CACHE;
+}
+
+function wsMembers() { return _WS_MEMBERS_CACHE.slice(); }
+
+function wsMemberById(userId) {
+  if (!userId) return null;
+  for (var i = 0; i < _WS_MEMBERS_CACHE.length; i++) {
+    if (_WS_MEMBERS_CACHE[i].user_id === userId) return _WS_MEMBERS_CACHE[i];
+  }
+  return null;
+}
+
+function wsMemberInitials(m) {
+  if (!m) return '?';
+  var src = (m.display_name && m.display_name.trim()) || (m.email || '').split('@')[0] || '';
+  if (!src) return '?';
+  var parts = src.trim().split(/[\s._-]+/).filter(function(s) { return s.length; });
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return src.substring(0, 2).toUpperCase();
+}
+
+// Deterministic gradient palette keyed on user_id so avatars stay stable.
+var _WS_AV_PALETTE = [
+  ['#EC4899', '#8B5CF6'],
+  ['#F59E0B', '#EC4899'],
+  ['#06B6D4', '#8B5CF6'],
+  ['#10B981', '#06B6D4'],
+  ['#F43F5E', '#F59E0B'],
+  ['#6366F1', '#EC4899'],
+  ['#8B5CF6', '#3B82F6'],
+  ['#14B8A6', '#22C55E']
+];
+function wsMemberColor(userId) {
+  if (!userId) return _WS_AV_PALETTE[0];
+  var h = 0;
+  for (var i = 0; i < userId.length; i++) h = (h * 31 + userId.charCodeAt(i)) & 0x7fffffff;
+  return _WS_AV_PALETTE[h % _WS_AV_PALETTE.length];
+}
+
+function wsAvatarHtml(userId, size) {
+  var s = size || 20;
+  var m = wsMemberById(userId);
+  if (!m) {
+    if (!userId) return '';
+    return '<span class="ws-av ws-av-unknown" style="width:' + s + 'px;height:' + s + 'px;font-size:' + Math.round(s * 0.42) + 'px" title="Membre inconnu">?</span>';
+  }
+  var pal = wsMemberColor(userId);
+  var initials = wsMemberInitials(m);
+  var name = (m.display_name && m.display_name.trim()) || m.email || 'Membre';
+  return '<span class="ws-av" title="' + escapeHtml(name) + '"' +
+    ' style="width:' + s + 'px;height:' + s + 'px;font-size:' + Math.round(s * 0.42) + 'px;' +
+    'background:linear-gradient(135deg,' + pal[0] + ',' + pal[1] + ')">' + escapeHtml(initials) + '</span>';
+}
+
+function wsMyId() { return window._VEYRA_UID || null; }
+
+function wsShouldShowAssignee() {
+  var a = wsGetActive();
+  return !!(a && !a.is_personal && _WS_MEMBERS_CACHE.length > 1);
+}
+
+function toggleMyTasksOnly() {
+  window._MY_TASKS_ONLY = !window._MY_TASKS_ONLY;
+  var btns = document.querySelectorAll('.mytasks-filter');
+  btns.forEach(function(b) { b.classList.toggle('active', window._MY_TASKS_ONLY); });
+  if (typeof renderProd === 'function') renderProd();
+  if (typeof renderPlanning === 'function') renderPlanning();
+}
+
+function refreshMyTasksFilterUI() {
+  var show = wsShouldShowAssignee();
+  var btns = document.querySelectorAll('.mytasks-filter');
+  btns.forEach(function(b) {
+    b.style.display = show ? '' : 'none';
+    b.classList.toggle('active', window._MY_TASKS_ONLY);
+  });
+  if (!show && window._MY_TASKS_ONLY) {
+    window._MY_TASKS_ONLY = false;
+  }
+}
+
+// Assignee dropdown <select> HTML fragment (empty string in personal ws).
+function wsAssigneeSelectHtml(selectId, currentAssigneeId) {
+  var a = wsGetActive();
+  if (!a || a.is_personal) return '';
+  var options = '<option value="">— Non assignée —</option>';
+  _WS_MEMBERS_CACHE.forEach(function(m) {
+    var sel = (m.user_id === currentAssigneeId) ? ' selected' : '';
+    var name = (m.display_name && m.display_name.trim()) || (m.email || '').split('@')[0] || 'Membre';
+    if (m.user_id === window._VEYRA_UID) name += ' (moi)';
+    options += '<option value="' + escapeHtml(m.user_id) + '"' + sel + '>' + escapeHtml(name) + '</option>';
+  });
+  return '<div class="fr" id="' + selectId + '-row"><label>&#x1F464; Assignée à</label>' +
+    '<select id="' + selectId + '">' + options + '</select></div>';
 }
 
 async function wsRefreshPendingInvites() {
@@ -88,11 +215,13 @@ async function wsSetActive(id) {
 
   if (typeof showSync === 'function') showSync('Chargement…', null);
 
+  await wsRefreshMembers();
   if (typeof load === 'function') await load();
   if (typeof loadFeedData === 'function') await loadFeedData();
   if (typeof loadEvents === 'function') await loadEvents();
   if (typeof renderAll === 'function') renderAll();
   renderWorkspacePill();
+  if (typeof refreshMyTasksFilterUI === 'function') refreshMyTasksFilterUI();
   if (typeof showSync === 'function') showSync('Espace : ' + target.name, null);
 }
 

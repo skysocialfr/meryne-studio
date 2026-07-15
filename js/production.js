@@ -39,8 +39,13 @@ function renderProd() {
     progEl.style.background = pct === 100 ? 'var(--green)' : 'var(--amber)';
   }
 
-  var activeTasks = PROD.filter(function(t) { return !t.done; });
-  var doneTasks   = PROD.filter(function(t) { return t.done; });
+  var visible = PROD;
+  if (window._MY_TASKS_ONLY && typeof wsShouldShowAssignee === 'function' && wsShouldShowAssignee()) {
+    var mine = wsMyId();
+    visible = PROD.filter(function(t) { return t.assigneeId === mine; });
+  }
+  var activeTasks = visible.filter(function(t) { return !t.done; });
+  var doneTasks   = visible.filter(function(t) { return t.done; });
 
   function _buildProdCard(t) {
     var realIdx = PROD.indexOf(t);
@@ -64,6 +69,9 @@ function renderProd() {
     if (t.plat) c += '<span class="tag tg-rose">' + escapeHtml(t.plat) + '</span>';
     if (t.fmt)  c += '<span class="tag tg-cyan">' + escapeHtml(t.fmt) + '</span>';
     if (t.posts) c += '<span class="tag tg-amber">' + escapeHtml(String(t.posts)) + ' post' + (parseInt(t.posts, 10) > 1 ? 's' : '') + '</span>';
+    if (t.assigneeId && typeof wsShouldShowAssignee === 'function' && wsShouldShowAssignee()) {
+      c += '<span class="pc-assignee">' + wsAvatarHtml(t.assigneeId, 18) + '</span>';
+    }
     c += '</div>';
     c += '<div class="pc-title' + (t.done ? ' done' : '') + '">';
     if (t.em) c += escapeHtml(t.em) + ' ';
@@ -161,6 +169,7 @@ function openProdModal(idx) {
     note: t.note || '',
     launch: t.launch || false,
     pubId: t.pubId || '',
+    assigneeId: t.assigneeId || '',
     script: t.script ? { title: t.script.title || '', shots: [] } : { title: '', shots: [] }
   };
 
@@ -225,6 +234,9 @@ function openProdModal(idx) {
     + '<input type="checkbox" id="pe-launch"' + (_pe.launch ? ' checked' : '') + ' style="width:16px;height:16px;accent-color:var(--rose);">'
     + '<label for="pe-launch" style="font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;">⭐ Priorité</label>'
     + '</div>'
+
+    // Assignee (shared workspace only — helper returns '' in personal)
+    + (typeof wsAssigneeSelectHtml === 'function' ? wsAssigneeSelectHtml('pe-assignee', _pe.assigneeId) : '')
 
     // Link to a Planning publication — done state syncs across both
     + (function() {
@@ -321,6 +333,8 @@ function saveProd(id, isNew, idx) {
   var launchVal = (document.getElementById('pe-launch') || {}).checked || false;
   var scriptTitle = (document.getElementById('pe-script-title') || {}).value || '';
   var pubIdVal = (document.getElementById('pe-pubid') || {}).value || '';
+  var assigneeEl = document.getElementById('pe-assignee');
+  var assigneeVal = assigneeEl ? (assigneeEl.value || '') : '';
 
   // Preserve existing done state when editing (so the link sync doesn't reset it)
   var existing = isNew ? null : PROD.find(function(x) { return (x.id || PROD.indexOf(x)) == id; });
@@ -337,6 +351,7 @@ function saveProd(id, isNew, idx) {
     note: noteVal,
     launch: launchVal,
     pubId: pubIdVal || null,
+    assigneeId: assigneeEl ? (assigneeVal || null) : (existing ? existing.assigneeId || null : null),
     done: existing ? !!existing.done : false,
     script: {
       title: scriptTitle,
@@ -445,8 +460,13 @@ function renderProdKanban() {
     { id: 'done',     label: 'Terminé',     emoji: '✅', accent: '#10B981' }
   ];
 
+  var source = PROD || [];
+  if (window._MY_TASKS_ONLY && typeof wsShouldShowAssignee === 'function' && wsShouldShowAssignee()) {
+    var mine = wsMyId();
+    source = source.filter(function(t) { return t.assigneeId === mine; });
+  }
   var byCol = { todo: [], shooting: [], done: [] };
-  (PROD || []).forEach(function(t) { byCol[_prodStatus(t)].push(t); });
+  source.forEach(function(t) { byCol[_prodStatus(t)].push(t); });
 
   board.innerHTML = '<div class="kanban-board">' + cols.map(function(col) {
     var cards = byCol[col.id].map(function(t) {
@@ -463,6 +483,7 @@ function renderProdKanban() {
         + '<div class="kc-title">' + em + escapeHtml(t.title || 'Sans titre') + '</div>'
         + (t.date ? '<div class="kc-meta"><span>' + escapeHtml(t.date) + '</span>' + (t.fmt ? '<span class="kc-tag">' + escapeHtml(t.fmt) + '</span>' : '') + '</div>' : (t.fmt ? '<div class="kc-meta"><span class="kc-tag">' + escapeHtml(t.fmt) + '</span></div>' : ''))
         + (t.script && t.script.shots && t.script.shots.length ? '<div class="kc-shots">📝 ' + t.script.shots.length + ' plans</div>' : '')
+        + (t.assigneeId && typeof wsShouldShowAssignee === 'function' && wsShouldShowAssignee() ? '<div class="kc-assignee">' + wsAvatarHtml(t.assigneeId, 20) + '</div>' : '')
         + '</article>';
     }).join('');
     return '<div class="kanban-col" data-col="' + col.id + '"'

@@ -1899,3 +1899,42 @@ body.dark .ws-pending-item{background:rgba(255,255,255,.04)}
 .ws-pending-email{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 .ws-danger-row{margin-top:14px;display:flex;justify-content:flex-end}
+
+/* ═══ Avatars ═══ */
+.ws-av{
+  display:inline-flex;align-items:center;justify-content:center;
+  border-radius:999px;
+  color:#fff;font-weight:800;letter-spacing:.02em;
+  flex-shrink:0;
+  box-shadow:0 1px 2px rgba(0,0,0,.15), inset 0 1px 0 rgba(255,255,255,.15);
+}
+.ws-av-unknown{background:linear-gradient(135deg,#94A3B8,#64748B)!important}
+
+/* Prod card + kanban assignee */
+.pc-assignee{display:inline-flex;align-items:center;margin-left:auto;padding-left:6px}
+.pub-assignee{display:inline-flex;align-items:center;margin-left:auto;padding-left:6px}
+.kc-assignee{position:absolute;top:8px;right:8px}
+.kanban-card{position:relative}
+
+/* Mes tâches filter button — matches .pvt look but with primary-active accent */
+.mytasks-filter{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:6px 10px;
+  background:transparent;
+  border:1px solid rgba(0,0,0,.14);
+  border-radius:8px;
+  font-size:12px;font-weight:700;
+  color:var(--muted,#64748B);
+  cursor:pointer;font-family:inherit;
+  transition:background .12s,color .12s,border-color .12s;
+  margin-right:6px;
+}
+.mytasks-filter:hover{background:rgba(0,0,0,.04);color:var(--ink,#0F172A)}
+.mytasks-filter.active{
+  background:linear-gradient(90deg,rgba(236,72,153,.14),rgba(139,92,246,.14));
+  border-color:rgba(236,72,153,.4);
+  color:#7c3aed;
+}
+body.dark .mytasks-filter{border-color:rgba(255,255,255,.14);color:rgba(255,255,255,.7)}
+body.dark .mytasks-filter:hover{background:rgba(255,255,255,.06);color:#fff}
+body.dark .mytasks-filter.active{color:#c4b5fd}
