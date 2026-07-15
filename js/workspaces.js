@@ -226,29 +226,25 @@ async function wsSetActive(id) {
 }
 
 // ─── Create a new shared workspace ───────────────────────────────────────
+// Delegates to the create_workspace() RPC so workspace + member row are
+// inserted atomically as SECURITY DEFINER — avoids the RLS chicken-and-egg
+// where INSERT workspaces RETURNING fails because the caller isn't yet a
+// member.
 async function wsCreate(name) {
   if (!sb || !window._VEYRA_UID) throw new Error('Not authenticated');
   var clean = (name || '').trim();
   if (!clean) throw new Error('Nom requis');
-  if (clean.length > 60) clean = clean.substring(0, 60);
 
-  var res = await sb.from('workspaces')
-    .insert({ name: clean, owner_id: window._VEYRA_UID, is_personal: false })
-    .select('*')
-    .single();
+  var res = await sb.rpc('create_workspace', { p_name: clean });
   if (res.error) throw new Error(res.error.message || 'Création impossible');
-  var wsRow = res.data;
-
-  var m = await sb.from('workspace_members')
-    .insert({ workspace_id: wsRow.id, user_id: window._VEYRA_UID, role: 'owner' });
-  if (m.error && !/duplicate|unique/i.test(m.error.message || '')) {
-    throw new Error(m.error.message || 'Ajout membre impossible');
-  }
+  var newId = res.data;
 
   await wsInit();
-  window._VEYRA_WS_ID = wsRow.id;
-  try { localStorage.setItem(_wsLsKey(), wsRow.id); } catch (e) {}
-  return wsRow;
+  if (newId) {
+    window._VEYRA_WS_ID = newId;
+    try { localStorage.setItem(_wsLsKey(), newId); } catch (e) {}
+  }
+  return _wsGet(newId) || { id: newId, name: clean };
 }
 
 // ─── Invite by email (existing Veyra account required) ──────────────────
