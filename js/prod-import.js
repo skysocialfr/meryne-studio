@@ -3,8 +3,8 @@
 
    Schema (all columns optional except Titre):
      ID · Date tournage · Emoji · Titre · Description · Plateforme · Format ·
-     Note · Priorité · Date publication · Heure publication · Script - Titre ·
-     Plan 1 · Plan 2 · … · Plan N
+     Note · Priorité · Assignée à · Date publication · Heure publication ·
+     Script - Titre · Plan 1 · Plan 2 · … · Plan N
 
    Re-import logic:
      - Empty ID  → new PROD task (a fresh id is generated)
@@ -53,6 +53,7 @@ function _prodImportShellHtml() {
 
 function _IMPORT_HEADER_ROW() {
   return ['ID','Date tournage','Emoji','Titre','Description','Plateforme','Format','Note','Priorité',
+          'Assignée à',
           'Date publication','Heure publication','Script - Titre',
           'Plan 1','Plan 2','Plan 3','Plan 4','Plan 5','Plan 6','Plan 7','Plan 8'];
 }
@@ -60,6 +61,7 @@ function _IMPORT_HEADER_ROW() {
 function downloadProdImportTemplate() {
   var header = _IMPORT_HEADER_ROW();
   var example = ['','12/03','🎬','Reel routine matin','Une journée dans ma vie de créatrice','Instagram','Reel','Matériel : trépied + ring light','oui',
+                 '',
                  '14/03','18h00','Routine matin — script',
                  'Hook : "Voilà comment je commence mes journées"',
                  'Vue d\'ensemble du lit (5s)',
@@ -90,6 +92,7 @@ function exportProdToCsv() {
       t.fmt || '',
       t.note || '',
       t.launch ? 'oui' : '',
+      _assigneeNameForExport(t.assigneeId),
       linkedPub ? (linkedPub.date || '') : '',
       linkedPub ? (linkedPub.heure || '') : '',
       (t.script && t.script.title) || '',
@@ -193,6 +196,7 @@ function _normaliseImportRows(rows) {
   var iFmt     = findCol(/^format$/);
   var iNote    = findCol(/^note$/);
   var iPrio    = findCol(/^priorit[ée]$|^priority$/);
+  var iAssign  = findCol(/^assign[ée]e?\s*[àa]?$|^assignee$|^qui$/);
   var iDatePub = findCol(/^date\s*publi/);
   var iHourPub = findCol(/^heure\s*publi/);
   var iSTitle  = findCol(/^script.*titre|^script.*title/);
@@ -228,6 +232,7 @@ function _normaliseImportRows(rows) {
       fmt:     iFmt     !== -1 ? row[iFmt]     : '',
       note:    iNote    !== -1 ? row[iNote]    : '',
       launch:  iPrio    !== -1 ? /^(oui|yes|true|1|✓)$/i.test(row[iPrio]) : false,
+      assigneeId: iAssign !== -1 ? _resolveAssignee(row[iAssign]) : null,
       datePub: iDatePub !== -1 ? row[iDatePub] : '',
       hourPub: iHourPub !== -1 ? row[iHourPub] : '',
       scriptTitle: iSTitle !== -1 ? row[iSTitle] : (shots.length ? title : ''),
@@ -325,6 +330,7 @@ async function confirmProdImport() {
     task.fmt = t.fmt;
     task.note = t.note;
     task.launch = !!t.launch;
+    if (t.assigneeId !== undefined) task.assigneeId = t.assigneeId;
     task.script = {
       title: t.scriptTitle || (t.shots.length ? t.title : ''),
       shots: t.shots
@@ -353,6 +359,7 @@ async function confirmProdImport() {
         pub.mo  = dt.mo;
         pub.yr  = dt.yr;
         pub.heure = t.hourPub || pub.heure || '18h00';
+        if (t.assigneeId !== undefined) pub.assigneeId = t.assigneeId;
       }
     }
   });
@@ -369,4 +376,43 @@ async function confirmProdImport() {
   if (s.updated)  bits.push(s.updated  + ' mise à jour' + (s.updated  > 1 ? 's' : ''));
   if (s.withPub)  bits.push(s.withPub  + ' planifiée' + (s.withPub  > 1 ? 's' : ''));
   showSync('✅ Import terminé · ' + bits.join(' · '), 'rgba(5,150,105,.8)');
+}
+
+// Resolve an "Assignée à" cell (a person's name) into a workspace member's
+// user_id. Matches case-insensitively against display_name, first token of
+// the display name, or the local part of the email. "moi" / "me" resolves
+// to the current user. Empty / unmatched → null (task unassigned).
+function _resolveAssignee(rawName) {
+  var name = (rawName || '').trim().toLowerCase();
+  if (!name) return null;
+  if (typeof wsMembers !== 'function') return null;
+  var members = wsMembers();
+  if (name === 'moi' || name === 'me' || name === 'moi-même') {
+    return window._VEYRA_UID || null;
+  }
+  for (var i = 0; i < members.length; i++) {
+    var m = members[i];
+    var dn = (m.display_name || '').trim().toLowerCase();
+    var em = (m.email || '').toLowerCase();
+    var local = em.split('@')[0];
+    var first = dn.split(/\s+/)[0];
+    if (dn === name || em === name || local === name || first === name) return m.user_id;
+    // Also match partial: "Aminata" against "Aminata Diallo"
+    if (dn && dn.indexOf(name) !== -1) return m.user_id;
+    if (first && name.indexOf(first) !== -1) return m.user_id;
+  }
+  return null;
+}
+
+// Reverse: given a user_id, return a display name for the CSV export.
+function _assigneeNameForExport(userId) {
+  if (!userId) return '';
+  if (typeof wsMemberById === 'function') {
+    var m = wsMemberById(userId);
+    if (m) {
+      return (m.display_name && m.display_name.trim()) ||
+             (m.email || '').split('@')[0] || '';
+    }
+  }
+  return '';
 }

@@ -6,7 +6,7 @@
 <!-- Auto-update: force a fresh load when a new version is deployed -->
 <script>
 (function(){
-  var APP_VERSION = '49';
+  var APP_VERSION = '50';
   try {
     fetch('/version.json?_=' + Date.now(), { cache: 'no-store' })
       .then(function(r){ return r.json(); })
@@ -1021,7 +1021,7 @@
 <script src="js/feed.js?v=25"></script>
 <script src="js/script-modal.js?v=1"></script>
 <script src="js/production.js?v=10"></script>
-<script src="js/prod-import.js?v=2"></script>
+<script src="js/prod-import.js?v=3"></script>
 <script src="js/planning.js?v=11"></script>
 <script src="js/calendar.js?v=5"></script>
 <script src="js/coaching.js?v=3"></script>
