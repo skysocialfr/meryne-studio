@@ -40,9 +40,9 @@ function renderProd() {
   }
 
   var visible = PROD;
-  if (window._MY_TASKS_ONLY && typeof wsShouldShowAssignee === 'function' && wsShouldShowAssignee()) {
-    var mine = wsMyId();
-    visible = PROD.filter(function(t) { return t.assigneeId === mine; });
+  if (window._TASK_FILTER_USER_ID && typeof wsShouldShowAssignee === 'function' && wsShouldShowAssignee()) {
+    var _fu = window._TASK_FILTER_USER_ID;
+    visible = PROD.filter(function(t) { return t.assigneeId === _fu; });
   }
   var activeTasks = visible.filter(function(t) { return !t.done; });
   var doneTasks   = visible.filter(function(t) { return t.done; });
@@ -461,9 +461,9 @@ function renderProdKanban() {
   ];
 
   var source = PROD || [];
-  if (window._MY_TASKS_ONLY && typeof wsShouldShowAssignee === 'function' && wsShouldShowAssignee()) {
-    var mine = wsMyId();
-    source = source.filter(function(t) { return t.assigneeId === mine; });
+  if (window._TASK_FILTER_USER_ID && typeof wsShouldShowAssignee === 'function' && wsShouldShowAssignee()) {
+    var _fuk = window._TASK_FILTER_USER_ID;
+    source = source.filter(function(t) { return t.assigneeId === _fuk; });
   }
   var byCol = { todo: [], shooting: [], done: [] };
   source.forEach(function(t) { byCol[_prodStatus(t)].push(t); });
