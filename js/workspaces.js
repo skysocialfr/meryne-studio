@@ -9,8 +9,15 @@ var _WS_PERSONAL = null;
 var _WS_PENDING_INVITES = [];
 var _WS_MEMBERS_CACHE = [];
 
-// Global "Mes tâches" filter (production + planning honor it when set)
-window._MY_TASKS_ONLY = false;
+// Global per-member task filter honored by Production + Planning renderers.
+// null = show all tasks; a user_id = show only that member's tasks.
+window._TASK_FILTER_USER_ID = null;
+// Kept for backwards compat with any external caller / old cache.
+Object.defineProperty(window, '_MY_TASKS_ONLY', {
+  get: function() { return window._TASK_FILTER_USER_ID === window._VEYRA_UID; },
+  set: function(v) { window._TASK_FILTER_USER_ID = v ? window._VEYRA_UID : null; },
+  configurable: true
+});
 
 function _wsLsKey() {
   return 'veyra_active_ws:' + (window._VEYRA_UID || 'anon');
@@ -158,24 +165,60 @@ function wsShouldShowAssignee() {
   return !!(a && !a.is_personal && _WS_MEMBERS_CACHE.length > 1);
 }
 
+// Legacy toggle (still bound to a few older callers). Cycles through:
+//   null → current user → null
 function toggleMyTasksOnly() {
-  window._MY_TASKS_ONLY = !window._MY_TASKS_ONLY;
-  var btns = document.querySelectorAll('.mytasks-filter');
-  btns.forEach(function(b) { b.classList.toggle('active', window._MY_TASKS_ONLY); });
+  setTaskFilter(window._TASK_FILTER_USER_ID === window._VEYRA_UID ? null : window._VEYRA_UID);
+}
+
+// Primary API. Pass null to show everything, or a user_id to filter to
+// that member's tasks. Re-renders Production + Planning + chip state.
+function setTaskFilter(userId) {
+  window._TASK_FILTER_USER_ID = userId || null;
+  _renderMembersFilterChipsAll();
   if (typeof renderProd === 'function') renderProd();
   if (typeof renderPlanning === 'function') renderPlanning();
 }
 
+// Refresh the chip rows in both Prod + Planning toolbars. Called on
+// wsInit, workspace switch, and every setTaskFilter().
 function refreshMyTasksFilterUI() {
   var show = wsShouldShowAssignee();
-  var btns = document.querySelectorAll('.mytasks-filter');
-  btns.forEach(function(b) {
-    b.style.display = show ? '' : 'none';
-    b.classList.toggle('active', window._MY_TASKS_ONLY);
+  var rows = document.querySelectorAll('.members-filter-row');
+  rows.forEach(function(r) { r.style.display = show ? '' : 'none'; });
+  if (!show && window._TASK_FILTER_USER_ID) window._TASK_FILTER_USER_ID = null;
+  _renderMembersFilterChipsAll();
+}
+
+function _renderMembersFilterChipsAll() {
+  var rows = document.querySelectorAll('.members-filter-row');
+  rows.forEach(function(r) {
+    r.innerHTML = _membersFilterChipsHtml();
   });
-  if (!show && window._MY_TASKS_ONLY) {
-    window._MY_TASKS_ONLY = false;
-  }
+}
+
+function _membersFilterChipsHtml() {
+  var active = window._TASK_FILTER_USER_ID;
+  var html = '<button class="mchip' + (active === null ? ' mchip-active' : '') +
+    '" onclick="setTaskFilter(null)" title="Toutes les tâches">' +
+    '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5">' +
+    '<circle cx="12" cy="12" r="9"/></svg>' +
+    'Toutes</button>';
+  _WS_MEMBERS_CACHE.forEach(function(m) {
+    var isActive = active === m.user_id;
+    var isMe = m.user_id === window._VEYRA_UID;
+    var name = (m.display_name && m.display_name.trim().split(/\s+/)[0]) ||
+               (m.email || '').split('@')[0] || 'Membre';
+    if (isMe) name += ' (moi)';
+    var pal = wsMemberColor(m.user_id);
+    var initials = wsMemberInitials(m);
+    html += '<button class="mchip' + (isActive ? ' mchip-active' : '') +
+      '" onclick="setTaskFilter(\'' + m.user_id + '\')" title="' + escapeHtml(name) + '">' +
+      '<span class="mchip-av" style="background:linear-gradient(135deg,' + pal[0] + ',' + pal[1] + ')">' +
+      escapeHtml(initials) + '</span>' +
+      escapeHtml(name) + '</button>';
+  });
+  return html;
 }
 
 // Assignee dropdown <select> HTML fragment (empty string in personal ws).

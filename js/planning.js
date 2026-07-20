@@ -221,9 +221,9 @@ function renderPlanning() {
   var inSevenDays = new Date(now.getTime() + 7 * 24 * 3600 * 1000);
 
   var pubs = PUBS;
-  if (window._MY_TASKS_ONLY && typeof wsShouldShowAssignee === 'function' && wsShouldShowAssignee()) {
-    var _mine = wsMyId();
-    pubs = pubs.filter(function(p) { return p.assigneeId === _mine; });
+  if (window._TASK_FILTER_USER_ID && typeof wsShouldShowAssignee === 'function' && wsShouldShowAssignee()) {
+    var _fu = window._TASK_FILTER_USER_ID;
+    pubs = pubs.filter(function(p) { return p.assigneeId === _fu; });
   }
   if (fPlat !== 'all') pubs = pubs.filter(function(p) { return p.plat === fPlat; });
   if (fSearch) pubs = pubs.filter(function(p) {
@@ -403,9 +403,9 @@ function renderPlanKanban() {
     { id: 'published', label: 'Publié',        emoji: '🚀', accent: '#10B981' }
   ];
   var _source = PUBS || [];
-  if (window._MY_TASKS_ONLY && typeof wsShouldShowAssignee === 'function' && wsShouldShowAssignee()) {
-    var _mineK = wsMyId();
-    _source = _source.filter(function(p) { return p.assigneeId === _mineK; });
+  if (window._TASK_FILTER_USER_ID && typeof wsShouldShowAssignee === 'function' && wsShouldShowAssignee()) {
+    var _fuK = window._TASK_FILTER_USER_ID;
+    _source = _source.filter(function(p) { return p.assigneeId === _fuK; });
   }
   var byCol = { todo: [], thisweek: [], published: [] };
   _source.forEach(function(p) { byCol[_planStatus(p)].push(p); });

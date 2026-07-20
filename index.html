@@ -6,7 +6,7 @@
 <!-- Auto-update: force a fresh load when a new version is deployed -->
 <script>
 (function(){
-  var APP_VERSION = '50';
+  var APP_VERSION = '51';
   try {
     fetch('/version.json?_=' + Date.now(), { cache: 'no-store' })
       .then(function(r){ return r.json(); })
@@ -39,7 +39,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=40">
+<link rel="stylesheet" href="css/style.css?v=41">
 <link rel="canonical" href="https://veyrastudio.fr/">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -746,11 +746,8 @@
           </div>
           <div class="pb-outer"><div id="prod-prog" class="pb-inner" style="width:0%"></div></div>
         </div>
+        <div class="members-filter-row" style="display:none;"></div>
         <div class="plan-view-toggle" style="align-self:center;">
-          <button class="mytasks-filter" style="display:none" onclick="toggleMyTasksOnly()" title="Afficher uniquement mes t&acirc;ches">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2"/></svg>
-            Mes t&acirc;ches
-          </button>
           <button class="pvt active" id="pvt-prod-list" onclick="setProdView('list',this)">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
             Liste
@@ -790,11 +787,8 @@
             Imprimer
           </button>
         </div>
+        <div class="members-filter-row" style="display:none;"></div>
         <div class="plan-view-toggle">
-          <button class="mytasks-filter" style="display:none" onclick="toggleMyTasksOnly()" title="Afficher uniquement mes t&acirc;ches">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2"/></svg>
-            Mes t&acirc;ches
-          </button>
           <button class="pvt active" id="pvt-list" onclick="setPlanView('list',this)">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/></svg>
             Liste
@@ -1012,7 +1006,7 @@
 <!-- JS Modules (order matters: utils > storage > auth > modules > app) -->
 <script src="js/utils.js?v=3"></script>
 <script src="js/storage.js?v=8"></script>
-<script src="js/workspaces.js?v=4"></script>
+<script src="js/workspaces.js?v=5"></script>
 <script src="js/tracking.js?v=2"></script>
 <script src="js/auth.js?v=17"></script>
 <script src="js/landing.js?v=3"></script>
@@ -1020,9 +1014,9 @@
 <script src="js/onboarding.js?v=2"></script>
 <script src="js/feed.js?v=25"></script>
 <script src="js/script-modal.js?v=1"></script>
-<script src="js/production.js?v=10"></script>
+<script src="js/production.js?v=11"></script>
 <script src="js/prod-import.js?v=3"></script>
-<script src="js/planning.js?v=11"></script>
+<script src="js/planning.js?v=12"></script>
 <script src="js/calendar.js?v=5"></script>
 <script src="js/coaching.js?v=3"></script>
 <script src="js/analytics.js?v=9"></script>
