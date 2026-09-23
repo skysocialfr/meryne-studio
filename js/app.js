@@ -26,12 +26,15 @@ if ('serviceWorker' in navigator) {
 }
 
 // ─── Authentification ───
+let authReady = false;
 sb.auth.onAuthStateChange((event, session) => {
   if (event === 'PASSWORD_RECOVERY') return renderNewPassword();
   const next = session?.user || null;
-  if (next?.id === S.user?.id) return;
+  if (authReady && next?.id === S.user?.id) return;
+  authReady = true;
   S.user = next;
-  if (next) boot(); else renderLogin();
+  // Hors du callback : supabase-js se bloque si on l'appelle depuis onAuthStateChange.
+  setTimeout(() => (next ? boot() : renderLogin()), 0);
 });
 
 async function boot() {
