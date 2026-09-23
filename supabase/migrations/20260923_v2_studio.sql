@@ -130,3 +130,19 @@ select cron.schedule(
   );
   $cron$
 );
+
+-- ─── Ménage quotidien des journaux (sinon la base se remplit : ~110 Mo en 6 mois) ───
+do $$
+begin
+  perform cron.unschedule('vs-purge-logs')
+  where exists (select 1 from cron.job where jobname = 'vs-purge-logs');
+end $$;
+
+select cron.schedule(
+  'vs-purge-logs',
+  '15 3 * * *',
+  $cron$
+  delete from cron.job_run_details where end_time < now() - interval '2 days';
+  delete from net._http_response where created < now() - interval '2 days';
+  $cron$
+);
