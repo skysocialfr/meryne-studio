@@ -38,7 +38,7 @@ export function openEditor(existing, defaults = {}) {
     const P = PLATFORMS[d.platform];
     const video = isVideoFormat(d.format);
     const tags = countTags(d.hashtags);
-    const showScript = video || d.script.hook || d.script.shots?.length;
+    const showScript = video || d.script.hook || d.script.narration || d.script.shots?.length;
     sheet.setBody(`
       <div class="form-grid">
         <div class="seg full" role="group" aria-label="Réseau">
@@ -87,6 +87,10 @@ export function openEditor(existing, defaults = {}) {
           <div class="fold-b">
             <div class="field"><label for="s-hook">Accroche (3 premières secondes)</label>
               <textarea class="input" id="s-hook" rows="2" style="min-height:64px" placeholder="La phrase ou l’image qui arrête le scroll">${esc(d.script.hook || '')}</textarea></div>
+            <div class="field"><label for="s-narr">Voix off (narratrice)</label>
+              <textarea class="input" id="s-narr" rows="4" placeholder="Le texte de la narratrice">${esc(d.script.narration || '')}</textarea></div>
+            <div class="field"><label for="s-lines">Répliques de Mey</label>
+              <textarea class="input" id="s-lines" rows="2" style="min-height:64px" placeholder="Ce que tu dis face caméra">${esc(d.script.lines || '')}</textarea></div>
             <div class="field"><span class="label">Plans</span><div class="stack" id="shots">${(d.script.shots || []).map(shotRow).join('')}</div>
               <button class="btn btn-ghost btn-sm" data-add-shot style="justify-self:start">${icon('plus')} Ajouter un plan</button></div>
             <div class="field"><label for="s-cta">Fin / appel à l’action</label>
@@ -206,7 +210,7 @@ export function openEditor(existing, defaults = {}) {
     }));
 
     // script
-    const sc = { '#s-hook': 'hook', '#s-cta': 'cta', '#s-sound': 'sound', '#s-place': 'place', '#s-notes': 'notes' };
+    const sc = { '#s-hook': 'hook', '#s-narr': 'narration', '#s-lines': 'lines', '#s-cta': 'cta', '#s-sound': 'sound', '#s-place': 'place', '#s-notes': 'notes' };
     Object.entries(sc).forEach(([sel, k]) => $(sel)?.addEventListener('input', (e) => { d.script[k] = e.target.value; }));
     $$('[data-shot]').forEach((t) => t.addEventListener('input', () => { d.script.shots[t.dataset.shot].text = t.value; }));
     $$('[data-rm-shot]').forEach((b) => b.addEventListener('click', () => { d.script.shots.splice(+b.dataset.rmShot, 1); render(); }));

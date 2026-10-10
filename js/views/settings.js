@@ -1,6 +1,7 @@
 // ═══ Réglages : profil, rappels, thème ═══
 import { S, sb, saveProfile, uploadFile, makeThumb, signedUrls, cachedUrl, pushSupported, currentPushSub, enablePush, disablePush } from '../store.js';
 import { icon, esc, openSheet, toast, isIOS, isStandalone } from '../ui.js';
+import { openImporter } from './importer.js';
 
 export function openSettings() {
   const pr = { ...S.profile };
@@ -37,6 +38,12 @@ export function openSettings() {
             <select class="input" id="st-rem">
               ${[[0, 'À l’heure prévue'], [5, '5 min avant'], [15, '15 min avant'], [30, '30 min avant'], [60, '1 h avant']].map(([v, l]) => `<option value="${v}" ${+pr.reminder_minutes === v ? 'selected' : ''}>${l}</option>`).join('')}
             </select></div>
+        </section>
+
+        <section class="stack">
+          <h3 class="label">Importer des posts</h3>
+          <p class="small muted">Ajoute ou mets à jour tous tes posts d’un coup depuis ton fichier Excel. Aperçu avant enregistrement, rien n’est publié.</p>
+          <button class="btn" data-import style="justify-self:start">${icon('download')} Importer depuis Excel</button>
         </section>
 
         <section class="stack">
@@ -108,6 +115,7 @@ export function openSettings() {
       if (t === 'auto') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = t;
       sheet.el.querySelectorAll('[data-theme]').forEach((x) => x.setAttribute('aria-pressed', x === b));
     }));
+    $('[data-import]').addEventListener('click', () => openImporter());
     $('[data-logout]').addEventListener('click', async () => { sheet.close(true); await sb.auth.signOut(); });
     sheet.el.querySelector('[data-save]').onclick = async () => {
       try {

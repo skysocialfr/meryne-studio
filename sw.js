@@ -2,10 +2,10 @@
 // Rôles : recevoir les notifications « C'est l'heure de poster »,
 // ouvrir le bon post au toucher, et garder l'app lisible hors connexion.
 
-const CACHE = 'veyra-v2-2';
+const CACHE = 'veyra-v2-3';
 const SHELL = ['/', '/css/app.css', '/js/app.js', '/js/store.js', '/js/ui.js', '/js/config.js',
   '/js/views/today.js', '/js/views/platform.js', '/js/views/editor.js', '/js/views/poster.js',
-  '/js/views/stats.js', '/js/views/settings.js', '/js/views/common.js', '/icon-192.png', '/favicon.svg'];
+  '/js/views/stats.js', '/js/views/settings.js', '/js/views/importer.js', '/js/views/common.js', '/icon-192.png', '/favicon.svg'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).catch(() => {}));
