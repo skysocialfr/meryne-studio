@@ -146,8 +146,16 @@ function renderLogin(msg = '', isErr = false) {
   document.getElementById('forgot').addEventListener('click', async () => {
     const email = f.em.value.trim();
     if (!email) { m.className = 'login-msg err'; m.textContent = 'Entre ton email d’abord.'; return; }
-    await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin });
-    m.className = 'login-msg'; m.textContent = 'Email envoyé : clique sur le lien pour choisir un nouveau mot de passe.';
+    m.className = 'login-msg'; m.textContent = 'Envoi…';
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin });
+    if (error) {
+      m.className = 'login-msg err';
+      m.textContent = error.status === 429 || /rate limit|security purposes|seconds/i.test(error.message)
+        ? 'Trop de demandes d’email d’affilée. Attends environ 1 h, puis réessaie une seule fois.'
+        : `L’email n’a pas pu partir : ${error.message}`;
+      return;
+    }
+    m.className = 'login-msg'; m.textContent = 'Email envoyé : regarde aussi dans les spams, puis clique sur le lien du dernier email reçu.';
   });
 }
 
