@@ -1,5 +1,5 @@
 // ═══ Veyra Studio v2 — point d'entrée ═══
-import { sb, S, loadAll, onChange, getPost } from './store.js';
+import { sb, S, loadAll, onChange, getPost, AUTH_LINK } from './store.js';
 import { icon, esc, toast, sheetOpen } from './ui.js';
 import { renderToday } from './views/today.js';
 import { renderPlatform } from './views/platform.js';
@@ -27,15 +27,34 @@ if ('serviceWorker' in navigator) {
 
 // ─── Authentification ───
 let authReady = false;
+let recovering = false;
 sb.auth.onAuthStateChange((event, session) => {
-  if (event === 'PASSWORD_RECOVERY') return renderNewPassword();
+  // Lien « mot de passe oublié » : on reste sur le formulaire de nouveau mot de passe,
+  // même si supabase-js annonce d'abord la session comme une connexion normale.
+  if (event === 'PASSWORD_RECOVERY' || (AUTH_LINK.recovery && session)) {
+    S.user = session?.user || S.user;
+    authReady = true;
+    if (!recovering) { recovering = true; setTimeout(renderNewPassword, 0); }
+    return;
+  }
+  if (recovering) return;
   const next = session?.user || null;
   if (authReady && next?.id === S.user?.id) return;
   authReady = true;
   S.user = next;
   // Hors du callback : supabase-js se bloque si on l'appelle depuis onAuthStateChange.
-  setTimeout(() => (next ? boot() : renderLogin()), 0);
+  setTimeout(() => (next ? boot() : renderLogin(linkErrorMessage(), true)), 0);
 });
+
+function linkErrorMessage() {
+  if (!AUTH_LINK.error) return '';
+  const code = AUTH_LINK.error;
+  AUTH_LINK.error = '';
+  history.replaceState(null, '', location.pathname);
+  return /expired|otp|access_denied/i.test(code)
+    ? 'Ce lien a expiré ou a déjà servi. Entre ton email et touche « Mot de passe oublié » pour en recevoir un nouveau (il est valable 1 h, utilise le dernier reçu).'
+    : 'Ce lien ne fonctionne pas. Redemande un email avec « Mot de passe oublié ».';
+}
 
 async function boot() {
   app.innerHTML = `<div class="boot"><div class="boot-logo">Veyra <em>Studio</em></div></div>`;
@@ -104,7 +123,7 @@ document.addEventListener('visibilitychange', async () => {
 setInterval(() => { if (S.user && !sheetOpen()) renderView(); }, 60_000);
 
 // ─── Écrans de connexion ───
-function renderLogin(msg = '') {
+function renderLogin(msg = '', isErr = false) {
   app.innerHTML = `
     <div class="login"><div class="login-card">
       <h1>Veyra <em style="color:var(--rose)">Studio</em></h1>
@@ -114,7 +133,7 @@ function renderLogin(msg = '') {
         <div class="field"><label for="pw">Mot de passe</label><input class="input" id="pw" type="password" autocomplete="current-password" required></div>
         <button class="btn btn-rose btn-lg btn-block" type="submit">Se connecter</button>
         <button class="btn btn-ghost btn-sm" type="button" id="forgot">Mot de passe oublié ?</button>
-        <p class="login-msg" id="lmsg">${esc(msg)}</p>
+        <p class="login-msg${isErr && msg ? ' err' : ''}" id="lmsg">${esc(msg)}</p>
       </form>
     </div></div>`;
   const f = document.getElementById('login-form'), m = document.getElementById('lmsg');
@@ -141,12 +160,23 @@ function renderNewPassword() {
     </div></div>`;
   document.getElementById('np').addEventListener('submit', async (e) => {
     e.preventDefault();
+    const m = document.getElementById('npm'), btn = e.target.querySelector('button');
+    btn.disabled = true; m.className = 'login-msg'; m.textContent = 'Enregistrement…';
     const { error } = await sb.auth.updateUser({ password: e.target.p1.value });
-    if (error) { document.getElementById('npm').textContent = error.message; return; }
+    if (error) {
+      m.className = 'login-msg err';
+      m.textContent = /session/i.test(error.message) ? 'Ce lien a expiré. Retourne à la connexion et redemande « Mot de passe oublié ».'
+        : /different/i.test(error.message) ? 'Choisis un mot de passe différent de l’ancien.'
+        : /at least|characters|weak/i.test(error.message) ? 'Mot de passe trop court ou trop simple (8 caractères minimum).'
+        : error.message;
+      btn.disabled = false;
+      return;
+    }
     toast('Mot de passe mis à jour');
-    S.user = null;
+    recovering = false; AUTH_LINK.recovery = false;
+    history.replaceState(null, '', location.pathname);
     const { data } = await sb.auth.getSession();
     S.user = data.session?.user || null;
-    if (S.user) boot(); else renderLogin();
+    if (S.user) boot(); else renderLogin('Mot de passe mis à jour : connecte-toi avec le nouveau.');
   });
 }

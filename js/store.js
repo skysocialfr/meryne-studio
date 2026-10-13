@@ -3,6 +3,13 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 import { SUPA_URL, SUPA_KEY, VAPID_PUBLIC_KEY, BUCKET } from './config.js';
 
 export const DEMO = new URLSearchParams(location.search).has('demo');
+
+// Lien reçu par email (mot de passe oublié) : lu avant que supabase-js ne nettoie l'URL.
+const linkParams = new URLSearchParams(`${location.hash.slice(1)}&${location.search.slice(1)}`);
+export const AUTH_LINK = {
+  recovery: linkParams.get('type') === 'recovery',
+  error: linkParams.get('error_code') || linkParams.get('error') || '',
+};
 export const sb = DEMO
   ? await (await import('./demo.js')).makeDemoSb()
   : createClient(SUPA_URL, SUPA_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
